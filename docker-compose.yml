@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: wavefit
+      POSTGRES_PASSWORD: wavefit123
+      POSTGRES_DB: wavefitdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  api:
+    build: .
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: wavefit
+      DB_PASS: wavefit123
+      DB_NAME: wavefitdb
+      JWT_SECRET: "super_secret_key"
+      APP_SOURCE: "postgres"
+    depends_on:
+      - db
+
+volumes:
+  pgdata:
