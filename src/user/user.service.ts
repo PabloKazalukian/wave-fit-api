@@ -3,8 +3,8 @@ import * as bcrypt from 'bcryptjs';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-import { User, User as UserMongo } from './schema/user.schema';
+import { Model } from 'mongoose';
+import { User as UserMongo } from './schema/user.schema';
 import { handleError } from 'src/common/utils/handle-error';
 
 @Injectable()
@@ -31,6 +31,14 @@ export class UserService {
 
   async findAll(): Promise<UserMongo[]> {
     return this.userModel.find().exec();
+  }
+
+  async findByIdentifier(identifier: string): Promise<UserMongo | null> {
+    return this.userModel
+      .findOne({
+        $or: [{ email: identifier }, { name: identifier }],
+      })
+      .exec();
   }
 
   async findOne(id: String) {

@@ -7,6 +7,8 @@ import { UserModule } from './user/user.module';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { join } from 'path';
+import { AuthModule } from './auth/auth.module';
+import { RoutinePlanModule } from './routine-plan/routine-plan.module';
 dotenv.config();
 
 // console.log('DB_MONGO_PASSWORD:', process.env.DB_MONGO_PASSWORD);
@@ -22,6 +24,8 @@ dotenv.config();
       playground: true, // habilita GraphQL playground
     }),
     UserModule,
+    AuthModule,
+    RoutinePlanModule,
   ],
   controllers: [AppController],
   providers: [AppService],

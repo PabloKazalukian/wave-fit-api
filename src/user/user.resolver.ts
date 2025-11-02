@@ -14,7 +14,6 @@ export class UserResolver {
   @Mutation(() => User)
   async createUser(@Args('createUserInput') createUserInput: CreateUserInput) {
     try {
-      console.log('Role received:', createUserInput);
       const created = await this.userService.create({
         ...createUserInput,
         role: createUserInput.role ?? UserRole.USER,
