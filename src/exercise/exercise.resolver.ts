@@ -9,12 +9,14 @@ export class ExerciseResolver {
   constructor(private readonly exerciseService: ExerciseService) {}
 
   @Mutation(() => Exercise)
-  createExercise(@Args('createExerciseInput') createExerciseInput: CreateExerciseInput) {
+  createExercise(
+    @Args('createExerciseInput') createExerciseInput: CreateExerciseInput,
+  ) {
     return this.exerciseService.create(createExerciseInput);
   }
 
-  @Query(() => [Exercise], { name: 'exercise' })
-  findAll() {
+  @Query(() => [Exercise], { name: 'exercises' })
+  exercises() {
     return this.exerciseService.findAll();
   }
 
@@ -24,8 +26,13 @@ export class ExerciseResolver {
   }
 
   @Mutation(() => Exercise)
-  updateExercise(@Args('updateExerciseInput') updateExerciseInput: UpdateExerciseInput) {
-    return this.exerciseService.update(updateExerciseInput.id, updateExerciseInput);
+  updateExercise(
+    @Args('updateExerciseInput') updateExerciseInput: UpdateExerciseInput,
+  ) {
+    return this.exerciseService.update(
+      updateExerciseInput.id,
+      updateExerciseInput,
+    );
   }
 
   @Mutation(() => Exercise)

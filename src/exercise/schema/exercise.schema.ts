@@ -4,7 +4,7 @@ import { ExerciseCategory } from 'src/common/interfaces/exercise.interface';
 
 @Schema({ timestamps: true })
 export class Exercise extends Document {
-  @Prop({ required: true })
+  @Prop({ unique: true, trim: true })
   name: string;
 
   @Prop()

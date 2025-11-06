@@ -1,15 +1,29 @@
 import { Injectable } from '@nestjs/common';
 import { CreateExerciseInput } from './dto/create-exercise.input';
 import { UpdateExerciseInput } from './dto/update-exercise.input';
+import { Exercise } from './schema/exercise.schema';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { handleError } from 'src/common/utils/handle-error';
 
 @Injectable()
 export class ExerciseService {
-  create(createExerciseInput: CreateExerciseInput) {
-    return 'This action adds a new exercise';
+  constructor(
+    @InjectModel(Exercise.name) private ExerciseModel: Model<Exercise>,
+  ) {}
+  async create(
+    createExerciseInput: CreateExerciseInput,
+  ): Promise<Exercise | undefined> {
+    try {
+      const createdExercise = new this.ExerciseModel(createExerciseInput);
+      return createdExercise.save();
+    } catch (error) {
+      handleError(error);
+    }
   }
 
-  findAll() {
-    return `This action returns all exercise`;
+  async findAll() {
+    return this.ExerciseModel.find().exec();
   }
 
   findOne(id: number) {
