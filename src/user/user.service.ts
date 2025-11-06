@@ -4,18 +4,18 @@ import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User as UserMongo } from './schema/user.schema';
+import { User as UserMongoose } from './schema/user.schema';
 import { handleError } from 'src/common/utils/handle-error';
 
 @Injectable()
 export class UserService {
   constructor(
-    @InjectModel(UserMongo.name) private userModel: Model<UserMongo>,
+    @InjectModel(UserMongoose.name) private userModel: Model<UserMongoose>,
   ) {}
 
   async create(
     createUserInput: CreateUserInput,
-  ): Promise<UserMongo | undefined> {
+  ): Promise<UserMongoose | undefined> {
     try {
       const hashed = await bcrypt.hash(createUserInput.password, 10);
       const createdUser = new this.userModel({
@@ -29,11 +29,11 @@ export class UserService {
     }
   }
 
-  async findAll(): Promise<UserMongo[]> {
+  async findAll(): Promise<UserMongoose[]> {
     return this.userModel.find().exec();
   }
 
-  async findByIdentifier(identifier: string): Promise<UserMongo | null> {
+  async findByIdentifier(identifier: string): Promise<UserMongoose | null> {
     return this.userModel
       .findOne({
         $or: [{ email: identifier }, { name: identifier }],

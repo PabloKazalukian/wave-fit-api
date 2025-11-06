@@ -9,6 +9,11 @@ import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { join } from 'path';
 import { AuthModule } from './auth/auth.module';
 import { RoutinePlanModule } from './routine-plan/routine-plan.module';
+import { RoutineDayModule } from './routine-day/routine-day.module';
+import { WorkoutSessionModule } from './workout-session/workout-session.module';
+import { ExerciseModule } from './exercise/exercise.module';
+import { WeekLogModule } from './week-log/week-log.module';
+import { ExtraSessionModule } from './extra-session/extra-session.module';
 dotenv.config();
 
 // console.log('DB_MONGO_PASSWORD:', process.env.DB_MONGO_PASSWORD);
@@ -26,6 +31,11 @@ dotenv.config();
     UserModule,
     AuthModule,
     RoutinePlanModule,
+    RoutineDayModule,
+    WorkoutSessionModule,
+    ExerciseModule,
+    WeekLogModule,
+    ExtraSessionModule,
   ],
   controllers: [AppController],
   providers: [AppService],

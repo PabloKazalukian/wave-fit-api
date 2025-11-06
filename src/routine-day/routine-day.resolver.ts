@@ -1,0 +1,35 @@
+import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import { RoutineDayService } from './routine-day.service';
+import { RoutineDay } from './entities/routine-day.entity';
+import { CreateRoutineDayInput } from './dto/create-routine-day.input';
+import { UpdateRoutineDayInput } from './dto/update-routine-day.input';
+
+@Resolver(() => RoutineDay)
+export class RoutineDayResolver {
+  constructor(private readonly routineDayService: RoutineDayService) {}
+
+  @Mutation(() => RoutineDay)
+  createRoutineDay(@Args('createRoutineDayInput') createRoutineDayInput: CreateRoutineDayInput) {
+    return this.routineDayService.create(createRoutineDayInput);
+  }
+
+  @Query(() => [RoutineDay], { name: 'routineDay' })
+  findAll() {
+    return this.routineDayService.findAll();
+  }
+
+  @Query(() => RoutineDay, { name: 'routineDay' })
+  findOne(@Args('id', { type: () => Int }) id: number) {
+    return this.routineDayService.findOne(id);
+  }
+
+  @Mutation(() => RoutineDay)
+  updateRoutineDay(@Args('updateRoutineDayInput') updateRoutineDayInput: UpdateRoutineDayInput) {
+    return this.routineDayService.update(updateRoutineDayInput.id, updateRoutineDayInput);
+  }
+
+  @Mutation(() => RoutineDay)
+  removeRoutineDay(@Args('id', { type: () => Int }) id: number) {
+    return this.routineDayService.remove(id);
+  }
+}

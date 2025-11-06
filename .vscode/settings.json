@@ -1,0 +1,15 @@
+{
+  "workbench.colorTheme": "One Dark Pro",
+  "workbench.iconTheme": "material-icon-theme",
+  "editor.formatOnSave": true,
+
+  // NestJS: íconos personalizados
+  "material-icon-theme.files.associations": {
+    "**/*.resolver.ts": "nestjs-controller",
+    "**/*.service.ts": "nestjs-service",
+    "**/*.module.ts": "nestjs-module",
+    "**/*.guard.ts": "nestjs-guard",
+    "**/*.interceptor.ts": "nestjs-interceptor",
+    "**/*.pipe.ts": "nestjs-pipe"
+  }
+}
