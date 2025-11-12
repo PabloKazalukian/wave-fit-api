@@ -4,16 +4,26 @@ import {
 } from '@nestjs/common';
 
 export function handleError(error: any) {
+  console.log('Error code:', error);
   if (error.name === 'ValidationError') {
-    throw new BadRequestException(
-      Object.values(error.errors).map((e: any) => e.message),
-    );
+    throw new BadRequestException({
+      message: 'Error de validación',
+      details: Object.values(error.errors).map((e: any) => e.message),
+      code: 'VALIDATION_ERROR',
+    });
   }
 
   if (error.code === 11000) {
-    throw new BadRequestException('Duplicated key error');
+    const field = Object.keys(error.keyValue)[0];
+    throw new BadRequestException({
+      message: `El campo '${field}' debe ser único`,
+      code: 'DUPLICATE_KEY',
+    });
   }
 
   console.error('[DB Error]', error);
-  throw new InternalServerErrorException('Error interno del servidor');
+  throw new InternalServerErrorException({
+    message: 'Error interno del servidor',
+    code: 'INTERNAL_SERVER_ERROR',
+  });
 }
