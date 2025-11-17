@@ -14,6 +14,7 @@ import { WorkoutSessionModule } from './modules/routines/tracking/workout-sessio
 import { ExerciseModule } from './modules/routines/templates/exercise/exercise.module';
 import { WeekLogModule } from './modules/routines/tracking/week-log/week-log.module';
 import { ExtraSessionModule } from './modules/routines/tracking/extra-session/extra-session.module';
+import { GoogleModule } from './modules/auth/google/google.module';
 dotenv.config();
 
 // console.log('DB_MONGO_PASSWORD:', process.env.DB_MONGO_PASSWORD);
@@ -36,6 +37,7 @@ dotenv.config();
     ExerciseModule,
     WeekLogModule,
     ExtraSessionModule,
+    GoogleModule,
   ],
   controllers: [AppController],
   providers: [AppService],

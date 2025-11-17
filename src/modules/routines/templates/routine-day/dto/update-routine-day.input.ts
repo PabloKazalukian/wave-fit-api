@@ -6,3 +6,9 @@ export class UpdateRoutineDayInput extends PartialType(CreateRoutineDayInput) {
   @Field(() => Int)
   id: number;
 }
+
+@InputType()
+export class findByCategoryInput extends PartialType(CreateRoutineDayInput) {
+  @Field(() => String)
+  category: string;
+}

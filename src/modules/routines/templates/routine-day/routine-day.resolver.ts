@@ -2,7 +2,10 @@ import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
 import { RoutineDayService } from './routine-day.service';
 import { RoutineDay } from './entities/routine-day.entity';
 import { CreateRoutineDayInput } from './dto/create-routine-day.input';
-import { UpdateRoutineDayInput } from './dto/update-routine-day.input';
+import {
+  findByCategoryInput,
+  UpdateRoutineDayInput,
+} from './dto/update-routine-day.input';
 
 @Resolver(() => RoutineDay)
 export class RoutineDayResolver {
@@ -23,6 +26,11 @@ export class RoutineDayResolver {
   @Query(() => RoutineDay, { name: 'routineDay' })
   findOne(@Args('id', { type: () => Int }) id: number) {
     return this.routineDayService.findOne(id);
+  }
+
+  @Query(() => [RoutineDay], { name: 'routinesByCategory' })
+  routineByCategory(@Args('input') input: findByCategoryInput) {
+    return this.routineDayService.findByCategory(input.category);
   }
 
   @Mutation(() => RoutineDay)

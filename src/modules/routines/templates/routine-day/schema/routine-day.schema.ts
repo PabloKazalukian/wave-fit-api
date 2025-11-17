@@ -1,5 +1,11 @@
+import { registerEnumType } from '@nestjs/graphql';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import { ExerciseCategory } from 'src/common/interfaces/exercise.interface';
+
+registerEnumType(ExerciseCategory, {
+  name: 'ExerciseCategory',
+});
 
 @Schema({ timestamps: true })
 export class RoutineDay extends Document {
@@ -8,7 +14,7 @@ export class RoutineDay extends Document {
 
   // Ejemplo: "entrenamiento", "descanso", "cardio"
   @Prop({ required: false })
-  type?: string[];
+  type?: ExerciseCategory[];
 
   // Array de ejercicios (referencias)
   @Prop({ type: [{ type: Types.ObjectId, ref: 'Exercise' }], default: [] })

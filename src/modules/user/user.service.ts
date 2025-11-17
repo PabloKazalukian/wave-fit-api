@@ -4,8 +4,9 @@ import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User as UserMongoose } from './schema/user.schema';
+import { User as UserMongoose, UserRole } from './schema/user.schema';
 import { handleError } from 'src/common/utils/handle-error';
+import { UserGoogle } from 'src/common/interfaces/user.interface';
 
 @Injectable()
 export class UserService {
@@ -41,6 +42,10 @@ export class UserService {
       .exec();
   }
 
+  async findByEmail(email: string): Promise<UserMongoose | null> {
+    return this.userModel.findOne({ email: email }).exec();
+  }
+
   async findOne(id: String) {
     return this.userModel.findById(id);
   }
@@ -55,5 +60,21 @@ export class UserService {
 
   async remove(id: String) {
     return this.userModel.deleteOne({ _id: id }).exec();
+  }
+
+  async createGoogleUser(userInfo: UserGoogle): Promise<UserMongoose> {
+    const pass = Math.random().toString(36).slice(-8);
+    const hashed = await bcrypt.hash(pass, 10);
+
+    const createdUser = new this.userModel({
+      email: userInfo.email,
+      name: userInfo.name,
+      // picture: userInfo.picture,
+      // googleId: userInfo.googleId,
+      password: hashed,
+      role: UserRole.USER,
+      // Puedes agregar otros campos necesarios aquí
+    });
+    return createdUser.save();
   }
 }

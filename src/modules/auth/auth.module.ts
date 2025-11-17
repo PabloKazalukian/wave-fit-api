@@ -6,17 +6,18 @@ import { UserModule } from '../user/user.module';
 import { JwtStrategy } from './jwt.strategy';
 import { AuthResolver } from './auth.resolver';
 import { LocalStrategy } from './local.strategy';
+import { GoogleModule } from './google/google.module';
 
 @Module({
   imports: [
     UserModule,
     PassportModule,
     JwtModule.register({
-      secret: process.env.AUTH_JWT || 'supersecretkey', // cambia esto
+      secret: process.env.AUTH_JWT || 'supersecretkey',
       signOptions: { expiresIn: '1h' },
     }),
   ],
   providers: [AuthService, JwtStrategy, LocalStrategy, AuthResolver],
-  exports: [AuthService],
+  exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

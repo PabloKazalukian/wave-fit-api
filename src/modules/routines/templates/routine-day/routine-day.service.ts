@@ -30,6 +30,10 @@ export class RoutineDayService {
     return `This action returns a #${id} routineDay`;
   }
 
+  findByCategory(category: string) {
+    return this.routineDayModel.find({ category }).exec();
+  }
+
   update(id: number, updateRoutineDayInput: UpdateRoutineDayInput) {
     return `This action updates a #${id} routineDay`;
   }
