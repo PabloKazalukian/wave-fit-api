@@ -4,7 +4,6 @@ import {
 } from '@nestjs/common';
 
 export function handleError(error: any) {
-  console.log('Error code:', error);
   if (error.name === 'ValidationError') {
     throw new BadRequestException({
       message: 'Error de validación',

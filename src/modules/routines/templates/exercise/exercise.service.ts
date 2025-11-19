@@ -26,7 +26,6 @@ export class ExerciseService {
       const createdExercise = new this.ExerciseModel(createExerciseInput);
       return createdExercise.save();
     } catch (error) {
-      console.log('Error creating exercise:', error);
       handleError(error);
     }
   }

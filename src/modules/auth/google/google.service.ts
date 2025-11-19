@@ -22,7 +22,6 @@ export class GoogleService {
     params.append('grant_type', 'authorization_code');
     params.append('code_verifier', codeVerifier); // ← CLAVE
 
-    console.log(params.toString());
     const res = await axios.post(
       'https://oauth2.googleapis.com/token',
       params.toString(),
