@@ -1,6 +1,7 @@
 import { InputType, Field } from '@nestjs/graphql';
 import { IsOptional, IsString } from 'class-validator';
 import { CreateExerciseInput } from '../../exercise/dto/create-exercise.input';
+import { ExerciseCategory } from 'src/common/interfaces/exercise.interface';
 
 @InputType()
 export class CreateRoutineDayInput {
@@ -8,13 +9,12 @@ export class CreateRoutineDayInput {
   @IsString()
   title: string;
 
-  @Field({ nullable: true })
-  @IsOptional()
-  type?: string;
+  @Field(() => [ExerciseCategory], { nullable: true })
+  type?: ExerciseCategory[];
 
-  @Field(() => [CreateExerciseInput], { nullable: 'itemsAndList' })
+  @Field(() => [String], { nullable: true })
   @IsOptional()
-  exercises?: CreateExerciseInput[]; // IDs o nombres de ejercicios
+  exercises?: string[]; // IDs o nombres de ejercicios
 
   @Field({ nullable: true })
   @IsOptional()

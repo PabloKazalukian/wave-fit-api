@@ -1,5 +1,7 @@
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 import { Exercise } from '../../exercise/entities/exercise.entity';
+import { ExerciseCategory } from 'src/common/interfaces/exercise.interface';
+import { IsOptional } from 'class-validator';
 
 @ObjectType()
 export class RoutineDay {
@@ -10,8 +12,8 @@ export class RoutineDay {
   title: string;
 
   // Tipo (entrenamiento, descanso, cardio)
-  @Field({ nullable: true })
-  type?: string;
+  @Field(() => [ExerciseCategory], { nullable: true })
+  type?: ExerciseCategory[];
 
   // Ejercicios del día
   @Field(() => [Exercise], { nullable: 'itemsAndList' })
