@@ -1,3 +1,4 @@
+import { ExerciseCategory } from 'src/common/interfaces/exercise.interface';
 import { CreateRoutineDayInput } from './create-routine-day.input';
 import { InputType, Field, Int, PartialType } from '@nestjs/graphql';
 
@@ -9,6 +10,6 @@ export class UpdateRoutineDayInput extends PartialType(CreateRoutineDayInput) {
 
 @InputType()
 export class findByCategoryInput extends PartialType(CreateRoutineDayInput) {
-  @Field(() => String)
-  category: string;
+  @Field(() => ExerciseCategory)
+  category: ExerciseCategory;
 }

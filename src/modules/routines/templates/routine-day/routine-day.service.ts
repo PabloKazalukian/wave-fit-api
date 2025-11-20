@@ -31,7 +31,7 @@ export class RoutineDayService {
   }
 
   findByCategory(category: string) {
-    return this.routineDayModel.find({ category }).exec();
+    return this.routineDayModel.find({ type: category }).exec();
   }
 
   update(id: number, updateRoutineDayInput: UpdateRoutineDayInput) {

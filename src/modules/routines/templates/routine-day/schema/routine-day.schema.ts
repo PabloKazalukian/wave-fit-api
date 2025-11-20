@@ -13,8 +13,8 @@ export class RoutineDay extends Document {
   title: string;
 
   // Ejemplo: "entrenamiento", "descanso", "cardio"
-  @Prop({ required: false })
-  type?: ExerciseCategory[];
+  @Prop({ type: [String], enum: ExerciseCategory, required: true })
+  type: ExerciseCategory[];
 
   // Array de ejercicios (referencias)
   @Prop({ type: [{ type: Types.ObjectId, ref: 'Exercise' }], default: [] })
