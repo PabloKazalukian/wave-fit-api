@@ -38,6 +38,10 @@ export class ExerciseService {
     return `This action returns a #${id} exercise`;
   }
 
+  findByIds(ids: string[]) {
+    return this.ExerciseModel.find({ _id: { $in: ids } });
+  }
+
   update(id: number, updateExerciseInput: UpdateExerciseInput) {
     return `This action updates a #${id} exercise`;
   }

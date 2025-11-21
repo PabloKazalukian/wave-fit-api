@@ -11,5 +11,6 @@ import { MongooseModule } from '@nestjs/mongoose';
     ]),
   ],
   providers: [ExerciseResolver, ExerciseService],
+  exports: [ExerciseService],
 })
 export class ExerciseModule {}

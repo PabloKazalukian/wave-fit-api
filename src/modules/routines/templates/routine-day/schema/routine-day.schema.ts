@@ -2,6 +2,7 @@ import { registerEnumType } from '@nestjs/graphql';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { ExerciseCategory } from 'src/common/interfaces/exercise.interface';
+import { Exercise } from '../../exercise/schema/exercise.schema';
 
 registerEnumType(ExerciseCategory, {
   name: 'ExerciseCategory',
