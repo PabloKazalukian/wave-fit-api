@@ -23,7 +23,7 @@ export class RoutineDayService {
   }
 
   async findAll() {
-    return this.routineDayModel.find().exec();
+    return this.routineDayModel.find().populate('exercises').exec();
   }
 
   findOne(id: number) {
@@ -31,7 +31,10 @@ export class RoutineDayService {
   }
 
   findByCategory(category: string) {
-    return this.routineDayModel.find({ type: category }).exec();
+    return this.routineDayModel
+      .find({ type: category })
+      .populate('exercises')
+      .exec();
   }
 
   update(id: number, updateRoutineDayInput: UpdateRoutineDayInput) {
