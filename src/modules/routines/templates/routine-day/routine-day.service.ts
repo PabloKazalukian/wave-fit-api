@@ -26,8 +26,8 @@ export class RoutineDayService {
     return this.routineDayModel.find().populate('exercises').exec();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} routineDay`;
+  findOne(id: String) {
+    return this.routineDayModel.findById(id).populate('exercises').exec();
   }
 
   findByCategory(category: string) {
