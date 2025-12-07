@@ -23,15 +23,18 @@ export class RoutineDayService {
   }
 
   async findAll() {
-    return this.routineDayModel.find().exec();
+    return this.routineDayModel.find().populate('exercises').exec();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} routineDay`;
+  findOne(id: String) {
+    return this.routineDayModel.findById(id).populate('exercises').exec();
   }
 
   findByCategory(category: string) {
-    return this.routineDayModel.find({ type: category }).exec();
+    return this.routineDayModel
+      .find({ type: category })
+      .populate('exercises')
+      .exec();
   }
 
   update(id: number, updateRoutineDayInput: UpdateRoutineDayInput) {

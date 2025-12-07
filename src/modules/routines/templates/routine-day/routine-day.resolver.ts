@@ -37,7 +37,7 @@ export class RoutineDayResolver {
   }
 
   @Query(() => RoutineDay, { name: 'routineDay' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
+  findOne(@Args('id', { type: () => String }) id: String) {
     return this.routineDayService.findOne(id);
   }
 

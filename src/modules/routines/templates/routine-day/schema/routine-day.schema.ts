@@ -28,3 +28,22 @@ export class RoutineDay extends Document {
 
 export const RoutineDaySchema = SchemaFactory.createForClass(RoutineDay);
 RoutineDaySchema.index({ type: 1 });
+
+RoutineDaySchema.set('toJSON', {
+  virtuals: true,
+  versionKey: false,
+  transform: (_, ret: any) => {
+    ret.id = ret._id.toString();
+    delete ret._id;
+
+    // Convertir exercises a string si no hay populate
+    if (Array.isArray(ret.exercises)) {
+      ret.exercises = ret.exercises.map((e) => e.toString());
+    }
+
+    // Convertir planId si existe
+    if (ret.planId) ret.planId = ret.planId.toString();
+
+    return ret;
+  },
+});
