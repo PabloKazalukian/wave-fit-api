@@ -36,6 +36,12 @@ export class RoutineDayService {
       .populate('exercises')
       .exec();
   }
+  findByIds(ids: string[]) {
+    return this.routineDayModel
+      .find({ _id: { $in: ids } })
+      .populate('exercises')
+      .exec();
+  }
 
   update(id: number, updateRoutineDayInput: UpdateRoutineDayInput) {
     return `This action updates a #${id} routineDay`;

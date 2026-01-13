@@ -13,5 +13,6 @@ import { ExerciseModule } from '../exercise/exercise.module';
     ]),
   ],
   providers: [RoutineDayResolver, RoutineDayService],
+  exports: [RoutineDayService],
 })
 export class RoutineDayModule {}

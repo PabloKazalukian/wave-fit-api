@@ -16,8 +16,8 @@ export class RoutinePlan {
   @Field({ nullable: true })
   weekly_distribution?: string;
 
-  @Field(() => [RoutineDay], { nullable: 'itemsAndList' })
-  routineDays?: RoutineDay[];
+  @Field(() => [ID], { nullable: 'itemsAndList' })
+  routineDays?: string[];
 
   @Field({ nullable: true })
   createdBy?: string;
