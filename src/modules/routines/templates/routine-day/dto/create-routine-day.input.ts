@@ -12,8 +12,7 @@ export class CreateRoutineDayInput {
   @Field(() => [ExerciseCategory], { nullable: true })
   type?: ExerciseCategory[];
 
-  @Field(() => [String], { nullable: true })
-  @IsOptional()
+  @Field(() => [String])
   exercises?: string[]; // IDs o nombres de ejercicios
 
   @Field({ nullable: true })

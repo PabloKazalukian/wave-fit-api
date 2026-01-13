@@ -11,5 +11,6 @@ import { RoutineDay, RoutineDaySchema } from './schema/routine-day.schema';
     ]),
   ],
   providers: [RoutineDayResolver, RoutineDayService],
+  exports: [RoutineDayService],
 })
 export class RoutineDayModule {}
