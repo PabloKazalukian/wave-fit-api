@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import { Document, Schema as MongooseSchema, Types } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class RoutinePlan extends Document {
@@ -9,15 +9,11 @@ export class RoutinePlan extends Document {
   @Prop({ required: true })
   description: string;
 
-  // ejemplo: "6/7" (días activos/semana)
-  @Prop({ required: false })
-  weekly_distribution?: string;
-
-  // Referencias a los días del plan
-  @Prop({ type: [{ type: Types.ObjectId, ref: 'RoutineDay' }], default: [] })
-  routineDays: Types.ObjectId[];
-
-  // usuario creador del plan (si aplica)
+  @Prop({
+    type: [MongooseSchema.Types.Mixed],
+    default: [],
+  })
+  routineDays?: any[];
   @Prop({ required: false })
   createdBy?: string;
 }

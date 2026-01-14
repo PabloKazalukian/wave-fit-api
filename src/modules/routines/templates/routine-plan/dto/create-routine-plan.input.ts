@@ -1,6 +1,6 @@
-import { InputType, Int, Field, ID } from '@nestjs/graphql';
+import { InputType, Field, ID } from '@nestjs/graphql';
 import { IsNotEmpty, IsOptional, MaxLength } from 'class-validator';
-import { CreateRoutineDayInput } from '../../routine-day/dto/create-routine-day.input';
+import { RoutineDay } from '../../routine-day/entities/routine-day.entity';
 
 @InputType()
 export class CreateRoutinePlanInput {
@@ -16,11 +16,12 @@ export class CreateRoutinePlanInput {
   @Field()
   weekly_distribution: string;
 
-  // @Field(() => [CreateRoutineDayInput], { nullable: 'itemsAndList' })
-  // routineDays?: CreateRoutineDayInput[];
+  @Field(() => [String], { nullable: 'itemsAndList' })
+  routineDays?: (string | null)[];
 
-  @Field(() => [ID], { nullable: 'itemsAndList' })
-  routineDays?: string[];
+  // @Field(() => [RoutineDay])
+  //
+  // routineDays?: RoutineDay[];
 
   @Field({ nullable: true })
   @IsOptional()
