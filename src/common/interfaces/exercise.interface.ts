@@ -9,4 +9,5 @@ export enum ExerciseCategory {
   SHOULDERS = 'shoulders',
   CORE = 'core',
   CARDIO = 'cardio',
+  REST = 'rest',
 }
