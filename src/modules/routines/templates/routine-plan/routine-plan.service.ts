@@ -68,6 +68,14 @@ export class RoutinePlanService {
     }
   }
 
+  async findByTitle(title: string): Promise<RoutinePlan | null | undefined> {
+    try {
+      return this.routinePlanModel.findOne({ name: title }).exec();
+    } catch (error) {
+      handleError(error);
+    }
+  }
+
   update(id: number, updateRoutinePlanInput: UpdateRoutinePlanInput) {
     return `This action updates a #${id} routinePlan`;
   }

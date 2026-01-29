@@ -27,3 +27,9 @@ export class CreateRoutinePlanInput {
   @IsOptional()
   createdBy?: string;
 }
+
+@InputType()
+export class ValidateTitleInput {
+  @Field()
+  title: string;
+}

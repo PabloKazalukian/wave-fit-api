@@ -11,7 +11,10 @@ import { RoutinePlanService } from './routine-plan.service';
 import { RoutinePlan } from './entities/routine-plan.entity';
 import { RoutinePlan as RoutinePlanSchema } from './schema/routine-plan.schema';
 
-import { CreateRoutinePlanInput } from './dto/create-routine-plan.input';
+import {
+  CreateRoutinePlanInput,
+  ValidateTitleInput,
+} from './dto/create-routine-plan.input';
 import { UpdateRoutinePlanInput } from './dto/update-routine-plan.input';
 import { RoutineDay } from '../routine-day/entities/routine-day.entity';
 import { RoutineDayService } from '../routine-day/routine-day.service';
@@ -131,5 +134,11 @@ export class RoutinePlanResolver {
   @Mutation(() => RoutinePlan)
   removeRoutinePlan(@Args('id', { type: () => Int }) id: number) {
     return this.routinePlanService.remove(id);
+  }
+
+  @Query(() => Boolean)
+  async isRoutineTitleAvailable(@Args('title') input: ValidateTitleInput) {
+    const payload = await this.routinePlanService.findByTitle(input.title);
+    return payload === null;
   }
 }
