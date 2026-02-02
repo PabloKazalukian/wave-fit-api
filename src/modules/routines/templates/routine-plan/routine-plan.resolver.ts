@@ -20,8 +20,13 @@ import { RoutineDay } from '../routine-day/entities/routine-day.entity';
 import { RoutineDayService } from '../routine-day/routine-day.service';
 import { Types } from 'mongoose';
 import { ExerciseCategory } from 'src/common/interfaces/exercise.interface';
+import { AuditInterceptor } from 'src/modules/audit-logs/audit-logs.interceptor';
+import { UseGuards, UseInterceptors } from '@nestjs/common';
+import { Audit } from 'src/modules/audit-logs/audit-logs.decorator';
+import { GqlAuthGuard } from 'src/modules/auth/guards/gql-auth.guard';
 
 @Resolver(() => RoutinePlan)
+@UseInterceptors(AuditInterceptor)
 export class RoutinePlanResolver {
   constructor(
     private readonly routinePlanService: RoutinePlanService,
@@ -29,6 +34,8 @@ export class RoutinePlanResolver {
   ) {}
 
   @Mutation(() => RoutinePlan)
+  @Audit('CREATE_WEEKLY_ROUTINE', 'WeeklyRoutine')
+  @UseGuards(GqlAuthGuard)
   createRoutinePlan(
     @Args('createRoutinePlanInput')
     createRoutinePlanInput: CreateRoutinePlanInput,
@@ -42,9 +49,8 @@ export class RoutinePlanResolver {
       return [];
     }
 
-    // Paso 1: Identificar qué posiciones tienen ObjectIds y cuáles "Rest"
     const idsToFetch: string[] = [];
-    const dayMap = new Map<number, 'Rest' | string>(); // posición → tipo
+    const dayMap = new Map<number, 'Rest' | string>();
 
     plan.routineDays.forEach((day, index) => {
       if (typeof day === 'string' && day === 'Rest') {
@@ -56,39 +62,29 @@ export class RoutinePlanResolver {
       }
     });
 
-    // Paso 2: Hacer populate solo de los ObjectIds válidos
     let populatedDays: any[] = [];
-    if (idsToFetch.length > 0) {
+    if (idsToFetch.length > 0)
       populatedDays = await this.routineDayService.findByIds(idsToFetch);
-    }
 
-    // Crear Map para acceso rápido por ID
     const populatedMap = new Map<string, any>();
     populatedDays.forEach((day) => {
-      // Mongoose Document tiene _id, GraphQL tiene id
       const dayId = day.id || day._id?.toString();
-      if (dayId) {
-        populatedMap.set(dayId, day);
-      }
+
+      if (dayId) populatedMap.set(dayId, day);
     });
 
-    // Paso 3: Reconstruir array en orden original
     const result: any[] = [];
 
     for (let i = 0; i < plan.routineDays.length; i++) {
       const value = dayMap.get(i);
 
       if (value === 'Rest') {
-        // Crear objeto especial para día de descanso
         result.push(this.createRestDay(i));
       } else if (value) {
-        // Buscar el documento populado
         const populatedDay = populatedMap.get(value);
         if (populatedDay) {
           result.push(populatedDay);
         } else {
-          // Si no se encontró, usar Rest como fallback
-          console.warn(`RoutineDay ${value} no encontrado en DB`);
           result.push(this.createRestDay(i));
         }
       }
@@ -97,9 +93,6 @@ export class RoutinePlanResolver {
     return result;
   }
 
-  /**
-   * Crea un objeto RoutineDay especial para días de descanso
-   */
   private createRestDay(index: number): any {
     return {
       id: 'rest',
