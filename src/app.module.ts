@@ -5,7 +5,6 @@ import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
-import { join } from 'path';
 import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { RoutinePlanModule } from './modules/routines/templates/routine-plan/routine-plan.module';
@@ -15,6 +14,7 @@ import { ExerciseModule } from './modules/routines/templates/exercise/exercise.m
 import { WeekLogModule } from './modules/routines/tracking/week-log/week-log.module';
 import { ExtraSessionModule } from './modules/routines/tracking/extra-session/extra-session.module';
 import { GoogleModule } from './modules/auth/google/google.module';
+import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
 dotenv.config();
 
 // console.log('DB_MONGO_PASSWORD:', process.env.DB_MONGO_PASSWORD);
@@ -26,6 +26,7 @@ dotenv.config();
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: true,
+      context: ({ req }) => ({ req }),
       // autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       playground: true, // habilita GraphQL playground
     }),
@@ -38,6 +39,7 @@ dotenv.config();
     WeekLogModule,
     ExtraSessionModule,
     GoogleModule,
+    AuditLogsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

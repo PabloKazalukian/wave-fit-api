@@ -4,6 +4,7 @@ import { RoutinePlanResolver } from './routine-plan.resolver';
 import { RoutinePlan, RoutinePlanSchema } from './schema/routine-plan.schema';
 import { MongooseModule } from '@nestjs/mongoose';
 import { RoutineDayModule } from '../routine-day/routine-day.module';
+import { AuditLogsModule } from 'src/modules/audit-logs/audit-logs.module';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { RoutineDayModule } from '../routine-day/routine-day.module';
     MongooseModule.forFeature([
       { name: RoutinePlan.name, schema: RoutinePlanSchema },
     ]),
+    AuditLogsModule,
   ],
   providers: [RoutinePlanResolver, RoutinePlanService],
 })
