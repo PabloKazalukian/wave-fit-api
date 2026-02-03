@@ -28,7 +28,7 @@ dotenv.config();
       autoSchemaFile: true,
       context: ({ req }) => ({ req }),
       // autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
-      playground: true, // habilita GraphQL playground
+      playground: true,
     }),
     UserModule,
     AuthModule,
