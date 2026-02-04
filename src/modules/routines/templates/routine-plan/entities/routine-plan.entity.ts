@@ -12,12 +12,8 @@ export class RoutinePlan {
   @Field({ nullable: false })
   description: string;
 
-  // exemple: "6/7 4/7"
   @Field({ nullable: true })
   weekly_distribution?: string;
-
-  // @Field(() => [ID], { nullable: 'itemsAndList' })
-  // routineDays?: string[];
 
   @Field(() => [RoutineDay], { nullable: 'itemsAndList' })
   routineDays?: RoutineDay[];

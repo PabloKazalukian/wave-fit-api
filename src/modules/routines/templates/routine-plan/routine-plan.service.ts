@@ -12,23 +12,6 @@ export class RoutinePlanService {
     @InjectModel(RoutinePlan.name) private routinePlanModel: Model<RoutinePlan>,
   ) {}
 
-  private processRoutineDays(days: (string | null)[]): any[] {
-    return days.map((day) => {
-      // Si es null o undefined → "Rest"
-      if (day === null || day === undefined || day === '') {
-        return 'Rest';
-      }
-
-      // Si es un string válido de ObjectId → convertir a ObjectId
-      if (typeof day === 'string' && Types.ObjectId.isValid(day)) {
-        return new Types.ObjectId(day);
-      }
-
-      // Si no es válido → "Rest" como fallback
-      return 'Rest';
-    });
-  }
-
   async create(
     createRoutinePlanInput: CreateRoutinePlanInput,
   ): Promise<RoutinePlan | undefined> {
