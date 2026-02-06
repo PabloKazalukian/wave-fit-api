@@ -53,28 +53,36 @@ export class RoutinePlanResolver {
     const dayMap = new Map<number, 'Rest' | string>();
 
     plan.routineDays.forEach((day, index) => {
-      if (typeof day === 'string' && day === 'Rest') {
+      // Si es string vacío o 'Rest', es día de descanso
+      if (!day || day === '' || day === 'Rest') {
         dayMap.set(index, 'Rest');
-      } else if (day && Types.ObjectId.isValid(day)) {
+      }
+      // Si es un ID válido de MongoDB
+      else if (Types.ObjectId.isValid(day)) {
         const idStr = day.toString();
         idsToFetch.push(idStr);
         dayMap.set(index, idStr);
       }
+      // Cualquier otro caso también se trata como descanso
+      else {
+        dayMap.set(index, 'Rest');
+      }
     });
 
     let populatedDays: any[] = [];
-    if (idsToFetch.length > 0)
+    if (idsToFetch.length > 0) {
       populatedDays = await this.routineDayService.findByIds(idsToFetch);
+    }
 
     const populatedMap = new Map<string, any>();
     populatedDays.forEach((day) => {
       const dayId = day.id || day._id?.toString();
-
       if (dayId) populatedMap.set(dayId, day);
     });
 
     const result: any[] = [];
 
+    // Iterar sobre TODOS los días del plan (siempre 7)
     for (let i = 0; i < plan.routineDays.length; i++) {
       const value = dayMap.get(i);
 
@@ -85,8 +93,12 @@ export class RoutinePlanResolver {
         if (populatedDay) {
           result.push(populatedDay);
         } else {
+          // Si el ID no se encontró en la DB, poner descanso
           result.push(this.createRestDay(i));
         }
+      } else {
+        // Fallback: si no hay valor en el map, poner descanso
+        result.push(this.createRestDay(i));
       }
     }
 

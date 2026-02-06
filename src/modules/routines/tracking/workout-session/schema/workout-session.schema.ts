@@ -7,16 +7,22 @@ import {
 
 @Schema({ timestamps: true })
 export class WorkoutSession {
-  @Prop({ type: Date, default: Date.now })
-  date?: Date;
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
+  userId: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'RoutineDay', required: false })
-  routineDayId?: string;
+  @Prop({ type: Types.ObjectId, ref: 'WeekLog', required: true, index: true })
+  weekLogId: Types.ObjectId;
+
+  @Prop({ type: Date, required: true, index: true })
+  date: Date;
+
+  @Prop({ type: Types.ObjectId, ref: 'RoutineDay', default: null })
+  routineDayId?: Types.ObjectId;
 
   @Prop({ type: [ExercisePerformanceSchema], default: [] })
-  exercises?: ExercisePerformance[];
+  exercises: ExercisePerformance[];
 
-  @Prop({ type: String })
+  @Prop({ type: String, default: '' })
   notes?: string;
 }
 
@@ -24,3 +30,5 @@ export type WorkoutSessionDocument = WorkoutSession & Document;
 export const WorkoutSessionSchema =
   SchemaFactory.createForClass(WorkoutSession);
 WorkoutSessionSchema.index({ userId: 1, date: 1 });
+WorkoutSessionSchema.index({ userId: 1, routineDayId: 1 });
+WorkoutSessionSchema.index({ weekLogId: 1 });

@@ -3,9 +3,9 @@ import { GoogleService } from './google.service';
 import { Google } from './entities/google.entity';
 import { CreateGoogleInput } from './dto/create-google.input';
 import { UpdateGoogleInput } from './dto/update-google.input';
-import { UserService } from 'src/modules/user/user.service';
+import { UserService } from '../../../modules/user/user.service';
 import { JwtService } from '@nestjs/jwt';
-import { UserGoogle } from 'src/common/interfaces/user.interface';
+import { UserGoogle } from '../../../common/interfaces/user.interface';
 import { GoogleLoginOutput } from './dto/google-login.output';
 
 @Resolver(() => Google)

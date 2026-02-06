@@ -4,30 +4,13 @@ import { UpdateRoutinePlanInput } from './dto/update-routine-plan.input';
 import { InjectModel } from '@nestjs/mongoose';
 import { RoutinePlan } from './schema/routine-plan.schema';
 import { Model, Types } from 'mongoose';
-import { handleError } from 'src/common/utils/handle-error';
+import { handleError } from '../../../../common/utils/handle-error';
 
 @Injectable()
 export class RoutinePlanService {
   constructor(
     @InjectModel(RoutinePlan.name) private routinePlanModel: Model<RoutinePlan>,
   ) {}
-
-  private processRoutineDays(days: (string | null)[]): any[] {
-    return days.map((day) => {
-      // Si es null o undefined → "Rest"
-      if (day === null || day === undefined || day === '') {
-        return 'Rest';
-      }
-
-      // Si es un string válido de ObjectId → convertir a ObjectId
-      if (typeof day === 'string' && Types.ObjectId.isValid(day)) {
-        return new Types.ObjectId(day);
-      }
-
-      // Si no es válido → "Rest" como fallback
-      return 'Rest';
-    });
-  }
 
   async create(
     createRoutinePlanInput: CreateRoutinePlanInput,
@@ -42,7 +25,7 @@ export class RoutinePlanService {
     }
   }
 
-  async findAll() {
+  async findAll(): Promise<RoutinePlan[] | undefined> {
     try {
       return this.routinePlanModel.find().exec();
     } catch (error) {

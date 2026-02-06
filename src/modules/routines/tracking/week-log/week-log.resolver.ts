@@ -1,35 +1,83 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args, Int, Context } from '@nestjs/graphql';
 import { WeekLogService } from './week-log.service';
 import { WeekLog } from './entities/week-log.entity';
 import { CreateWeekLogInput } from './dto/create-week-log.input';
 import { UpdateWeekLogInput } from './dto/update-week-log.input';
+import { BadRequestException, UseGuards } from '@nestjs/common';
+import { GqlAuthGuard } from '../../../../modules/auth/guards/gql-auth.guard';
+import { Types } from 'mongoose';
 
 @Resolver(() => WeekLog)
+@UseGuards(GqlAuthGuard)
 export class WeekLogResolver {
   constructor(private readonly weekLogService: WeekLogService) {}
 
   @Mutation(() => WeekLog)
-  createWeekLog(@Args('createWeekLogInput') createWeekLogInput: CreateWeekLogInput) {
-    return this.weekLogService.create(createWeekLogInput);
+  async createWeekLog(
+    @Args('createWeekLogInput') createWeekLogInput: CreateWeekLogInput,
+    @Context() context,
+  ) {
+    // const userId = context.req.user.id;
+    if (!Types.ObjectId.isValid(context?.req?.user?.id)) {
+      throw new BadRequestException('Invalid user id');
+    }
+
+    const userId = new Types.ObjectId(context.req.user.id);
+    return this.weekLogService.create(createWeekLogInput, userId);
   }
 
   @Query(() => [WeekLog], { name: 'weekLog' })
-  findAll() {
-    return this.weekLogService.findAll();
+  async findAll(@Context() context) {
+    if (!Types.ObjectId.isValid(context?.req?.user?.id)) {
+      throw new BadRequestException('Invalid user id');
+    }
+
+    return this.weekLogService.findAllByUser(context?.req?.user?.id);
   }
 
   @Query(() => WeekLog, { name: 'weekLog' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
-    return this.weekLogService.findOne(id);
+  async findOne(
+    @Args('id', { type: () => String }) id: string,
+    @Context() context,
+  ) {
+    if (!Types.ObjectId.isValid(context?.req?.user?.id)) {
+      throw new BadRequestException('Invalid user id');
+    }
+    return this.weekLogService.findOne(id, context?.req?.user?.id);
+  }
+
+  @Query(() => WeekLog, { name: 'activeWeekLog' })
+  async findActiveWeekLog(@Context() context) {
+    if (!Types.ObjectId.isValid(context?.req?.user?.id)) {
+      throw new BadRequestException('Invalid user id');
+    }
+    return this.weekLogService.findActiveWeekLog(context?.req?.user?.id);
+  }
+
+  @Query(() => WeekLog, { name: 'currentWorkoutSession' })
+  async getCurrentWorkoutSession(@Context() context) {
+    if (!Types.ObjectId.isValid(context?.req?.user?.id)) {
+      throw new BadRequestException('Invalid user id');
+    }
+    return this.weekLogService.findActiveWeekLog(context?.req?.user?.id);
   }
 
   @Mutation(() => WeekLog)
-  updateWeekLog(@Args('updateWeekLogInput') updateWeekLogInput: UpdateWeekLogInput) {
-    return this.weekLogService.update(updateWeekLogInput.id, updateWeekLogInput);
+  async updateWeekLog(
+    @Args('updateWeekLogInput') updateWeekLogInput: UpdateWeekLogInput,
+    @Context() context,
+  ) {
+    return this.weekLogService.update(
+      updateWeekLogInput.id,
+      updateWeekLogInput,
+    );
   }
 
   @Mutation(() => WeekLog)
-  removeWeekLog(@Args('id', { type: () => Int }) id: number) {
+  async removeWeekLog(
+    @Args('id', { type: () => String }) id: string,
+    @Context() context,
+  ) {
     return this.weekLogService.remove(id);
   }
 }
