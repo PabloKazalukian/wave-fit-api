@@ -5,8 +5,8 @@ import { UpdateUserInput } from './dto/update-user.input';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User as UserMongoose, UserRole } from './schema/user.schema';
-import { handleError } from 'src/common/utils/handle-error';
-import { UserGoogle } from 'src/common/interfaces/user.interface';
+import { handleError } from '../../common/utils/handle-error';
+import { UserGoogle } from '../../common/interfaces/user.interface';
 
 @Injectable()
 export class UserService {
