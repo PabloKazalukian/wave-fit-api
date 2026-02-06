@@ -4,8 +4,6 @@ import { User } from './entities/user.entity';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
 import { UserRole } from './schema/user.schema';
-import passport from 'passport';
-import { handleError } from 'src/common/utils/handle-error';
 
 @Resolver(() => User)
 export class UserResolver {
@@ -13,16 +11,12 @@ export class UserResolver {
 
   @Mutation(() => User)
   async createUser(@Args('createUserInput') createUserInput: CreateUserInput) {
-    try {
-      const created = await this.userService.create({
-        ...createUserInput,
-        role: createUserInput.role ?? UserRole.USER,
-      });
+    const created = await this.userService.create({
+      ...createUserInput,
+      role: createUserInput.role ?? UserRole.USER,
+    });
 
-      return created;
-    } catch (err) {
-      handleError(err);
-    }
+    return created;
   }
 
   @Query(() => [User])

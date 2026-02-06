@@ -4,7 +4,6 @@ import { UpdateRoutineDayInput } from './dto/update-routine-day.input';
 import { InjectModel } from '@nestjs/mongoose';
 import { RoutineDay } from './schema/routine-day.schema';
 import { Model } from 'mongoose';
-import { handleError } from 'src/common/utils/handle-error';
 
 @Injectable()
 export class RoutineDayService {
@@ -13,13 +12,8 @@ export class RoutineDayService {
   ) {}
 
   async create(createRoutineDayInput: CreateRoutineDayInput) {
-    try {
-      const createdRoutineDay = new this.routineDayModel(createRoutineDayInput);
-      return createdRoutineDay.save();
-    } catch (error) {
-      console.error('Error creating RoutineDay:', error);
-      handleError(error);
-    }
+    const createdRoutineDay = new this.routineDayModel(createRoutineDayInput);
+    return createdRoutineDay.save();
   }
 
   async findAll() {

@@ -4,7 +4,6 @@ import { UpdateRoutinePlanInput } from './dto/update-routine-plan.input';
 import { InjectModel } from '@nestjs/mongoose';
 import { RoutinePlan } from './schema/routine-plan.schema';
 import { Model, Types } from 'mongoose';
-import { handleError } from '../../../../common/utils/handle-error';
 
 @Injectable()
 export class RoutinePlanService {
@@ -15,48 +14,32 @@ export class RoutinePlanService {
   async create(
     createRoutinePlanInput: CreateRoutinePlanInput,
   ): Promise<RoutinePlan | undefined> {
-    try {
-      const creadoredRoutinePlan = new this.routinePlanModel(
-        createRoutinePlanInput,
-      );
-      return creadoredRoutinePlan.save();
-    } catch (error) {
-      handleError(error);
-    }
+    const creadoredRoutinePlan = new this.routinePlanModel(
+      createRoutinePlanInput,
+    );
+    return creadoredRoutinePlan.save();
   }
 
   async findAll(): Promise<RoutinePlan[] | undefined> {
-    try {
-      return this.routinePlanModel.find().exec();
-    } catch (error) {
-      handleError(error);
-    }
+    return this.routinePlanModel.find().exec();
   }
 
   async findOne(id: string) {
-    try {
-      if (!Types.ObjectId.isValid(id)) {
-        throw new NotFoundException(`ID "${id}" no es válido`);
-      }
-
-      const plan = await this.routinePlanModel.findById(id).exec();
-
-      if (!plan) {
-        throw new NotFoundException(`Plan con ID "${id}" no encontrado`);
-      }
-
-      return plan;
-    } catch (error) {
-      handleError(error);
+    if (!Types.ObjectId.isValid(id)) {
+      throw new NotFoundException(`ID "${id}" no es válido`);
     }
+
+    const plan = await this.routinePlanModel.findById(id).exec();
+
+    if (!plan) {
+      throw new NotFoundException(`Plan con ID "${id}" no encontrado`);
+    }
+
+    return plan;
   }
 
   async findByTitle(title: string): Promise<RoutinePlan | null | undefined> {
-    try {
-      return this.routinePlanModel.findOne({ name: title }).exec();
-    } catch (error) {
-      handleError(error);
-    }
+    return this.routinePlanModel.findOne({ name: title }).exec();
   }
 
   update(id: number, updateRoutinePlanInput: UpdateRoutinePlanInput) {
