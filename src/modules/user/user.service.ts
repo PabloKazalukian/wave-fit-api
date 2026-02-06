@@ -5,7 +5,6 @@ import { UpdateUserInput } from './dto/update-user.input';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User as UserMongoose, UserRole } from './schema/user.schema';
-import { handleError } from '../../common/utils/handle-error';
 import { UserGoogle } from '../../common/interfaces/user.interface';
 
 @Injectable()
@@ -17,17 +16,13 @@ export class UserService {
   async create(
     createUserInput: CreateUserInput,
   ): Promise<UserMongoose | undefined> {
-    try {
-      const hashed = await bcrypt.hash(createUserInput.password, 10);
-      const createdUser = new this.userModel({
-        ...createUserInput,
-        password: hashed,
-      });
+    const hashed = await bcrypt.hash(createUserInput.password, 10);
+    const createdUser = new this.userModel({
+      ...createUserInput,
+      password: hashed,
+    });
 
-      return createdUser.save();
-    } catch (error) {
-      handleError(error);
-    }
+    return createdUser.save();
   }
 
   async findAll(): Promise<UserMongoose[]> {

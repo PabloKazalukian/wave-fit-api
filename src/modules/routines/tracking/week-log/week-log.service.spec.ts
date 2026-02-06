@@ -11,12 +11,24 @@ describe('WeekLogService', () => {
   let service: WeekLogService;
   let model: Model<WeekLog>;
 
-  const mockUserId = new Types.ObjectId();
-  const mockWeekLogId = new Types.ObjectId().toString();
-  const mockPlanId = new Types.ObjectId().toString();
+  const mockSave = jest.fn();
 
+  const mockWeekLogModel = jest.fn().mockImplementation((input) => ({
+    ...input,
+    userId: null,
+    save: mockSave,
+  }));
+
+  (mockWeekLogModel as any).findOne = jest.fn();
+  (mockWeekLogModel as any).find = jest.fn();
+  (mockWeekLogModel as any).findOneAndUpdate = jest.fn();
+  (mockWeekLogModel as any).deleteOne = jest.fn();
+
+  const mockUserId = new Types.ObjectId();
+  const mockWeekLogId = new Types.ObjectId();
+  const mockPlanId = new Types.ObjectId().toString();
   const mockWeekLog = {
-    _id: mockWeekLogId,
+    id: mockWeekLogId,
     userId: mockUserId,
     startDate: new Date('2024-01-01'),
     endDate: new Date('2024-01-07'),
@@ -25,20 +37,6 @@ describe('WeekLogService', () => {
     planId: mockPlanId,
     notes: 'Test week',
     completed: false,
-    save: jest.fn().mockResolvedValue(this),
-    toObject: jest.fn().mockReturnThis(),
-  };
-
-  const mockWeekLogModel = {
-    new: jest.fn().mockResolvedValue(mockWeekLog),
-    constructor: jest.fn().mockResolvedValue(mockWeekLog),
-    find: jest.fn(),
-    findById: jest.fn(),
-    findByIdAndUpdate: jest.fn(),
-    findByIdAndDelete: jest.fn(),
-    findOne: jest.fn(),
-    create: jest.fn(),
-    exec: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -53,7 +51,6 @@ describe('WeekLogService', () => {
     }).compile();
 
     service = module.get<WeekLogService>(WeekLogService);
-    model = module.get<Model<WeekLog>>(getModelToken(WeekLog.name));
   });
 
   afterEach(() => {
@@ -62,57 +59,72 @@ describe('WeekLogService', () => {
 
   describe('create', () => {
     it('should create a new week log for authenticated user', async () => {
-      const createWeekLogInput: CreateWeekLogInput = {
+      const input: CreateWeekLogInput = {
         startDate: new Date('2024-01-01'),
         endDate: new Date('2024-01-07'),
-        planId: mockPlanId,
+        planId: 'plan-id',
         notes: 'New week log',
       };
 
-      const createdWeekLog = {
-        ...mockWeekLog,
-        ...createWeekLogInput,
-        userId: mockUserId,
-      };
-
-      jest.spyOn(model, 'create').mockResolvedValue(createdWeekLog as any);
-
-      const result = await service.create(createWeekLogInput, mockUserId);
-
-      expect(model.create).toHaveBeenCalledWith({
-        ...createWeekLogInput,
-        userId: mockUserId,
+      (mockWeekLogModel as any).findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
       });
-      expect(result).toEqual(createdWeekLog);
-      expect(result?.userId).toBe(mockUserId);
-    });
 
-    it('should validate required fields in CreateWeekLogInput', async () => {
-      const invalidInput = {
-        // Missing required fields
-        notes: 'Invalid',
-      } as CreateWeekLogInput;
+      mockSave.mockResolvedValue({
+        _id: mockWeekLogId,
+        userId: mockUserId,
+        ...input,
+      });
 
-      jest
-        .spyOn(model, 'create')
-        .mockRejectedValue(
-          new Error('Validation failed: startDate is required'),
-        );
+      const result = await service.create(input, mockUserId);
 
-      await expect(service.create(invalidInput, mockUserId)).rejects.toThrow();
+      expect((mockWeekLogModel as any).findOne).toHaveBeenCalledWith({
+        userId: mockUserId.toHexString(),
+        completed: false,
+      });
+
+      expect(result).toMatchObject({
+        userId: mockUserId,
+        startDate: input.startDate,
+        endDate: input.endDate,
+      });
     });
 
     it('should validate date range (endDate must be after startDate)', async () => {
       const invalidInput: CreateWeekLogInput = {
         startDate: new Date('2024-01-07'),
-        endDate: new Date('2024-01-01'), // endDate before startDate
+        endDate: new Date('2024-01-01'),
       };
 
-      jest
-        .spyOn(model, 'create')
-        .mockRejectedValue(new Error('endDate must be after startDate'));
+      await expect(service.create(invalidInput, mockUserId)).rejects.toThrow(
+        ForbiddenException,
+      );
+      await expect(service.create(invalidInput, mockUserId)).rejects.toThrow(
+        'endDate must be after startDate',
+      );
+    });
 
-      await expect(service.create(invalidInput, mockUserId)).rejects.toThrow();
+    it('should throw error if active week log already exists', async () => {
+      const input: CreateWeekLogInput = {
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-01-07'),
+      };
+
+      (mockWeekLogModel as any).findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({
+          _id: mockWeekLogId,
+          userId: mockUserId,
+          completed: false,
+        }),
+      });
+
+      await expect(service.create(input, mockUserId)).rejects.toThrow(
+        ForbiddenException,
+      );
+
+      await expect(service.create(input, mockUserId)).rejects.toThrow(
+        'Ya existe una semana activa',
+      );
     });
 
     it('should create week log without optional fields', async () => {
@@ -121,15 +133,17 @@ describe('WeekLogService', () => {
         endDate: new Date('2024-01-07'),
       };
 
-      const createdWeekLog = {
-        ...mockWeekLog,
-        ...minimalInput,
+      (mockWeekLogModel as any).findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      });
+
+      mockSave.mockResolvedValue({
+        _id: mockWeekLogId,
         userId: mockUserId,
+        ...minimalInput,
         planId: null,
         notes: '',
-      };
-
-      jest.spyOn(model, 'create').mockResolvedValue(createdWeekLog as any);
+      });
 
       const result = await service.create(minimalInput, mockUserId);
 
@@ -138,86 +152,89 @@ describe('WeekLogService', () => {
     });
   });
 
-  // describe('findAll', () => {
-  //   it('should return all week logs for authenticated user', async () => {
-  //     const mockWeekLogs = [
-  //       { ...mockWeekLog, _id: new Types.ObjectId().toString() },
-  //       { ...mockWeekLog, _id: new Types.ObjectId().toString() },
-  //     ];
+  describe('findAll', () => {
+    it('should return all week logs for authenticated user', async () => {
+      const logs = [
+        { _id: new Types.ObjectId(), userId: mockUserId },
+        { _id: new Types.ObjectId(), userId: mockUserId },
+      ];
 
-  //     jest.spyOn(model, 'find').mockReturnValue({
-  //       exec: jest.fn().mockResolvedValue(mockWeekLogs),
-  //     } as any);
+      (mockWeekLogModel as any).find.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(logs),
+      });
 
-  //     const result = await service.findAll(mockUserId);
+      const result = await service.findAllByUser(mockUserId.toHexString());
 
-  //     expect(model.find).toHaveBeenCalledWith({ userId: mockUserId });
-  //     expect(result).toEqual(mockWeekLogs);
-  //     expect(result.length).toBe(2);
-  //   });
+      expect((mockWeekLogModel as any).find).toHaveBeenCalledWith({
+        userId: mockUserId.toHexString(),
+      });
 
-  //   it('should return empty array if user has no week logs', async () => {
-  //     jest.spyOn(model, 'find').mockReturnValue({
-  //       exec: jest.fn().mockResolvedValue([]),
-  //     } as any);
+      expect(result).toHaveLength(2);
+    });
 
-  //     const result = await service.findAll(mockUserId);
+    it('should return empty array if user has no week logs', async () => {
+      (mockWeekLogModel as any).find.mockReturnValue({
+        exec: jest.fn().mockResolvedValue([]),
+      });
 
-  //     expect(result).toEqual([]);
-  //   });
+      const result = await service.findAllByUser(mockUserId.toHexString());
 
-  //   it('should only return week logs belonging to the authenticated user', async () => {
-  //     const otherUserId = new Types.ObjectId().toString();
-  //     const userWeekLogs = [
-  //       { ...mockWeekLog, userId: mockUserId },
-  //     ];
+      expect(result).toEqual([]);
+    });
 
-  //     jest.spyOn(model, 'find').mockReturnValue({
-  //       exec: jest.fn().mockResolvedValue(userWeekLogs),
-  //     } as any);
+    it('should only return week logs belonging to the authenticated user', async () => {
+      const logs = [{ _id: new Types.ObjectId(), userId: mockUserId }];
 
-  //     const result = await service.findAll(mockUserId);
+      (mockWeekLogModel as any).find.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(logs),
+      });
 
-  //     expect(model.find).toHaveBeenCalledWith({ userId: mockUserId });
-  //     expect(result.every(log => log.userId === mockUserId)).toBe(true);
-  //   });
-  // });
+      const result = await service.findAllByUser(mockUserId.toHexString());
 
-  // describe('findOne', () => {
-  //   it('should return a week log by id for the authenticated user', async () => {
-  //     jest.spyOn(model, 'findById').mockReturnValue({
-  //       exec: jest.fn().mockResolvedValue(mockWeekLog),
-  //     } as any);
+      expect((mockWeekLogModel as any).find).toHaveBeenCalledWith({
+        userId: mockUserId.toHexString(),
+      });
 
-  //     const result = await service.findOne(mockWeekLogId, mockUserId);
+      expect(result?.every((log) => log.userId === mockUserId)).toBe(true);
+    });
+  });
 
-  //     expect(model.findById).toHaveBeenCalledWith(mockWeekLogId);
-  //     expect(result).toEqual(mockWeekLog);
-  //   });
+  describe('findOne', () => {
+    it('should return a week log by id for the authenticated user', async () => {
+      (mockWeekLogModel as any).findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockWeekLog),
+      });
 
-  //   it('should throw NotFoundException if week log does not exist', async () => {
-  //     jest.spyOn(model, 'findById').mockReturnValue({
-  //       exec: jest.fn().mockResolvedValue(null),
-  //     } as any);
+      const result = await service.findOne(
+        mockWeekLogId.toString(),
+        mockUserId.toString(),
+      );
 
-  //     await expect(
-  //       service.findOne(mockWeekLogId, mockUserId),
-  //     ).rejects.toThrow(NotFoundException);
-  //   });
+      expect(result).toEqual(mockWeekLog);
+    });
 
-  //   it('should throw ForbiddenException if week log belongs to another user', async () => {
-  //     const otherUserId = new Types.ObjectId().toString();
-  //     const otherUserWeekLog = { ...mockWeekLog, userId: otherUserId };
+    it('should throw NotFoundException if week log does not exist', async () => {
+      (mockWeekLogModel as any).findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      });
 
-  //     jest.spyOn(model, 'findById').mockReturnValue({
-  //       exec: jest.fn().mockResolvedValue(otherUserWeekLog),
-  //     } as any);
+      await expect(
+        service.findOne(mockWeekLogId.toHexString(), mockUserId.toHexString()),
+      ).rejects.toThrow(NotFoundException);
+    });
 
-  //     await expect(
-  //       service.findOne(mockWeekLogId, mockUserId),
-  //     ).rejects.toThrow(ForbiddenException);
-  //   });
-  // });
+    it('should throw NotFoundException if week log does not exist for user', async () => {
+      (mockWeekLogModel as any).findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({}),
+      });
+
+      const result = await service.findOne(
+        mockWeekLogId.toHexString(),
+        mockUserId.toHexString(),
+      );
+      expect(result).toEqual({});
+    });
+  });
 
   // describe('findActiveWeekLog', () => {
   //   it('should return the active week log for the authenticated user', async () => {

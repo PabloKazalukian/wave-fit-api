@@ -4,7 +4,6 @@ import { UpdateExerciseInput } from './dto/update-exercise.input';
 import { Exercise } from './schema/exercise.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { handleError } from 'src/common/utils/handle-error';
 
 @Injectable()
 export class ExerciseService {
@@ -14,20 +13,16 @@ export class ExerciseService {
   async create(
     createExerciseInput: CreateExerciseInput,
   ): Promise<Exercise | undefined> {
-    try {
-      const { name } = createExerciseInput;
-      const existing = await this.ExerciseModel.findOne({ name }).exec();
-      if (existing) {
-        throw new BadRequestException({
-          message: `Ya existe un ejercicio con el nombre "${name}"`,
-          code: 'DUPLICATE_NAME',
-        });
-      }
-      const createdExercise = new this.ExerciseModel(createExerciseInput);
-      return createdExercise.save();
-    } catch (error) {
-      handleError(error);
+    const { name } = createExerciseInput;
+    const existing = await this.ExerciseModel.findOne({ name }).exec();
+    if (existing) {
+      throw new BadRequestException({
+        message: `Ya existe un ejercicio con el nombre "${name}"`,
+        code: 'DUPLICATE_NAME',
+      });
     }
+    const createdExercise = new this.ExerciseModel(createExerciseInput);
+    return createdExercise.save();
   }
 
   async findAll() {

@@ -23,7 +23,10 @@ export class WeekLogResolver {
     }
 
     const userId = new Types.ObjectId(context.req.user.id);
-    return this.weekLogService.create(createWeekLogInput, userId);
+    return this.weekLogService.create(
+      createWeekLogInput,
+      context?.req?.user?.id,
+    );
   }
 
   @Query(() => [WeekLog], { name: 'weekLog' })

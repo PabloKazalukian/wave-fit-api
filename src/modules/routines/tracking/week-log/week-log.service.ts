@@ -1,10 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateWeekLogInput } from './dto/create-week-log.input';
 import { UpdateWeekLogInput } from './dto/update-week-log.input';
 import { WeekLog } from './schema/week-log.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { handleError } from '../../../../common/utils/handle-error';
 
 @Injectable()
 export class WeekLogService {
@@ -15,61 +18,53 @@ export class WeekLogService {
     createWeekLogInput: CreateWeekLogInput,
     userId: Types.ObjectId,
   ): Promise<WeekLog | undefined> {
-    try {
-      const weekLog = new this.routinePlanModel(createWeekLogInput);
-      weekLog.userId = userId;
-      return weekLog.save();
-    } catch (error) {
-      handleError(error);
+    if (createWeekLogInput.startDate > createWeekLogInput.endDate) {
+      throw new ForbiddenException('endDate must be after startDate');
     }
+
+    const activeWeekLog = await this.findActiveWeekLog(userId.toHexString());
+    if (activeWeekLog !== null && activeWeekLog !== undefined) {
+      throw new ForbiddenException(
+        `Ya existe una semana activa
+        ${activeWeekLog}`,
+      );
+    }
+
+    const weekLog = new this.routinePlanModel(createWeekLogInput);
+    weekLog.userId = userId;
+    return weekLog.save();
   }
 
   async findAllByUser(userId: string): Promise<WeekLog[] | undefined> {
-    try {
-      return this.routinePlanModel.find({ userId }).exec();
-    } catch (error) {
-      handleError(error);
-    }
+    return this.routinePlanModel.find({ userId }).exec();
   }
 
   async findOne(
     id: string,
     userId: string,
   ): Promise<WeekLog | null | undefined> {
-    try {
-      if (!Types.ObjectId.isValid(id)) {
-        throw new NotFoundException(`ID "${id}" no es válido`);
-      }
-      return this.routinePlanModel.findOne({ _id: id, userId }).exec();
-    } catch (error) {
-      handleError(error);
+    const weekLog = await this.routinePlanModel
+      .findOne({ _id: id, userId })
+      .exec();
+
+    if (!weekLog) {
+      throw new NotFoundException(`Week log con ID "${id}" no encontrado`);
     }
-    // return `This action returns a #${id} weekLog`;
+
+    return weekLog;
   }
 
   async findActiveWeekLog(userId: string): Promise<WeekLog | null | undefined> {
-    try {
-      return this.routinePlanModel.findOne({ userId, completed: false }).exec();
-    } catch (error) {
-      handleError(error);
-    }
+    return this.routinePlanModel.findOne({ userId, completed: false }).exec();
   }
 
   update(id: string, updateWeekLogInput: UpdateWeekLogInput) {
-    try {
-      return this.routinePlanModel
-        .findOneAndUpdate({ _id: id }, updateWeekLogInput, { new: true })
-        .exec();
-    } catch (error) {
-      handleError(error);
-    }
+    return this.routinePlanModel
+      .findOneAndUpdate({ _id: id }, updateWeekLogInput, { new: true })
+      .exec();
   }
 
   remove(id: string) {
-    try {
-      return this.routinePlanModel.deleteOne({ _id: id }).exec();
-    } catch (error) {
-      handleError(error);
-    }
+    return this.routinePlanModel.deleteOne({ _id: id }).exec();
   }
 }
