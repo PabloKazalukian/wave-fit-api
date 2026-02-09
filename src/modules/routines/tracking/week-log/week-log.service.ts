@@ -22,7 +22,7 @@ export class WeekLogService {
       throw new ForbiddenException('endDate must be after startDate');
     }
 
-    const activeWeekLog = await this.findActiveWeekLog(userId.toHexString());
+    const activeWeekLog = await this.findActiveWeekLog(userId.toString());
     if (activeWeekLog !== null && activeWeekLog !== undefined) {
       throw new ForbiddenException(
         `Ya existe una semana activa
@@ -30,7 +30,10 @@ export class WeekLogService {
       );
     }
 
-    const weekLog = new this.routinePlanModel(createWeekLogInput);
+    const weekLog = new this.routinePlanModel({
+      ...createWeekLogInput,
+      completed: false,
+    });
     weekLog.userId = userId;
     return weekLog.save();
   }
@@ -55,7 +58,14 @@ export class WeekLogService {
   }
 
   async findActiveWeekLog(userId: string): Promise<WeekLog | null | undefined> {
-    return this.routinePlanModel.findOne({ userId, completed: false }).exec();
+    const weekLog = await this.routinePlanModel
+      .findOne({ userId, completed: false })
+      .exec();
+    if (!weekLog) {
+      throw new NotFoundException(`Week log activo no encontrado`);
+    }
+
+    return weekLog;
   }
 
   update(id: string, updateWeekLogInput: UpdateWeekLogInput) {

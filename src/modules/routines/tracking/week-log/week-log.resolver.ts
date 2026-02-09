@@ -22,7 +22,6 @@ export class WeekLogResolver {
       throw new BadRequestException('Invalid user id');
     }
 
-    const userId = new Types.ObjectId(context.req.user.id);
     return this.weekLogService.create(
       createWeekLogInput,
       context?.req?.user?.id,

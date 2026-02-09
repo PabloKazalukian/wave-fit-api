@@ -10,27 +10,32 @@ import { ExercisePerformance } from './schema/exercise-performance.schema';
 export class WorkoutSessionService {
   constructor(
     @InjectModel(WorkoutSession.name)
-    private routinePlanModel: Model<WorkoutSession>,
+    private sessionModel: Model<WorkoutSession>,
     @InjectModel(ExercisePerformance.name)
     private exercisePerformanceModel: Model<ExercisePerformance>,
   ) {}
-  create(createWorkoutSessionInput: CreateWorkoutSessionInput) {
-    return 'This action adds a new workoutSession';
+  create(
+    createWorkoutSessionInput: CreateWorkoutSessionInput,
+  ): Promise<WorkoutSession> {
+    return new this.sessionModel(createWorkoutSessionInput).save();
   }
 
-  findAll() {
-    return `This action returns all workoutSession`;
+  findAllByUser(userId: string): Promise<WorkoutSession[]> {
+    return this.sessionModel.find({ userId }).populate('exercises').exec();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} workoutSession`;
+  findOne(id: string, userId: string) {
+    return this.sessionModel
+      .findOne({ _id: id, userId })
+      .populate('exercises')
+      .exec();
   }
 
-  update(id: number, updateWorkoutSessionInput: UpdateWorkoutSessionInput) {
+  update(id: string, updateWorkoutSessionInput: UpdateWorkoutSessionInput) {
     return `This action updates a #${id} workoutSession`;
   }
 
-  remove(id: number) {
+  remove(id: string) {
     return `This action removes a #${id} workoutSession`;
   }
 }
