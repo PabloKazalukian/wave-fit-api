@@ -1,13 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
-import {
-  ExtraSession,
-  ExtraSessionSchema,
-} from '../../extra-session/schema/extra-session.schema';
-import {
-  WorkoutSession,
-  WorkoutSessionSchema,
-} from '../../workout-session/schema/workout-session.schema';
+import { Types } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class WeekLog {
@@ -37,5 +29,8 @@ export class WeekLog {
 }
 
 export const WeekLogSchema = SchemaFactory.createForClass(WeekLog);
+WeekLogSchema.virtual('id').get(function (this: any) {
+  return this._id.toHexString();
+});
 WeekLogSchema.index({ userId: 1, startDate: 1 }, { unique: true });
 WeekLogSchema.index({ userId: 1, completed: 1 });

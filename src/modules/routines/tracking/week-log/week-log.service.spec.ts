@@ -236,61 +236,55 @@ describe('WeekLogService', () => {
     });
   });
 
-  // describe('findActiveWeekLog', () => {
-  //   it('should return the active week log for the authenticated user', async () => {
-  //     const activeWeekLog = {
-  //       ...mockWeekLog,
-  //       completed: false,
-  //       startDate: new Date('2024-01-01'),
-  //       endDate: new Date('2024-01-07'),
-  //     };
+  describe('findActiveWeekLog', () => {
+    it('should return the active week log for the authenticated user', async () => {
+      const activeWeekLog = {
+        ...mockWeekLog,
+        completed: false,
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-01-07'),
+      };
 
-  //     jest.spyOn(model, 'findOne').mockReturnValue({
-  //       sort: jest.fn().mockReturnValue({
-  //         exec: jest.fn().mockResolvedValue(activeWeekLog),
-  //       }),
-  //     } as any);
+      (mockWeekLogModel as any).findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(activeWeekLog),
+      });
 
-  //     const result = await service.findActiveWeekLog(mockUserId);
+      const result = await service.findActiveWeekLog(mockUserId.toString());
 
-  //     expect(model.findOne).toHaveBeenCalledWith({
-  //       userId: mockUserId,
-  //       completed: false,
-  //     });
-  //     expect(result).toEqual(activeWeekLog);
-  //     expect(result.completed).toBe(false);
-  //   });
+      expect((mockWeekLogModel as any).findOne).toHaveBeenCalledWith({
+        userId: mockUserId.toString(),
+        completed: false,
+      });
+      expect(result).toEqual(activeWeekLog);
+      expect(result?.completed).toBe(false);
+    });
 
-  //   it('should return null if no active week log exists', async () => {
-  //     jest.spyOn(model, 'findOne').mockReturnValue({
-  //       sort: jest.fn().mockReturnValue({
-  //         exec: jest.fn().mockResolvedValue(null),
-  //       }),
-  //     } as any);
+    it('should return null if no active week log exists', async () => {
+      (mockWeekLogModel as any).findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      });
 
-  //     const result = await service.findActiveWeekLog(mockUserId);
+      const result = await service.findActiveWeekLog(mockUserId.toString());
 
-  //     expect(result).toBeNull();
-  //   });
+      expect(result).toBeNull();
+    });
 
-  //   it('should return the most recent active week log if multiple exist', async () => {
-  //     const recentActiveWeekLog = {
-  //       ...mockWeekLog,
-  //       completed: false,
-  //       startDate: new Date('2024-01-08'),
-  //     };
+    it('should return the most recent active week log if multiple exist', async () => {
+      const recentActiveWeekLog = {
+        ...mockWeekLog,
+        completed: false,
+        startDate: new Date('2024-01-08'),
+      };
 
-  //     jest.spyOn(model, 'findOne').mockReturnValue({
-  //       sort: jest.fn().mockReturnValue({
-  //         exec: jest.fn().mockResolvedValue(recentActiveWeekLog),
-  //       }),
-  //     } as any);
+      (mockWeekLogModel as any).findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(recentActiveWeekLog),
+      });
 
-  //     const result = await service.findActiveWeekLog(mockUserId);
+      const result = await service.findActiveWeekLog(mockUserId.toString());
 
-  //     expect(result.startDate).toEqual(new Date('2024-01-08'));
-  //   });
-  // });
+      expect(result?.startDate).toEqual(new Date('2024-01-08'));
+    });
+  });
 
   // describe('update', () => {
   //   it('should update a week log for the authenticated user', async () => {
