@@ -8,7 +8,7 @@ import { UpdateWeekLogInput } from './dto/update-week-log.input';
 import { WeekLog } from './schema/week-log.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-
+import { differenceInDays } from 'date-fns';
 @Injectable()
 export class WeekLogService {
   constructor(
@@ -20,6 +20,17 @@ export class WeekLogService {
   ): Promise<WeekLog | undefined> {
     if (createWeekLogInput.startDate > createWeekLogInput.endDate) {
       throw new ForbiddenException('endDate must be after startDate');
+    }
+
+    if (
+      differenceInDays(
+        createWeekLogInput.startDate,
+        createWeekLogInput.endDate,
+      ) < 7
+    ) {
+      throw new ForbiddenException(
+        'The date range must be at least 7 days apart',
+      );
     }
 
     const activeWeekLog = await this.findActiveWeekLog(userId.toString());
