@@ -5,6 +5,12 @@ import {
   ExercisePerformanceSchema,
 } from './exercise-performance.schema';
 
+export type StatusWorkoutSession = 'not_started' | 'complete';
+export enum StatusWorkoutSessionEnum {
+  NOT_STARTED = 'not_started',
+  COMPLETE = 'complete',
+}
+
 @Schema({ timestamps: true })
 export class WorkoutSession {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
@@ -21,6 +27,9 @@ export class WorkoutSession {
 
   @Prop({ type: [ExercisePerformanceSchema], default: [] })
   exercises: ExercisePerformance[];
+
+  @Prop({ type: String, enum: StatusWorkoutSessionEnum, default: '' })
+  status: StatusWorkoutSession;
 
   @Prop({ type: String, default: '' })
   notes?: string;

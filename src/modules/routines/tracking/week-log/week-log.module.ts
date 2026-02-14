@@ -9,5 +9,6 @@ import { WeekLog, WeekLogSchema } from './schema/week-log.schema';
     MongooseModule.forFeature([{ name: WeekLog.name, schema: WeekLogSchema }]),
   ],
   providers: [WeekLogResolver, WeekLogService],
+  exports: [WeekLogService],
 })
 export class WeekLogModule {}

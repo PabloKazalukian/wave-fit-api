@@ -3,7 +3,11 @@ import { WeekLogService } from './week-log.service';
 import { WeekLog } from './entities/week-log.entity';
 import { CreateWeekLogInput } from './dto/create-week-log.input';
 import { UpdateWeekLogInput } from './dto/update-week-log.input';
-import { BadRequestException, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
 import { GqlAuthGuard } from '../../../../modules/auth/guards/gql-auth.guard';
 import { Types } from 'mongoose';
 
@@ -69,9 +73,16 @@ export class WeekLogResolver {
     @Args('updateWeekLogInput') updateWeekLogInput: UpdateWeekLogInput,
     @Context() context,
   ) {
+    const userId = context.req.user?.id || context.req.user?.userId;
+
+    if (!userId) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
     return this.weekLogService.update(
       updateWeekLogInput.id,
       updateWeekLogInput,
+      userId,
     );
   }
 

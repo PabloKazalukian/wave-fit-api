@@ -10,6 +10,8 @@ import {
   ExercisePerformance,
   ExercisePerformanceSchema,
 } from './schema/exercise-performance.schema';
+import { WeekLogModule } from '../week-log/week-log.module';
+import { AuditLogsModule } from 'src/modules/audit-logs/audit-logs.module';
 
 @Module({
   imports: [
@@ -17,6 +19,8 @@ import {
       { name: WorkoutSession.name, schema: WorkoutSessionSchema },
       { name: ExercisePerformance.name, schema: ExercisePerformanceSchema },
     ]),
+    WeekLogModule,
+    AuditLogsModule,
   ],
   providers: [WorkoutSessionResolver, WorkoutSessionService],
 })

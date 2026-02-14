@@ -4,15 +4,23 @@ import { WorkoutSession } from './entities/workout-session.entity';
 import { CreateWorkoutSessionInput } from './dto/create-workout-session.input';
 import { UpdateWorkoutSessionInput } from './dto/update-workout-session.input';
 import { GqlAuthGuard } from 'src/modules/auth/guards/gql-auth.guard';
-import { BadRequestException, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { Types } from 'mongoose';
+import { AuditInterceptor } from 'src/modules/audit-logs/audit-logs.interceptor';
+import { Audit } from 'src/modules/audit-logs/audit-logs.decorator';
 
 @Resolver(() => WorkoutSession)
 @UseGuards(GqlAuthGuard)
+@UseInterceptors(AuditInterceptor)
 export class WorkoutSessionResolver {
   constructor(private readonly workoutSessionService: WorkoutSessionService) {}
 
   @Mutation(() => WorkoutSession)
+  @Audit('CREATE_WORKOUT_SESSION', 'WeeklyRoutine')
   createWorkoutSession(
     @Args('createWorkoutSessionInput')
     createWorkoutSessionInput: CreateWorkoutSessionInput,
@@ -21,7 +29,10 @@ export class WorkoutSessionResolver {
     if (!Types.ObjectId.isValid(context?.req?.user?.id)) {
       throw new BadRequestException('Invalid user id');
     }
-    return this.workoutSessionService.create(createWorkoutSessionInput);
+    return this.workoutSessionService.create(
+      createWorkoutSessionInput,
+      context?.req?.user?.id,
+    );
   }
 
   @Query(() => [WorkoutSession], { name: 'workoutSession' })
