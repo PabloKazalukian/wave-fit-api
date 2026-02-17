@@ -120,15 +120,6 @@ export class WeekLogService {
         (id) => new Types.ObjectId(id),
       );
 
-      // Opcional: verificar que las sesiones existen
-      // const sessions = await this.workoutSessionModel.find({
-      //   _id: { $in: sessionIds },
-      //   userId: new Types.ObjectId(userId)
-      // });
-      // if (sessions.length !== sessionIds.length) {
-      //   throw new BadRequestException('Some workout sessions do not exist or do not belong to you');
-      // }
-
       updateData.workoutSessionIds = sessionIds;
     }
 
