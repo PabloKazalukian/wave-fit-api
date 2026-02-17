@@ -1,4 +1,4 @@
-import { InputType, Field, Int } from '@nestjs/graphql';
+import { InputType, Field, Int, Float } from '@nestjs/graphql';
 import {
   IsNotEmpty,
   IsString,
@@ -21,9 +21,8 @@ export class SetPerformanceInput {
   @Min(0)
   reps: number;
 
-  @Field(() => Int, { nullable: true })
+  @Field(() => Float, { nullable: true })
   @IsOptional()
-  @IsNumber()
   @Min(0)
   weights?: number;
 }
@@ -31,13 +30,9 @@ export class SetPerformanceInput {
 @InputType()
 export class ExercisePerformanceInput {
   @Field()
-  @IsNotEmpty()
-  @IsString()
-  @IsMongoId()
   exerciseId: string;
 
   @Field(() => Int)
-  @IsNumber()
   @Min(0)
   series: number;
 
@@ -48,8 +43,6 @@ export class ExercisePerformanceInput {
   sets: SetPerformanceInput[];
 
   @Field({ nullable: true })
-  @IsOptional()
-  @IsString()
   notes?: string;
 }
 

@@ -12,6 +12,7 @@ import {
 } from './schema/exercise-performance.schema';
 import { WeekLogModule } from '../week-log/week-log.module';
 import { AuditLogsModule } from 'src/modules/audit-logs/audit-logs.module';
+import { WorkoutSessionValidator } from './workout-session.validator';
 
 @Module({
   imports: [
@@ -22,6 +23,10 @@ import { AuditLogsModule } from 'src/modules/audit-logs/audit-logs.module';
     WeekLogModule,
     AuditLogsModule,
   ],
-  providers: [WorkoutSessionResolver, WorkoutSessionService],
+  providers: [
+    WorkoutSessionResolver,
+    WorkoutSessionService,
+    WorkoutSessionValidator,
+  ],
 })
 export class WorkoutSessionModule {}

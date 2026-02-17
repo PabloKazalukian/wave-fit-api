@@ -9,9 +9,8 @@ import { UpdateWorkoutSessionInput } from './dto/update-workout-session.input';
 import { WorkoutSession } from './schema/workout-session.schema';
 import { Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
-import { ExercisePerformance } from './schema/exercise-performance.schema';
-import { WeekLog } from '../week-log/schema/week-log.schema';
 import { WeekLogService } from '../week-log/week-log.service';
+import { WorkoutSessionValidator } from './workout-session.validator';
 
 @Injectable()
 export class WorkoutSessionService {
@@ -19,82 +18,41 @@ export class WorkoutSessionService {
     @InjectModel(WorkoutSession.name)
     private sessionModel: Model<WorkoutSession>,
     private weekLogService: WeekLogService,
+    private readonly validator: WorkoutSessionValidator,
   ) {}
 
   async create(
-    createWorkoutSessionInput: CreateWorkoutSessionInput,
+    input: CreateWorkoutSessionInput,
     userId: string,
   ): Promise<WorkoutSession> {
-    // 1. Validar que el WeekLog existe y pertenece al usuario
-    const weekLog = await this.weekLogService.findOne(
-      createWorkoutSessionInput.weekLogId,
-      userId,
-    );
+    const weekLog = await this.weekLogService.findOne(input.weekLogId, userId);
 
     if (!weekLog) {
       throw new NotFoundException(
-        `WeekLog with ID ${createWorkoutSessionInput.weekLogId}${weekLog} not found`,
+        `Week log con ID "${input.weekLogId}" no encontrado`,
       );
     }
 
-    if (weekLog.userId.toString() !== userId) {
-      throw new ForbiddenException(
-        'You do not have permission to add sessions to this WeekLog',
-      );
-    }
-
-    // 2. Validar que la fecha está dentro del rango del WeekLog
-    const sessionDate = new Date(createWorkoutSessionInput.date);
-    if (sessionDate < weekLog.startDate || sessionDate > weekLog.endDate) {
-      throw new BadRequestException(
-        'Session date must be within the WeekLog date range',
-      );
-    }
-
-    // 3. Verificar si ya existe una sesión para esta fecha (opcional, depende de tu lógica)
-    const existingSession = await this.sessionModel.findOne({
-      userId: new Types.ObjectId(userId),
-      weekLogId: new Types.ObjectId(createWorkoutSessionInput.weekLogId),
-      date: sessionDate,
-    });
-
-    if (existingSession) {
-      throw new BadRequestException(
-        'A workout session already exists for this date',
-      );
-    }
-
-    // 4. Validar que series coincide con la cantidad de sets
-    for (const exercise of createWorkoutSessionInput.exercises) {
-      if (exercise.series !== exercise.sets.length) {
-        throw new BadRequestException(
-          `Exercise ${exercise.exerciseId}: series (${exercise.series}) must match sets length (${exercise.sets.length})`,
-        );
-      }
-    }
-
-    // 5. Crear la sesión
-    const newSession = new this.sessionModel({
-      userId: new Types.ObjectId(userId),
-      weekLogId: new Types.ObjectId(createWorkoutSessionInput.weekLogId),
-      date: sessionDate,
-      routineDayId: createWorkoutSessionInput.routineDayId
-        ? new Types.ObjectId(createWorkoutSessionInput.routineDayId)
-        : null,
-      exercises: createWorkoutSessionInput.exercises,
-      status: createWorkoutSessionInput.status,
-      notes: createWorkoutSessionInput.notes || '',
-    });
-
-    const savedSession = await newSession.save();
-
-    // 6. Agregar el ID de la sesión al WeekLog
-    await this.weekLogService.findByIdAndUpdate(
-      createWorkoutSessionInput.weekLogId,
-      createWorkoutSessionInput,
+    await this.validator.validateCreation(
+      input,
+      userId,
+      weekLog,
+      this.sessionModel,
     );
 
-    return savedSession;
+    const session = await this.sessionModel.create({
+      userId: new Types.ObjectId(userId),
+      weekLogId: new Types.ObjectId(input.weekLogId),
+      date: new Date(input.date),
+      routineDayId: input.routineDayId
+        ? new Types.ObjectId(input.routineDayId)
+        : null,
+      exercises: input.exercises,
+      status: input.status,
+      notes: input.notes || '',
+    });
+
+    return session;
   }
 
   findAllByUser(userId: string): Promise<WorkoutSession[]> {

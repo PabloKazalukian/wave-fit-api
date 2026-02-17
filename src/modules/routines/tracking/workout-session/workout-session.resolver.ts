@@ -26,9 +26,6 @@ export class WorkoutSessionResolver {
     createWorkoutSessionInput: CreateWorkoutSessionInput,
     @Context() context,
   ) {
-    if (!Types.ObjectId.isValid(context?.req?.user?.id)) {
-      throw new BadRequestException('Invalid user id');
-    }
     return this.workoutSessionService.create(
       createWorkoutSessionInput,
       context?.req?.user?.id,
