@@ -1,20 +1,58 @@
-import { ObjectType, Field, ID } from '@nestjs/graphql';
-import { ExercisePerformance } from './exercise-performance.entity';
+import { ObjectType, Field, ID, Int } from '@nestjs/graphql';
+
+@ObjectType()
+export class SetPerformance {
+  @Field(() => Int)
+  reps: number;
+
+  @Field(() => Int, { nullable: true })
+  weights?: number;
+}
+
+@ObjectType()
+export class ExercisePerformance {
+  @Field()
+  exerciseId: string;
+
+  @Field(() => Int)
+  series: number;
+
+  @Field(() => [SetPerformance])
+  sets: SetPerformance[];
+
+  @Field({ nullable: true })
+  notes?: string;
+}
 
 @ObjectType()
 export class WorkoutSession {
   @Field(() => ID)
   id: string;
 
-  @Field({ nullable: true })
-  date?: Date;
+  @Field()
+  userId: string;
+
+  @Field()
+  weekLogId: string;
+
+  @Field()
+  date: Date;
 
   @Field({ nullable: true })
-  routineDayId?: string; // referencia al día del plan (si siguió uno)
+  routineDayId?: string;
 
-  @Field(() => [ExercisePerformance], { nullable: 'itemsAndList' })
-  exercises?: ExercisePerformance[];
+  @Field(() => [ExercisePerformance])
+  exercises: ExercisePerformance[];
+
+  @Field()
+  status: string;
 
   @Field({ nullable: true })
   notes?: string;
+
+  @Field()
+  createdAt: Date;
+
+  @Field()
+  updatedAt: Date;
 }

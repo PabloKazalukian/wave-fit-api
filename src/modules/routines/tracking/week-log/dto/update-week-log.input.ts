@@ -1,8 +1,49 @@
-import { CreateWeekLogInput } from './create-week-log.input';
-import { InputType, Field, Int, PartialType } from '@nestjs/graphql';
+import { InputType, Field } from '@nestjs/graphql';
+import {
+  IsOptional,
+  IsString,
+  IsBoolean,
+  IsDateString,
+  IsArray,
+  IsMongoId,
+} from 'class-validator';
 
 @InputType()
-export class UpdateWeekLogInput extends PartialType(CreateWeekLogInput) {
+export class UpdateWeekLogInput {
   @Field(() => String)
+  @IsString()
+  @IsMongoId()
   id: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsDateString()
+  startDate?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsDateString()
+  endDate?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  @IsMongoId()
+  planId?: string;
+
+  @Field(() => [String], { nullable: true })
+  @IsOptional()
+  @IsArray()
+  @IsMongoId({ each: true })
+  workoutSessionIds?: string[];
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsBoolean()
+  completed?: boolean;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  notes?: string;
 }

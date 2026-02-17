@@ -7,7 +7,7 @@ import { CreateWeekLogInput } from './dto/create-week-log.input';
 import { UpdateWeekLogInput } from './dto/update-week-log.input';
 import { WeekLog } from './schema/week-log.schema';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model, Types, UpdateQuery } from 'mongoose';
 import { differenceInDays } from 'date-fns';
 @Injectable()
 export class WeekLogService {
@@ -79,10 +79,87 @@ export class WeekLogService {
     return weekLog;
   }
 
-  update(id: string, updateWeekLogInput: UpdateWeekLogInput) {
-    return this.routinePlanModel
-      .findOneAndUpdate({ _id: id }, updateWeekLogInput, { new: true })
-      .exec();
+  async update(
+    id: string,
+    updateWeekLogInput: UpdateWeekLogInput,
+    userId: string,
+  ) {
+    // 1. Verificar que existe y pertenece al usuario
+    const weekLog = await this.routinePlanModel.findById(id);
+
+    if (!weekLog) {
+      throw new NotFoundException(`WeekLog with ID ${id} not found`);
+    }
+
+    if (weekLog.userId.toString() !== userId) {
+      throw new ForbiddenException(
+        'You do not have permission to update this WeekLog',
+      );
+    }
+
+    // 2. Preparar datos de actualización
+    const updateData: any = {};
+
+    if (updateWeekLogInput.startDate !== undefined) {
+      updateData.startDate = new Date(updateWeekLogInput.startDate);
+    }
+
+    if (updateWeekLogInput.endDate !== undefined) {
+      updateData.endDate = new Date(updateWeekLogInput.endDate);
+    }
+
+    if (updateWeekLogInput.planId !== undefined) {
+      updateData.planId = updateWeekLogInput.planId
+        ? new Types.ObjectId(updateWeekLogInput.planId)
+        : null;
+    }
+
+    if (updateWeekLogInput.workoutSessionIds !== undefined) {
+      // Validar que las WorkoutSessions existen y pertenecen al usuario
+      const sessionIds = updateWeekLogInput.workoutSessionIds.map(
+        (id) => new Types.ObjectId(id),
+      );
+
+      updateData.workoutSessionIds = sessionIds;
+    }
+
+    if (updateWeekLogInput.notes !== undefined) {
+      updateData.notes = updateWeekLogInput.notes;
+    }
+
+    if (updateWeekLogInput.completed !== undefined) {
+      updateData.completed = updateWeekLogInput.completed;
+    }
+
+    // 3. Actualizar
+    const updatedWeekLog = await this.routinePlanModel
+      .findByIdAndUpdate(
+        id,
+        { $set: updateData },
+        { new: true, runValidators: true },
+      )
+      .lean();
+
+    return updatedWeekLog;
+  }
+
+  async findByIdAndUpdate(
+    id: string,
+    updateQuery: UpdateQuery<WeekLog>,
+    options?: { new?: boolean; runValidators?: boolean },
+  ): Promise<WeekLog> {
+    const weekLog = await this.routinePlanModel
+      .findByIdAndUpdate(id, updateQuery, {
+        new: options?.new ?? true,
+        runValidators: options?.runValidators ?? true,
+      })
+      .lean();
+
+    if (!weekLog) {
+      throw new NotFoundException(`WeekLog with ID ${id} not found`);
+    }
+
+    return weekLog;
   }
 
   remove(id: string) {
