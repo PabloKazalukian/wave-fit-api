@@ -13,25 +13,25 @@ export enum StatusWorkoutSessionEnum {
 
 @Schema({ timestamps: true })
 export class WorkoutSession {
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
-  userId: Types.ObjectId;
+  @Prop({ type: String, required: true })
+  userId: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'WeekLog', required: true, index: true })
-  weekLogId: Types.ObjectId;
+  @Prop({ type: String, required: true })
+  weekLogId: string;
 
-  @Prop({ type: Date, required: true, index: true })
+  @Prop({ type: Date, required: true })
   date: Date;
 
-  @Prop({ type: Types.ObjectId, ref: 'RoutineDay', default: null })
-  routineDayId?: Types.ObjectId;
+  @Prop({ type: String })
+  routineDayId?: string;
 
-  @Prop({ type: [ExercisePerformanceSchema], default: [] })
+  @Prop({ type: [ExercisePerformanceSchema], required: true })
   exercises: ExercisePerformance[];
 
-  @Prop({ type: String, enum: StatusWorkoutSessionEnum, default: '' })
-  status: StatusWorkoutSession;
+  @Prop({ type: String, required: true })
+  status: string;
 
-  @Prop({ type: String, default: '' })
+  @Prop({ type: String })
   notes?: string;
 }
 

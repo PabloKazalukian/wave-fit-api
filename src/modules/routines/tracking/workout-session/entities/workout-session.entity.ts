@@ -1,11 +1,11 @@
-import { ObjectType, Field, ID, Int } from '@nestjs/graphql';
+import { ObjectType, Field, ID, Int, Float } from '@nestjs/graphql';
 
 @ObjectType()
 export class SetPerformance {
   @Field(() => Int)
   reps: number;
 
-  @Field(() => Int, { nullable: true })
+  @Field(() => Float, { nullable: true })
   weights?: number;
 }
 

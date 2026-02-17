@@ -1,19 +1,17 @@
+// exercise-performance.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { SetPerformance, SetPerformanceSchema } from './set-performance.schema';
 
-@Schema({ _id: false }) // No genera un ObjectId propio porque es subdocumento
+@Schema({ _id: false })
 export class ExercisePerformance {
   @Prop({ type: String, required: true })
-  exerciseId: string; // referencia al Exercise
+  exerciseId: string;
 
-  @Prop({ type: Number })
+  @Prop({ type: Number, required: true, min: 0 })
   series: number;
 
-  @Prop({ type: [Object], required: true })
-  sets: {
-    reps: number;
-    weights?: number;
-  }[];
+  @Prop({ type: [SetPerformanceSchema], required: true })
+  sets: SetPerformance[];
 
   @Prop({ type: String })
   notes?: string;
@@ -21,4 +19,7 @@ export class ExercisePerformance {
 
 export const ExercisePerformanceSchema =
   SchemaFactory.createForClass(ExercisePerformance);
-export type ExercisePerformanceDocument = ExercisePerformance & Document;
+
+// export const ExercisePerformanceSchema =
+//   SchemaFactory.createForClass(ExercisePerformance);
+// export type ExercisePerformanceDocument = ExercisePerformance & Document;
