@@ -10,16 +10,35 @@ export class RoutinePlan extends Document {
   description: string;
 
   @Prop({
-    type: [MongooseSchema.Types.Mixed],
-    default: [],
+    type: [
+      {
+        day: {
+          type: Types.ObjectId,
+          ref: 'RoutineDay',
+        },
+        isRest: {
+          type: Boolean,
+          default: false,
+        },
+        order: {
+          type: Number,
+          required: true,
+        },
+      },
+    ],
+    validate: [(v: any[]) => v.length === 7, 'Must contain 7 days'],
   })
-  routineDays?: any[];
+  week: {
+    day?: Types.ObjectId;
+    isRest: boolean;
+    order: number;
+  }[];
 
   @Prop({ required: false })
   weekly_distribution?: string;
 
-  @Prop({ required: false })
-  createdBy?: string;
+  @Prop({ type: Types.ObjectId, ref: 'User', required: false })
+  createdBy?: Types.ObjectId;
 }
 
 export const RoutinePlanSchema = SchemaFactory.createForClass(RoutinePlan);
@@ -28,6 +47,7 @@ export const RoutinePlanSchema = SchemaFactory.createForClass(RoutinePlan);
 RoutinePlanSchema.virtual('id').get(function (this: any) {
   return this._id.toHexString();
 });
+RoutinePlanSchema.index({ 'week.day': 1 });
 
 // Configurar para que los virtuals se incluyan cuando se serializa
 RoutinePlanSchema.set('toJSON', {

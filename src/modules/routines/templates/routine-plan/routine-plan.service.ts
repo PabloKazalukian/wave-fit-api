@@ -11,13 +11,17 @@ export class RoutinePlanService {
     @InjectModel(RoutinePlan.name) private routinePlanModel: Model<RoutinePlan>,
   ) {}
 
-  async create(
-    createRoutinePlanInput: CreateRoutinePlanInput,
-  ): Promise<RoutinePlan | undefined> {
-    const creadoredRoutinePlan = new this.routinePlanModel(
-      createRoutinePlanInput,
-    );
-    return creadoredRoutinePlan.save();
+  async create(input: CreateRoutinePlanInput) {
+    const week = (input.routineDays || []).map((id, index) => ({
+      day: id ? new Types.ObjectId(id) : null,
+      isRest: !id,
+      order: index,
+    }));
+
+    return this.routinePlanModel.create({
+      ...input,
+      week,
+    });
   }
 
   async findAll(): Promise<RoutinePlan[] | undefined> {
@@ -46,7 +50,7 @@ export class RoutinePlanService {
     return `This action updates a #${id} routinePlan`;
   }
 
-  remove(id: number) {
+  remove(id: String) {
     return `This action removes a #${id} routinePlan`;
   }
 }

@@ -1,12 +1,11 @@
-import { ObjectType, Field, ID } from '@nestjs/graphql';
+import { ObjectType, Field, ID, Int } from '@nestjs/graphql';
 import { Exercise } from '../../exercise/entities/exercise.entity';
 import { ExerciseCategory } from 'src/common/interfaces/exercise.interface';
-import { IsOptional } from 'class-validator';
 
 @ObjectType()
 export class RoutineDay {
-  @Field(() => ID)
-  id: string;
+  @Field(() => String)
+  id: any;
 
   @Field()
   title: string;
@@ -16,10 +15,22 @@ export class RoutineDay {
   type?: ExerciseCategory[];
 
   // Ejercicios del día
-  @Field(() => [Exercise], { nullable: 'itemsAndList' })
-  exercises?: Exercise[];
+  @Field(() => [RoutineDayExercise])
+  exercises: RoutineDayExercise[];
+
+  @Field(() => Int)
+  order: number;
 
   // Referencia al plan al que pertenece
   @Field({ nullable: true })
   planId?: string;
+}
+
+@ObjectType()
+export class RoutineDayExercise {
+  @Field(() => Exercise)
+  exercise: Exercise;
+
+  @Field(() => Int)
+  order: number;
 }

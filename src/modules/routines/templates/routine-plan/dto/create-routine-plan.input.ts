@@ -19,10 +19,6 @@ export class CreateRoutinePlanInput {
   @Field(() => [String], { nullable: 'itemsAndList' })
   routineDays?: (string | null)[];
 
-  // @Field(() => [RoutineDay])
-  //
-  // routineDays?: RoutineDay[];
-
   @Field({ nullable: true })
   @IsOptional()
   createdBy?: string;
