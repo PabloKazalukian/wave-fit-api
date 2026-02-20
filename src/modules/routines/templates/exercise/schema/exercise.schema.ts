@@ -25,3 +25,4 @@ export class Exercise extends Document {
 export const ExerciseSchema = SchemaFactory.createForClass(Exercise);
 
 ExerciseSchema.index({ category: 1 });
+ExerciseSchema.index({ name: 1 });

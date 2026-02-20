@@ -4,8 +4,9 @@ import {
   Mutation,
   Args,
   Int,
-  ResolveField,
   Parent,
+  ResolveField,
+  ID,
 } from '@nestjs/graphql';
 import { RoutineDayService } from './routine-day.service';
 import { RoutineDay } from './entities/routine-day.entity';
@@ -16,6 +17,7 @@ import {
 } from './dto/update-routine-day.input';
 import { Exercise } from '../exercise/entities/exercise.entity';
 import { ExerciseService } from '../exercise/exercise.service';
+import { Audit } from 'src/modules/audit-logs/audit-logs.decorator';
 
 @Resolver(() => RoutineDay)
 export class RoutineDayResolver {
@@ -24,6 +26,10 @@ export class RoutineDayResolver {
     private readonly exerciseService: ExerciseService,
   ) {}
 
+  @ResolveField(() => ID, { name: 'id' })
+  id(@Parent() routineDay: any | RoutineDay) {
+    return routineDay._id.toString();
+  }
   @Mutation(() => RoutineDay)
   createRoutineDay(
     @Args('createRoutineDayInput') createRoutineDayInput: CreateRoutineDayInput,
@@ -37,7 +43,8 @@ export class RoutineDayResolver {
   }
 
   @Query(() => RoutineDay, { name: 'routineDay' })
-  findOne(@Args('id', { type: () => String }) id: String) {
+  @Audit('FINDBY_ID_ROUTINE_DAY', 'routineDay' + 'id')
+  findOne(@Args('id', { type: () => String }) id: string) {
     return this.routineDayService.findOne(id);
   }
 

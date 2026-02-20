@@ -44,73 +44,49 @@ export class RoutinePlanResolver {
   }
 
   @ResolveField(() => [RoutineDay], { name: 'routineDays' })
-  async resolveRoutineDays(@Parent() plan: RoutinePlanSchema): Promise<any[]> {
-    if (!plan.routineDays || plan.routineDays.length === 0) {
+  async resolveRoutineDays(
+    @Parent() plan: RoutinePlanSchema,
+  ): Promise<RoutineDay[]> {
+    if (!plan.week || plan.week.length === 0) {
       return [];
     }
 
-    const idsToFetch: string[] = [];
-    const dayMap = new Map<number, 'Rest' | string>();
-
-    plan.routineDays.forEach((day, index) => {
-      // Si es string vacío o 'Rest', es día de descanso
-      if (!day || day === '' || day === 'Rest') {
-        dayMap.set(index, 'Rest');
-      }
-      // Si es un ID válido de MongoDB
-      else if (Types.ObjectId.isValid(day)) {
-        const idStr = day.toString();
-        idsToFetch.push(idStr);
-        dayMap.set(index, idStr);
-      }
-      // Cualquier otro caso también se trata como descanso
-      else {
-        dayMap.set(index, 'Rest');
-      }
-    });
+    // Obtener solo los días que NO son descanso
+    const idsToFetch = plan.week
+      .filter((d) => !d.isRest && d.day)
+      .map((d) => d.day!.toString());
 
     let populatedDays: any[] = [];
+
     if (idsToFetch.length > 0) {
       populatedDays = await this.routineDayService.findByIds(idsToFetch);
     }
 
     const populatedMap = new Map<string, any>();
     populatedDays.forEach((day) => {
-      const dayId = day.id || day._id?.toString();
-      if (dayId) populatedMap.set(dayId, day);
+      populatedMap.set(day.id || day._id.toString(), day);
     });
 
-    const result: any[] = [];
+    // Reconstruir respetando orden
+    const orderedWeek = [...plan.week].sort((a, b) => a.order - b.order);
 
-    // Iterar sobre TODOS los días del plan (siempre 7)
-    for (let i = 0; i < plan.routineDays.length; i++) {
-      const value = dayMap.get(i);
+    const result: RoutineDay[] = [];
 
-      if (value === 'Rest') {
-        result.push(this.createRestDay(i));
-      } else if (value) {
-        const populatedDay = populatedMap.get(value);
-        if (populatedDay) {
-          result.push(populatedDay);
-        } else {
-          // Si el ID no se encontró en la DB, poner descanso
-          result.push(this.createRestDay(i));
-        }
+    for (const dayEntry of orderedWeek) {
+      if (dayEntry.isRest || !dayEntry.day) {
+        result.push(this.createRestDay());
       } else {
-        // Fallback: si no hay valor en el map, poner descanso
-        result.push(this.createRestDay(i));
+        const found = populatedMap.get(dayEntry.day.toString());
+        result.push(found ?? this.createRestDay());
       }
     }
 
     return result;
   }
-
-  private createRestDay(index: number): any {
+  private createRestDay(): any {
     return {
       id: 'rest',
-      _id: 'rest',
       title: 'Descanso',
-      type: [ExerciseCategory.REST],
       exercises: [],
     };
   }
@@ -137,7 +113,7 @@ export class RoutinePlanResolver {
   }
 
   @Mutation(() => RoutinePlan)
-  removeRoutinePlan(@Args('id', { type: () => Int }) id: number) {
+  removeRoutinePlan(@Args('id', { type: () => String }) id: string) {
     return this.routinePlanService.remove(id);
   }
 

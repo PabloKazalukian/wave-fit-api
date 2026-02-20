@@ -17,24 +17,47 @@ export class RoutineDayService {
   }
 
   async findAll() {
-    return this.routineDayModel.find().populate('exercises').exec();
-  }
-
-  findOne(id: String) {
-    return this.routineDayModel.findById(id).populate('exercises').exec();
-  }
-
-  findByCategory(category: string) {
-    return this.routineDayModel
-      .find({ type: category })
-      .populate('exercises')
+    const docs = await this.routineDayModel
+      .find()
+      .populate({
+        path: 'exercises.exercise',
+        select: 'name category',
+      })
       .exec();
+    return docs.map((doc) => doc.toObject({ virtuals: true }));
   }
-  findByIds(ids: string[]) {
-    return this.routineDayModel
+
+  async findOne(id: string) {
+    const docs = await this.routineDayModel
+      .findById(id)
+      .populate({
+        path: 'exercises.exercise',
+        select: 'name category',
+      })
+      .exec();
+    return docs?.toObject({ virtuals: true });
+    // .lean({ virtuals: true }); // importante
+  }
+
+  async findByCategory(category: string) {
+    const docs = await this.routineDayModel
+      .find({ type: category })
+      .populate({
+        path: 'exercises.exercise',
+        select: 'name category',
+      })
+      .exec();
+    return docs.map((doc) => doc.toObject({ virtuals: true }));
+  }
+
+  // const docs = await this.routineDayModel.find().exec();
+  // return docs.map(doc => doc.toJSON());
+  async findByIds(ids: string[]) {
+    const docs = await this.routineDayModel
       .find({ _id: { $in: ids } })
       .populate('exercises')
       .exec();
+    return docs.map((doc) => doc.toObject({ virtuals: true }));
   }
 
   update(id: number, updateRoutineDayInput: UpdateRoutineDayInput) {
