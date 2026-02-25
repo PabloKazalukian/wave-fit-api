@@ -1,5 +1,5 @@
 import { ObjectType, Field, ID, registerEnumType } from '@nestjs/graphql';
-import { ExerciseCategory } from 'src/common/interfaces/exercise.interface';
+import { ExerciseCategory } from '../../../../../common/interfaces/exercise.interface';
 
 registerEnumType(ExerciseCategory, {
   name: 'ExerciseCategory',
