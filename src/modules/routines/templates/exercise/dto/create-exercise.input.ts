@@ -1,6 +1,6 @@
 import { Field, InputType, registerEnumType } from '@nestjs/graphql';
 import { IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator';
-import { ExerciseCategory } from 'src/common/interfaces/exercise.interface';
+import { ExerciseCategory } from '../entities/exercise.entity';
 
 registerEnumType(ExerciseCategory, {
   name: 'ExerciseCategory',

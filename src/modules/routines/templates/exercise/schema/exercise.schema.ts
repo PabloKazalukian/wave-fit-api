@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
-import { ExerciseCategory } from 'src/common/interfaces/exercise.interface';
+import { ExerciseCategory } from '../entities/exercise.entity';
 
 @Schema({ timestamps: true })
 export class Exercise extends Document {
