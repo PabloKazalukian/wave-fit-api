@@ -1,7 +1,7 @@
 import { InputType, Field, Int } from '@nestjs/graphql';
 import { IsOptional, IsString } from 'class-validator';
 import { CreateExerciseInput } from '../../exercise/dto/create-exercise.input';
-import { ExerciseCategory } from 'src/common/interfaces/exercise.interface';
+import { ExerciseCategory } from '../../exercise/entities/exercise.entity';
 
 @InputType()
 class RoutineDayExerciseInput {

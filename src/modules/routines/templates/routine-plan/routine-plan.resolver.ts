@@ -19,7 +19,6 @@ import { UpdateRoutinePlanInput } from './dto/update-routine-plan.input';
 import { RoutineDay } from '../routine-day/entities/routine-day.entity';
 import { RoutineDayService } from '../routine-day/routine-day.service';
 import { Types } from 'mongoose';
-import { ExerciseCategory } from 'src/common/interfaces/exercise.interface';
 import { AuditInterceptor } from 'src/modules/audit-logs/audit-logs.interceptor';
 import { UseGuards, UseInterceptors } from '@nestjs/common';
 import { Audit } from 'src/modules/audit-logs/audit-logs.decorator';

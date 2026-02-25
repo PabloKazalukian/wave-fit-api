@@ -1,6 +1,8 @@
 import { ObjectType, Field, ID, Int } from '@nestjs/graphql';
-import { Exercise } from '../../exercise/entities/exercise.entity';
-import { ExerciseCategory } from 'src/common/interfaces/exercise.interface';
+import {
+  Exercise,
+  ExerciseCategory,
+} from '../../exercise/entities/exercise.entity';
 
 @ObjectType()
 export class RoutineDay {

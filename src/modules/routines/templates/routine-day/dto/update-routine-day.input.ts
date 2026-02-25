@@ -1,4 +1,4 @@
-import { ExerciseCategory } from 'src/common/interfaces/exercise.interface';
+import { ExerciseCategory } from '../../exercise/entities/exercise.entity';
 import { CreateRoutineDayInput } from './create-routine-day.input';
 import { InputType, Field, Int, PartialType } from '@nestjs/graphql';
 

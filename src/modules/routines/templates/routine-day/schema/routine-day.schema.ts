@@ -1,8 +1,8 @@
 import { registerEnumType } from '@nestjs/graphql';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
-import { ExerciseCategory } from 'src/common/interfaces/exercise.interface';
 import { Exercise } from '../../exercise/schema/exercise.schema';
+import { ExerciseCategory } from '../../exercise/entities/exercise.entity';
 
 registerEnumType(ExerciseCategory, {
   name: 'ExerciseCategory',
