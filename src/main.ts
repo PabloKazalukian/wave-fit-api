@@ -1,3 +1,4 @@
+import 'module-alias/register';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { GraphQLExceptionFilter } from './common/filters/gpl-exeption.filter';

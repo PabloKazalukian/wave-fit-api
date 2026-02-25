@@ -5,6 +5,9 @@
   "author": "",
   "private": true,
   "license": "UNLICENSED",
+  "_moduleAliases": {
+  "src": "dist"
+},
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/main.js",
@@ -41,6 +44,7 @@
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
     "graphql": "^16.11.0",
+    "module-alias": "^2.3.4",
     "mongoose": "^8.19.2",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",

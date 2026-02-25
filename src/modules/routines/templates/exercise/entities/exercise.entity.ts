@@ -1,5 +1,19 @@
 import { ObjectType, Field, ID, registerEnumType } from '@nestjs/graphql';
-import { ExerciseCategory } from '../../../../../common/interfaces/exercise.interface';
+// import { ExerciseCategory } from 'src/common/interfaces/exercise.interface';
+
+export enum ExerciseCategory {
+  CHEST = 'chest',
+  BACK = 'back',
+  LEGS = 'legs',
+  LEGS_FRONT = 'legs_front',
+  LEGS_POSTERIOR = 'legs_posterior',
+  BICEPS = 'biceps',
+  TRICEPS = 'triceps',
+  SHOULDERS = 'shoulders',
+  CORE = 'core',
+  CARDIO = 'cardio',
+  REST = 'rest',
+}
 
 registerEnumType(ExerciseCategory, {
   name: 'ExerciseCategory',
