@@ -8,45 +8,78 @@ import { UpdateWeekLogInput } from './dto/update-week-log.input';
 import { WeekLog } from './schema/week-log.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types, UpdateQuery } from 'mongoose';
-import { differenceInDays } from 'date-fns';
+import { addDays, differenceInDays } from 'date-fns';
+import { UpdateWeekLogDayInput } from './dto/update-week-log-day.input';
 @Injectable()
 export class WeekLogService {
   constructor(
     @InjectModel(WeekLog.name) private routinePlanModel: Model<WeekLog>,
   ) {}
-  async create(
-    createWeekLogInput: CreateWeekLogInput,
-    userId: Types.ObjectId,
-  ): Promise<WeekLog | undefined> {
-    if (createWeekLogInput.startDate > createWeekLogInput.endDate) {
-      throw new ForbiddenException('endDate must be after startDate');
+  async create(createWeekLogInput: CreateWeekLogInput, userId: Types.ObjectId) {
+    const { startDate, endDate, planId } = createWeekLogInput;
+
+    if (differenceInDays(endDate, startDate) !== 6) {
+      throw new ForbiddenException('Week must be exactly 7 days');
     }
 
-    if (
-      differenceInDays(
-        createWeekLogInput.startDate,
-        createWeekLogInput.endDate,
-      ) < 7
-    ) {
-      throw new ForbiddenException(
-        'The date range must be at least 7 days apart',
-      );
-    }
-
-    const activeWeekLog = await this.findActiveWeekLog(userId.toString());
-    if (activeWeekLog !== null && activeWeekLog !== undefined) {
-      throw new ForbiddenException(
-        `Ya existe una semana activa
-        ${activeWeekLog}`,
-      );
-    }
-
-    const weekLog = new this.routinePlanModel({
-      ...createWeekLogInput,
+    const existing = await this.routinePlanModel.findOne({
+      userId,
       completed: false,
     });
-    weekLog.userId = userId;
+
+    if (existing) {
+      throw new ForbiddenException('Already active week');
+    }
+
+    let isRestMap: boolean[] = new Array(7).fill(false);
+
+    if (planId) {
+      const plan = await this.routinePlanModel.db
+        .collection('routineplans')
+        .findOne({ _id: new Types.ObjectId(planId) });
+
+      if (plan?.week?.length === 7) {
+        isRestMap = plan.week.map((d) => d.isRest);
+      }
+    }
+
+    const days = Array.from({ length: 7 }).map((_, index) => ({
+      order: index + 1,
+      date: addDays(startDate, index),
+      isRest: isRestMap[index] ?? false,
+      workoutSessionId: null,
+      extraSessionIds: [],
+      status: 'pending',
+    }));
+
+    const weekLog = new this.routinePlanModel({
+      userId,
+      startDate,
+      endDate,
+      planId: planId ? new Types.ObjectId(planId) : null,
+      days,
+      completed: false,
+    });
+
     return weekLog.save();
+  }
+
+  async updateDay(input: UpdateWeekLogDayInput, userId: string) {
+    const weekLog = await this.routinePlanModel.findById(input.weekLogId);
+
+    if (!weekLog) throw new NotFoundException('WeekLog not found');
+
+    if (weekLog.userId.toString() !== userId) throw new ForbiddenException();
+
+    const day = weekLog.days.find((d) => d.order === input.order);
+
+    if (!day) throw new NotFoundException('Day not found');
+
+    if (input.status) day.status = input.status;
+
+    await weekLog.save();
+
+    return weekLog;
   }
 
   async findAllByUser(userId: string): Promise<WeekLog[] | undefined> {

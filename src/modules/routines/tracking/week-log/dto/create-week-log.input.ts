@@ -1,5 +1,5 @@
 import { InputType, Field, ID } from '@nestjs/graphql';
-import { IsDate, IsOptional, IsString, IsBoolean } from 'class-validator';
+import { IsDate, IsOptional, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
 
 @InputType()
@@ -23,9 +23,4 @@ export class CreateWeekLogInput {
   @IsOptional()
   @IsString()
   notes?: string;
-
-  @Field({ nullable: true, defaultValue: false })
-  @IsOptional()
-  @IsBoolean()
-  completed?: boolean;
 }

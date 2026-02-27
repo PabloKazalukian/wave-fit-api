@@ -1,6 +1,36 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
 
+@Schema({ _id: false })
+class WeekLogDay {
+  @Prop({ required: true })
+  order: number; // 1–7
+
+  @Prop({ required: true })
+  date: Date;
+
+  @Prop({ type: Boolean, default: false })
+  isRest: boolean; // descanso planificado
+
+  @Prop({ type: Types.ObjectId, ref: 'WorkoutSession', default: null })
+  workoutSessionId?: Types.ObjectId | null;
+
+  @Prop({
+    type: [{ type: Types.ObjectId, ref: 'ExtraSession' }],
+    default: [],
+  })
+  extraSessionIds: Types.ObjectId[];
+
+  @Prop({
+    type: String,
+    enum: ['pending', 'complete', 'skipped'],
+    default: 'pending',
+  })
+  status: string;
+}
+
+const WeekLogDaySchema = SchemaFactory.createForClass(WeekLogDay);
+
 @Schema({ timestamps: true })
 export class WeekLog {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
@@ -16,10 +46,10 @@ export class WeekLog {
   planId?: Types.ObjectId;
 
   @Prop({
-    type: [{ type: Types.ObjectId, ref: 'WorkoutSession' }],
-    default: [],
+    type: [WeekLogDaySchema],
+    validate: [(v: any[]) => v.length === 7, 'Week must contain 7 days'],
   })
-  workoutSessionIds: Types.ObjectId[];
+  days: WeekLogDay[];
 
   @Prop({ type: Boolean, default: false, index: true })
   completed: boolean;
@@ -29,8 +59,8 @@ export class WeekLog {
 }
 
 export const WeekLogSchema = SchemaFactory.createForClass(WeekLog);
-WeekLogSchema.virtual('id').get(function (this: any) {
-  return this._id.toHexString();
-});
+
 WeekLogSchema.index({ userId: 1, startDate: 1 }, { unique: true });
 WeekLogSchema.index({ userId: 1, completed: 1 });
+WeekLogSchema.index({ 'days.workoutSessionId': 1 });
+WeekLogSchema.index({ 'days.extraSessionIds': 1 });

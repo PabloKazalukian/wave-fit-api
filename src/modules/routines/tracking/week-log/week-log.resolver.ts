@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { GqlAuthGuard } from '../../../../modules/auth/guards/gql-auth.guard';
 import { Types } from 'mongoose';
+import { UpdateWeekLogDayInput } from './dto/update-week-log-day.input';
 
 @Resolver(() => WeekLog)
 @UseGuards(GqlAuthGuard)
@@ -84,6 +85,16 @@ export class WeekLogResolver {
       updateWeekLogInput,
       userId,
     );
+  }
+
+  @Mutation(() => WeekLog)
+  async updateWeekLogDay(
+    @Args('input') input: UpdateWeekLogDayInput,
+    @Context() context,
+  ) {
+    const userId = context.req.user?.id;
+
+    return this.weekLogService.updateDay(input, userId);
   }
 
   @Mutation(() => WeekLog)

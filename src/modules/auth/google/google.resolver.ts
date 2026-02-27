@@ -1,8 +1,6 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import { Resolver, Mutation, Args } from '@nestjs/graphql';
 import { GoogleService } from './google.service';
 import { Google } from './entities/google.entity';
-import { CreateGoogleInput } from './dto/create-google.input';
-import { UpdateGoogleInput } from './dto/update-google.input';
 import { UserService } from '../../../modules/user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import { UserGoogle } from '../../../common/interfaces/user.interface';
