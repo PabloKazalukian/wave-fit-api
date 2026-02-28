@@ -49,3 +49,13 @@ export class WeekLog {
   @Field({ nullable: true })
   notes?: string;
 }
+
+@ObjectType()
+export class ActiveWeekLogResponse {
+
+  @Field(() => Boolean)
+  hasActiveWeek: boolean;
+
+  @Field(() => WeekLog, { nullable: true })
+  week?: WeekLog;
+}

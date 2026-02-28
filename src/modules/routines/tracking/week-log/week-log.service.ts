@@ -85,13 +85,11 @@ export class WeekLogService {
     return weekLog;
   }
 
-  async findActiveWeekLog(userId: string): Promise<WeekLog | null | undefined> {
+  async findActiveWeekLog(userId: string): Promise<WeekLog | null > {
     const weekLog = await this.routinePlanModel
       .findOne({ userId, completed: false })
       .exec();
-    if (!weekLog) {
-      throw new NotFoundException(`Week log activo no encontrado`);
-    }
+    
 
     return weekLog;
   }

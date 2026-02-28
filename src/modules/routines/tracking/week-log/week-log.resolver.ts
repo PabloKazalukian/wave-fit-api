@@ -1,6 +1,6 @@
 import { Resolver, Query, Mutation, Args, Int, Context } from '@nestjs/graphql';
 import { WeekLogService } from './week-log.service';
-import { WeekLog } from './entities/week-log.entity';
+import { ActiveWeekLogResponse, WeekLog } from './entities/week-log.entity';
 import { CreateWeekLogInput } from './dto/create-week-log.input';
 import {
   UpdateWeekLogDayInput,
@@ -55,12 +55,19 @@ export class WeekLogResolver {
     return this.weekLogService.findOne(id, context?.req?.user?.id);
   }
 
-  @Query(() => WeekLog, { name: 'activeWeekLog' })
+  @Query(() => ActiveWeekLogResponse , { name: 'activeWeekLog' })
   async findActiveWeekLog(@Context() context) {
     if (!Types.ObjectId.isValid(context?.req?.user?.id)) {
       throw new BadRequestException('Invalid user id');
     }
-    return this.weekLogService.findActiveWeekLog(context?.req?.user?.id);
+
+    const week = await this.weekLogService.findActiveWeekLog(context?.req?.user?.id);
+
+    if (!week) {
+      return { hasActiveWeek: false };
+    }
+
+    return { hasActiveWeek: true, week };
   }
 
   @Query(() => WeekLog, { name: 'currentWorkoutSession' })
