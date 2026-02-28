@@ -4,19 +4,19 @@ import { User } from './entities/user.entity';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
 import { UserRole } from './schema/user.schema';
+import { Audit } from '../audit-logs/audit-logs.decorator';
 
 @Resolver(() => User)
 export class UserResolver {
   constructor(private readonly userService: UserService) {}
 
   @Mutation(() => User)
+  @Audit('CREATE_USER', 'User')
   async createUser(@Args('createUserInput') createUserInput: CreateUserInput) {
-    const created = await this.userService.create({
+    return this.userService.create({
       ...createUserInput,
-      role: createUserInput.role ?? UserRole.USER,
+      role: UserRole.USER,
     });
-
-    return created;
   }
 
   @Query(() => [User])
@@ -32,13 +32,18 @@ export class UserResolver {
   }
 
   @Query(() => User, { name: 'user' })
-  async findOne(@Args('id', { type: () => String }) id: String) {
+  async findOne(@Args('id', { type: () => String }) id: string) {
     return this.userService.findOne(id);
   }
 
   @Query(() => User, { name: 'userName' })
-  async findOneByName(@Args('name', { type: () => String }) name: String) {
+  async findOneByName(@Args('name', { type: () => String }) name: string) {
     return this.userService.findOneByName(name);
+  }
+
+  @Query(() => User, { name: 'userEmail' })
+  async findOneByEmail(@Args('email', { type: () => String }) email: string) {
+    return this.userService.findOneByEmail(email);
   }
 
   @Mutation(() => User)
@@ -47,7 +52,13 @@ export class UserResolver {
   }
 
   @Mutation(() => User)
-  async removeUser(@Args('id', { type: () => String }) id: String) {
+  async removeUser(@Args('id', { type: () => String }) id: string) {
     return this.userService.remove(id);
+  }
+
+  @Query(() => Boolean)
+  async isEmailAvailable(@Args('email', { type: () => String }) email: string) {
+    const user = await this.userService.findOneByEmail(email);
+    return user === null;
   }
 }

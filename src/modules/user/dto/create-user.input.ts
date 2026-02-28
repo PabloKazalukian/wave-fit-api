@@ -14,6 +14,20 @@ export class CreateUserInput {
   @Field()
   @MinLength(6)
   password: string;
+}
+
+@InputType()
+export class CreateUser {
+  @Field(() => String)
+  name: string;
+
+  @Field()
+  @IsEmail()
+  email: string;
+
+  @Field()
+  @MinLength(6)
+  password: string;
 
   @Field(() => String, { defaultValue: UserRole.USER })
   role: UserRole = UserRole.USER;
