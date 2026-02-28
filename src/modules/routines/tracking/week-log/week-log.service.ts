@@ -4,12 +4,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { CreateWeekLogInput } from './dto/create-week-log.input';
-import { UpdateWeekLogInput } from './dto/update-week-log.input';
+import {
+  UpdateWeekLogDayInput,
+  UpdateWeekLogInput,
+} from './dto/update-week-log.input';
 import { WeekLog } from './schema/week-log.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types, UpdateQuery } from 'mongoose';
 import { addDays, differenceInDays } from 'date-fns';
-import { UpdateWeekLogDayInput } from './dto/update-week-log-day.input';
 @Injectable()
 export class WeekLogService {
   constructor(
@@ -64,24 +66,6 @@ export class WeekLogService {
     return weekLog.save();
   }
 
-  async updateDay(input: UpdateWeekLogDayInput, userId: string) {
-    const weekLog = await this.routinePlanModel.findById(input.weekLogId);
-
-    if (!weekLog) throw new NotFoundException('WeekLog not found');
-
-    if (weekLog.userId.toString() !== userId) throw new ForbiddenException();
-
-    const day = weekLog.days.find((d) => d.order === input.order);
-
-    if (!day) throw new NotFoundException('Day not found');
-
-    if (input.status) day.status = input.status;
-
-    await weekLog.save();
-
-    return weekLog;
-  }
-
   async findAllByUser(userId: string): Promise<WeekLog[] | undefined> {
     return this.routinePlanModel.find({ userId }).exec();
   }
@@ -117,63 +101,66 @@ export class WeekLogService {
     updateWeekLogInput: UpdateWeekLogInput,
     userId: string,
   ) {
-    // 1. Verificar que existe y pertenece al usuario
     const weekLog = await this.routinePlanModel.findById(id);
+    if (!weekLog) throw new NotFoundException(`WeekLog ${id} not found`);
+    if (weekLog.userId.toString() !== userId) throw new ForbiddenException();
 
-    if (!weekLog) {
-      throw new NotFoundException(`WeekLog with ID ${id} not found`);
-    }
-
-    if (weekLog.userId.toString() !== userId) {
-      throw new ForbiddenException(
-        'You do not have permission to update this WeekLog',
-      );
-    }
-
-    // 2. Preparar datos de actualización
-    const updateData: any = {};
-
-    if (updateWeekLogInput.startDate !== undefined) {
-      updateData.startDate = new Date(updateWeekLogInput.startDate);
-    }
-
-    if (updateWeekLogInput.endDate !== undefined) {
-      updateData.endDate = new Date(updateWeekLogInput.endDate);
-    }
-
-    if (updateWeekLogInput.planId !== undefined) {
-      updateData.planId = updateWeekLogInput.planId
+    if (updateWeekLogInput.startDate)
+      weekLog.startDate = new Date(updateWeekLogInput.startDate);
+    if (updateWeekLogInput.endDate)
+      weekLog.endDate = new Date(updateWeekLogInput.endDate);
+    if (updateWeekLogInput.planId !== undefined)
+      weekLog.planId = updateWeekLogInput.planId
         ? new Types.ObjectId(updateWeekLogInput.planId)
-        : null;
+        : undefined;
+    if (updateWeekLogInput.notes !== undefined)
+      weekLog.notes = updateWeekLogInput.notes;
+    if (updateWeekLogInput.completed !== undefined)
+      weekLog.completed = updateWeekLogInput.completed;
+
+    // ✅ Actualizar días individualmente por order
+    if (updateWeekLogInput.days?.length) {
+      for (const dayInput of updateWeekLogInput.days) {
+        const day = weekLog.days.find((d) => d.order === dayInput.order);
+        if (!day) continue;
+
+        if (dayInput.workoutSessionId !== undefined) {
+          day.workoutSessionId = dayInput.workoutSessionId
+            ? new Types.ObjectId(dayInput.workoutSessionId)
+            : null;
+        }
+        if (dayInput.extraSessionIds !== undefined) {
+          day.extraSessionIds = dayInput.extraSessionIds.map(
+            (id) => new Types.ObjectId(id),
+          );
+        }
+        if (dayInput.status !== undefined) {
+          day.status = dayInput.status;
+        }
+      }
     }
 
-    if (updateWeekLogInput.workoutSessionIds !== undefined) {
-      // Validar que las WorkoutSessions existen y pertenecen al usuario
-      const sessionIds = updateWeekLogInput.workoutSessionIds.map(
-        (id) => new Types.ObjectId(id),
-      );
+    return weekLog.save();
+  }
 
-      updateData.workoutSessionIds = sessionIds;
-    }
+  async updateDay(input: UpdateWeekLogDayInput, userId: string) {
+    const weekLog = await this.routinePlanModel.findById(
+      input.workoutSessionId,
+    );
 
-    if (updateWeekLogInput.notes !== undefined) {
-      updateData.notes = updateWeekLogInput.notes;
-    }
+    if (!weekLog) throw new NotFoundException('WeekLog not found');
 
-    if (updateWeekLogInput.completed !== undefined) {
-      updateData.completed = updateWeekLogInput.completed;
-    }
+    if (weekLog.userId.toString() !== userId) throw new ForbiddenException();
 
-    // 3. Actualizar
-    const updatedWeekLog = await this.routinePlanModel
-      .findByIdAndUpdate(
-        id,
-        { $set: updateData },
-        { new: true, runValidators: true },
-      )
-      .lean();
+    const day = weekLog.days.find((d) => d.order === input.order);
 
-    return updatedWeekLog;
+    if (!day) throw new NotFoundException('Day not found');
+
+    if (input.status) day.status = input.status;
+
+    await weekLog.save();
+
+    return weekLog;
   }
 
   async findByIdAndUpdate(

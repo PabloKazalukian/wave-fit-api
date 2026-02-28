@@ -1,13 +1,34 @@
-import { ObjectType, Field, ID } from '@nestjs/graphql';
-import { WorkoutSession } from '../../workout-session/entities/workout-session.entity';
-import { ExtraSession } from '../../extra-session/entities/extra-session.entity';
+// week-log.type.ts (o similar en el backend)
+
+import { ObjectType, Field, ID, Int } from '@nestjs/graphql';
+
+@ObjectType()
+export class WeekLogDay {
+  @Field(() => Int)
+  order: number;
+
+  @Field()
+  date: Date;
+
+  @Field()
+  isRest: boolean;
+
+  @Field(() => String, { nullable: true })
+  workoutSessionId?: string | null;
+
+  @Field(() => [String])
+  extraSessionIds: string[];
+
+  @Field()
+  status: string;
+}
 
 @ObjectType()
 export class WeekLog {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   userId: string;
 
   @Field()
@@ -16,20 +37,15 @@ export class WeekLog {
   @Field()
   endDate: Date;
 
-  // Array de 7 días: si un día está vacío, se asume descanso
-  @Field(() => [WorkoutSession], { nullable: 'itemsAndList' })
-  workouts?: WorkoutSession[];
+  @Field(() => String, { nullable: true })
+  planId?: string | null;
 
-  // Extras fuera del plan
-  @Field(() => [ExtraSession], { nullable: 'itemsAndList' })
-  extras?: ExtraSession[];
-
-  @Field({ nullable: true })
-  planId?: string; // plan elegido esa semana
-
-  @Field({ nullable: true })
-  notes?: string;
+  @Field(() => [WeekLogDay]) // 👈 esto es lo que falta
+  days: WeekLogDay[];
 
   @Field()
   completed: boolean;
+
+  @Field({ nullable: true })
+  notes?: string;
 }

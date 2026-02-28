@@ -1,4 +1,4 @@
-import { InputType, Field } from '@nestjs/graphql';
+import { InputType, Field, Int } from '@nestjs/graphql';
 import {
   IsOptional,
   IsString,
@@ -8,10 +8,33 @@ import {
   IsMongoId,
 } from 'class-validator';
 
+// update-week-log-day.input.ts
+@InputType()
+export class UpdateWeekLogDayInput {
+  @Field(() => Int)
+  order: number;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsMongoId()
+  workoutSessionId?: string;
+
+  @Field(() => [String], { nullable: true })
+  @IsOptional()
+  @IsArray()
+  @IsMongoId({ each: true })
+  extraSessionIds?: string[];
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  status?: string; // 'pending' | 'complete' | 'skipped'
+}
+
+// update-week-log.input.ts
 @InputType()
 export class UpdateWeekLogInput {
   @Field(() => String)
-  @IsString()
   @IsMongoId()
   id: string;
 
@@ -27,15 +50,13 @@ export class UpdateWeekLogInput {
 
   @Field({ nullable: true })
   @IsOptional()
-  @IsString()
   @IsMongoId()
   planId?: string;
 
-  @Field(() => [String], { nullable: true })
+  @Field(() => [UpdateWeekLogDayInput], { nullable: true }) // ✅ reemplaza workoutSessionIds
   @IsOptional()
   @IsArray()
-  @IsMongoId({ each: true })
-  workoutSessionIds?: string[];
+  days?: UpdateWeekLogDayInput[];
 
   @Field({ nullable: true })
   @IsOptional()
