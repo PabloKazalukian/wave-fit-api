@@ -19,6 +19,12 @@ export class User extends Document {
 
   @Prop({ required: true, enum: UserRole, default: 'USER' })
   role!: UserRole;
+
+  @Prop({ unique: true, sparse: true })
+  googleId?: string;
+
+  @Prop()
+  picture?: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

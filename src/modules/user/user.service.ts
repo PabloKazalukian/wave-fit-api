@@ -79,11 +79,10 @@ export class UserService {
     const createdUser = new this.userModel({
       email: userInfo.email,
       name: userInfo.name,
-      // picture: userInfo.picture,
-      // googleId: userInfo.googleId,
+      picture: userInfo.picture,
+      googleId: userInfo.googleId,
       password: hashed,
       role: UserRole.USER,
-      // Puedes agregar otros campos necesarios aquí
     });
     return createdUser.save();
   }

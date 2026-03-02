@@ -1,0 +1,137 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { GoogleResolver } from './google.resolver';
+import { GoogleService } from './google.service';
+import { UserService } from '../../user/user.service';
+import { JwtService } from '@nestjs/jwt';
+import { UnauthorizedException } from '@nestjs/common';
+import { GoogleTokenStrategy } from './google-token.strategy';
+import { UserRole } from '../../user/schema/user.schema';
+
+describe('GoogleAuth Integration', () => {
+  let resolver: GoogleResolver;
+  let userService: UserService;
+  let jwtService: JwtService;
+  let googleService: GoogleService;
+  let strategy: GoogleTokenStrategy;
+
+  const mockUser = {
+    _id: 'user123',
+    email: 'test@gmail.com',
+    name: 'Test User',
+    role: 'user',
+    googleId: 'google123',
+  };
+
+  const mockGoogleInfo = {
+    email: 'test@gmail.com',
+    name: 'Test User',
+    picture: 'http://pic.com',
+    googleId: 'google123',
+  };
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        GoogleResolver,
+        GoogleTokenStrategy,
+        {
+          provide: GoogleService,
+          useValue: {
+            getTokens: jest
+              .fn()
+              .mockResolvedValue({ id_token: 'mock_id_token' }),
+            getUserInfo: jest.fn().mockResolvedValue(mockGoogleInfo),
+          },
+        },
+        {
+          provide: UserService,
+          useValue: {
+            findByEmail: jest.fn(),
+            createGoogleUser: jest.fn().mockResolvedValue(mockUser),
+          },
+        },
+        {
+          provide: JwtService,
+          useValue: {
+            sign: jest.fn().mockReturnValue('mock_jwt_token'),
+          },
+        },
+      ],
+    }).compile();
+
+    resolver = module.get<GoogleResolver>(GoogleResolver);
+    userService = module.get<UserService>(UserService);
+    jwtService = module.get<JwtService>(JwtService);
+    googleService = module.get<GoogleService>(GoogleService);
+    strategy = module.get<GoogleTokenStrategy>(GoogleTokenStrategy);
+  });
+
+  it('should login and return access_token and user object', async () => {
+    jest.spyOn(userService, 'findByEmail').mockResolvedValue(null); // User doesn't exist, will be created
+
+    const result = await resolver.loginWithGoogle('code', 'verifier');
+
+    expect(result).toBeDefined();
+    expect(result.access_token).toBe('mock_jwt_token');
+    expect(result.user).toBeDefined();
+    expect(result.user._id).toBe('user123');
+    expect(userService.createGoogleUser).toHaveBeenCalledWith(mockGoogleInfo);
+  });
+
+  it('should return existing user if email already exists', async () => {
+    jest.spyOn(userService, 'findByEmail').mockResolvedValue(mockUser as any);
+
+    const result = await resolver.loginWithGoogle('code', 'verifier');
+
+    expect(result.user._id).toBe('user123');
+    expect(userService.createGoogleUser).not.toHaveBeenCalled();
+  });
+
+  it('should throw error if code or verifier is missing', async () => {
+    await expect(
+      resolver.loginWithGoogle(null as any, 'verifier'),
+    ).rejects.toThrow('Code or Code Verifier is null');
+  });
+
+  describe('GoogleTokenStrategy', () => {
+    it('should validate valid id_token and return user', async () => {
+      jest.spyOn(userService, 'findByEmail').mockResolvedValue(mockUser as any);
+
+      const req = {
+        headers: {
+          authorization: 'Bearer valid_google_token',
+        },
+      };
+
+      const result = await strategy.validate(req);
+
+      expect(result).toBeDefined();
+      expect(result._id).toBe('user123');
+      expect(googleService.getUserInfo).toHaveBeenCalledWith(
+        'valid_google_token',
+      );
+    });
+
+    it('should throw UnauthorizedException if no auth header', async () => {
+      const req = { headers: {} };
+      await expect(strategy.validate(req)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should throw UnauthorizedException if invalid token format', async () => {
+      const req = { headers: { authorization: 'Basic token' } };
+      await expect(strategy.validate(req)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should return null if googleService.getUserInfo fails', async () => {
+      jest
+        .spyOn(googleService, 'getUserInfo')
+        .mockRejectedValue(new Error('Invalid token'));
+      const req = { headers: { authorization: 'Bearer invalid' } };
+      expect(await strategy.validate(req)).toBeNull();
+    });
+  });
+});

@@ -6,8 +6,8 @@
   "private": true,
   "license": "UNLICENSED",
   "_moduleAliases": {
-  "src": "dist"
-},
+    "src": "dist"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/main.js",
@@ -27,7 +27,7 @@
     "@as-integrations/express5": "^1.1.2",
     "@nestjs/apollo": "^13.2.1",
     "@nestjs/common": "^11.0.1",
-    "@nestjs/config": "^4.0.2",
+    "@nestjs/config": "^4.0.3",
     "@nestjs/core": "^11.0.1",
     "@nestjs/graphql": "^13.2.0",
     "@nestjs/jwt": "^11.0.1",
@@ -47,6 +47,7 @@
     "module-alias": "^2.3.4",
     "mongoose": "^8.19.2",
     "passport": "^0.7.0",
+    "passport-custom": "^1.1.1",
     "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",

@@ -17,7 +17,10 @@ export class AuthService {
     password: string,
   ): Promise<User | null> {
     const user = await this.userService.findByIdentifier(identifier); // name o email
-
+    console.log('user', user);
+    if (!user?.password) {
+      throw new UnauthorizedException('Invalid password');
+    }
     if (user && (await bcrypt.compare(password, user.password))) {
       return user;
     }

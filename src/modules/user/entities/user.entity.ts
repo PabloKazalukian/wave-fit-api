@@ -12,9 +12,14 @@ export class User {
   @Field()
   email: string;
 
-  @Field()
   password: string;
 
   @Field()
   role: UserRole;
+
+  @Field({ nullable: true })
+  googleId?: string;
+
+  @Field({ nullable: true })
+  picture?: string;
 }

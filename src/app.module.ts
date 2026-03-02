@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import * as dotenv from 'dotenv';
+import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -15,11 +15,13 @@ import { WeekLogModule } from './modules/routines/tracking/week-log/week-log.mod
 import { ExtraSessionModule } from './modules/routines/tracking/extra-session/extra-session.module';
 import { GoogleModule } from './modules/auth/google/google.module';
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
-dotenv.config();
 
 // console.log('DB_MONGO_PASSWORD:', process.env.DB_MONGO_PASSWORD);
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     MongooseModule.forRoot(
       `mongodb+srv://kazalukianpablo_db_user:${process.env.DB_MONGO_PASSWORD}@wavefit.ofapyei.mongodb.net/ `,
     ),

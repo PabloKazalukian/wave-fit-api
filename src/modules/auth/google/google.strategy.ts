@@ -12,7 +12,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       callbackURL:
         process.env.NODE_ENV === 'development'
           ? 'http://localhost:3000/auth/google-redirect'
-          : 'https://wave-fit-api.onrender.com//auth/google-redirect',
+          : 'https://wave-fit-api.onrender.com/auth/google-redirect',
       scope: ['email', 'profile'],
     });
   }
