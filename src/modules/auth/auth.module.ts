@@ -13,7 +13,7 @@ import { GoogleModule } from './google/google.module';
     UserModule,
     PassportModule,
     JwtModule.register({
-      secret: process.env.AUTH_JWT || 'supersecretkey',
+      secret: process.env.JWT_SECRET || 'supersecretkey',
       signOptions: { expiresIn: '1h' },
     }),
   ],
