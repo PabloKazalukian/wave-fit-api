@@ -55,7 +55,10 @@ export class RoutineDayService {
   async findByIds(ids: string[]) {
     const docs = await this.routineDayModel
       .find({ _id: { $in: ids } })
-      .populate('exercises')
+      .populate({
+        path: 'exercises.exercise',
+        select: 'name category type ',
+      })
       .exec();
     return docs.map((doc) => doc.toObject({ virtuals: true }));
   }

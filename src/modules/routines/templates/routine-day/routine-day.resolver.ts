@@ -9,7 +9,7 @@ import {
   ID,
 } from '@nestjs/graphql';
 import { RoutineDayService } from './routine-day.service';
-import { RoutineDay } from './entities/routine-day.entity';
+import { RoutineDay, RoutineDayExercise } from './entities/routine-day.entity';
 import { CreateRoutineDayInput } from './dto/create-routine-day.input';
 import {
   findByCategoryInput,
@@ -63,16 +63,18 @@ export class RoutineDayResolver {
     );
   }
 
-  @ResolveField(() => [Exercise], { nullable: 'itemsAndList' })
-  async exercises(@Parent() routineDay: RoutineDay) {
+  @ResolveField(() => [RoutineDayExercise], { nullable: 'itemsAndList' })
+  exercises(@Parent() routineDay: any) {
     if (!routineDay.exercises?.length) return [];
 
-    // const ids = routineDay.exercises.map((exercise) => exercise.id);
-    const exerciseIds = routineDay.exercises?.map((e: any) =>
-      typeof e === 'string' ? e : e._id,
-    );
-
-    return await this.exerciseService.findByIds(exerciseIds);
+    // Devolvemos el array con el objeto 'exercise' extraído correctamente más el 'order'
+    return routineDay.exercises.map((e: any) => {
+      return {
+        exercise:
+          typeof e.exercise === 'object' ? e.exercise : { id: e.exercise },
+        order: e.order,
+      };
+    });
   }
 
   @Mutation(() => RoutineDay)

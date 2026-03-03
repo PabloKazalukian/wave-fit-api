@@ -60,10 +60,23 @@ RoutineDaySchema.set('toJSON', {
     delete ret._id;
 
     if (Array.isArray(ret.exercises)) {
-      ret.exercises = ret.exercises.map((e: any) => ({
-        exercise: e.exercise?.toString(),
-        order: e.order,
-      }));
+      ret.exercises = ret.exercises.map((e: any) => {
+        let exerciseVal;
+        if (e.exercise && typeof e.exercise === 'object' && e.exercise._id) {
+          // Si está poblado, lo mantenemos y le seteamos 'id'
+          e.exercise.id = e.exercise._id.toString();
+          delete e.exercise._id;
+          exerciseVal = e.exercise;
+        } else {
+          // Si no está poblado, extraemos solo el string del id
+          exerciseVal = e.exercise?.toString();
+        }
+
+        return {
+          exercise: exerciseVal,
+          order: e.order,
+        };
+      });
     }
 
     if (ret.planId) {
