@@ -18,10 +18,11 @@ export class RoutinePlanService {
       order: index,
     }));
 
-    return this.routinePlanModel.create({
+    const plan = await this.routinePlanModel.create({
       ...input,
       week,
     });
+    return plan;
   }
 
   async findAll(): Promise<RoutinePlan[] | undefined> {

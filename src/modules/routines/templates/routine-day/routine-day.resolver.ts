@@ -28,7 +28,7 @@ export class RoutineDayResolver {
 
   @ResolveField(() => ID, { name: 'id' })
   id(@Parent() routineDay: any | RoutineDay) {
-    return routineDay._id.toString();
+    return (routineDay._id || routineDay.id)?.toString();
   }
   @Mutation(() => RoutineDay)
   createRoutineDay(
