@@ -1,4 +1,0 @@
-﻿
-> wave-fit-api@0.0.1 test
-> jest src/modules/auth/auth.service.spec.ts
-
