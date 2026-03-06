@@ -66,30 +66,45 @@ describe('GoogleAuth Integration', () => {
     strategy = module.get<GoogleTokenStrategy>(GoogleTokenStrategy);
   });
 
-  it('should login and return access_token and user object', async () => {
+  it('should login and set cookie, and return user object', async () => {
     jest.spyOn(userService, 'findByEmail').mockResolvedValue(null); // User doesn't exist, will be created
+    const mockContext = { res: { cookie: jest.fn() } };
 
-    const result = await resolver.loginWithGoogle('code', 'verifier');
+    const result = await resolver.loginWithGoogle(
+      'code',
+      'verifier',
+      mockContext,
+    );
 
     expect(result).toBeDefined();
-    expect(result.access_token).toBe('mock_jwt_token');
+    expect(mockContext.res.cookie).toHaveBeenCalledWith(
+      'token',
+      'mock_jwt_token',
+      expect.any(Object),
+    );
     expect(result.user).toBeDefined();
     expect(result.user._id).toBe('user123');
     expect(userService.createGoogleUser).toHaveBeenCalledWith(mockGoogleInfo);
   });
 
-  it('should return existing user if email already exists', async () => {
+  it('should return existing user and set cookie', async () => {
     jest.spyOn(userService, 'findByEmail').mockResolvedValue(mockUser as any);
+    const mockContext = { res: { cookie: jest.fn() } };
 
-    const result = await resolver.loginWithGoogle('code', 'verifier');
+    const result = await resolver.loginWithGoogle(
+      'code',
+      'verifier',
+      mockContext,
+    );
 
     expect(result.user._id).toBe('user123');
+    expect(mockContext.res.cookie).toHaveBeenCalled();
     expect(userService.createGoogleUser).not.toHaveBeenCalled();
   });
 
   it('should throw error if code or verifier is missing', async () => {
     await expect(
-      resolver.loginWithGoogle(null as any, 'verifier'),
+      resolver.loginWithGoogle(null as any, 'verifier', {} as any),
     ).rejects.toThrow('Code or Code Verifier is null');
   });
 

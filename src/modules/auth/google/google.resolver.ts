@@ -1,4 +1,4 @@
-import { Resolver, Mutation, Args } from '@nestjs/graphql';
+import { Resolver, Mutation, Args, Context } from '@nestjs/graphql';
 import { GoogleService } from './google.service';
 import { Google } from './entities/google.entity';
 import { UserService } from '../../../modules/user/user.service';
@@ -18,6 +18,7 @@ export class GoogleResolver {
   async loginWithGoogle(
     @Args('code') code: string,
     @Args('codeVerifier') codeVerifier: string,
+    @Context() context: any,
   ) {
     if (code == null || codeVerifier == null) {
       throw new Error('Code or Code Verifier is null');
@@ -35,8 +36,17 @@ export class GoogleResolver {
     }
 
     const payload = { sub: user._id, email: user.email, role: user.role };
+    const access_token = this.jwtService.sign(payload);
+
+    context.res.cookie('token', access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+    });
+
     return {
-      access_token: this.jwtService.sign(payload),
+      access_token, // Keeping it for compatibility with the DTO for now, but the important part is the cookie
       user,
     };
   }

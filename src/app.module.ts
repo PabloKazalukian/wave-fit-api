@@ -28,7 +28,7 @@ import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: true,
-      context: ({ req }) => ({ req }),
+      context: ({ req, res }) => ({ req, res }),
       // autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       playground: true,
     }),
