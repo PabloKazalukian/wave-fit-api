@@ -329,7 +329,7 @@ describe('WeekLogResolver', () => {
 
       expect(service.findActiveWeekLog).toHaveBeenCalledWith(validUserId);
       expect(result).toEqual(activeWeekLog);
-      expect(result?.completed).toBe(false);
+      expect(result?.hasActiveWeek).toBe(false);
     });
 
     it('should return null if no active week log exists', async () => {

@@ -55,13 +55,15 @@ export class WeekLogResolver {
     return this.weekLogService.findOne(id, context?.req?.user?.id);
   }
 
-  @Query(() => ActiveWeekLogResponse , { name: 'activeWeekLog' })
+  @Query(() => ActiveWeekLogResponse, { name: 'activeWeekLog' })
   async findActiveWeekLog(@Context() context) {
     if (!Types.ObjectId.isValid(context?.req?.user?.id)) {
       throw new BadRequestException('Invalid user id');
     }
 
-    const week = await this.weekLogService.findActiveWeekLog(context?.req?.user?.id);
+    const week = await this.weekLogService.findActiveWeekLog(
+      context?.req?.user?.id,
+    );
 
     if (!week) {
       return { hasActiveWeek: false };
@@ -104,6 +106,15 @@ export class WeekLogResolver {
     const userId = context.req.user?.id;
 
     return this.weekLogService.updateDay(input, userId);
+  }
+
+  @Mutation(() => WeekLog)
+  async syncWeekLogDays(
+    @Args('weekLogId', { type: () => String }) weekLogId: string,
+    @Context() context,
+  ) {
+    const userId = context.req.user?.id;
+    return this.weekLogService.syncDaysWithSessions(weekLogId, userId);
   }
 
   @Mutation(() => WeekLog)

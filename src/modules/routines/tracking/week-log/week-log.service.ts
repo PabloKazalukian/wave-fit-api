@@ -11,27 +11,26 @@ import {
 import { WeekLog } from './schema/week-log.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types, UpdateQuery } from 'mongoose';
-import { addDays, differenceInDays } from 'date-fns';
+import { addDays, differenceInDays, parseISO, isSameDay } from 'date-fns';
+import { WeekLogValidator } from './week-log.validator';
+import { WorkoutSession } from '../workout-session/schema/workout-session.schema';
+
 @Injectable()
 export class WeekLogService {
   constructor(
     @InjectModel(WeekLog.name) private routinePlanModel: Model<WeekLog>,
+    @InjectModel(WorkoutSession.name)
+    private workoutSessionModel: Model<WorkoutSession>,
+    private readonly validator: WeekLogValidator,
   ) {}
   async create(createWeekLogInput: CreateWeekLogInput, userId: Types.ObjectId) {
     const { startDate, endDate, planId } = createWeekLogInput;
 
-    if (differenceInDays(endDate, startDate) !== 6) {
-      throw new ForbiddenException('Week must be exactly 7 days');
-    }
-
-    const existing = await this.routinePlanModel.findOne({
+    await this.validator.validateCreation(
+      createWeekLogInput,
       userId,
-      completed: false,
-    });
-
-    if (existing) {
-      throw new ForbiddenException('Already active week');
-    }
+      this.routinePlanModel,
+    );
 
     let isRestMap: boolean[] = new Array(7).fill(false);
 
@@ -85,11 +84,10 @@ export class WeekLogService {
     return weekLog;
   }
 
-  async findActiveWeekLog(userId: string): Promise<WeekLog | null > {
+  async findActiveWeekLog(userId: string): Promise<WeekLog | null> {
     const weekLog = await this.routinePlanModel
       .findOne({ userId, completed: false })
       .exec();
-    
 
     return weekLog;
   }
@@ -101,12 +99,14 @@ export class WeekLogService {
   ) {
     const weekLog = await this.routinePlanModel.findById(id);
     if (!weekLog) throw new NotFoundException(`WeekLog ${id} not found`);
-    if (weekLog.userId.toString() !== userId) throw new ForbiddenException();
+
+    this.validator.validateOwnership(weekLog, userId);
+    this.validator.validateUpdate(updateWeekLogInput);
 
     if (updateWeekLogInput.startDate)
-      weekLog.startDate = new Date(updateWeekLogInput.startDate);
+      weekLog.startDate = parseISO(updateWeekLogInput.startDate);
     if (updateWeekLogInput.endDate)
-      weekLog.endDate = new Date(updateWeekLogInput.endDate);
+      weekLog.endDate = parseISO(updateWeekLogInput.endDate);
     if (updateWeekLogInput.planId !== undefined)
       weekLog.planId = updateWeekLogInput.planId
         ? new Types.ObjectId(updateWeekLogInput.planId)
@@ -148,7 +148,7 @@ export class WeekLogService {
 
     if (!weekLog) throw new NotFoundException('WeekLog not found');
 
-    if (weekLog.userId.toString() !== userId) throw new ForbiddenException();
+    this.validator.validateOwnership(weekLog, userId);
 
     const day = weekLog.days.find((d) => d.order === input.order);
 
@@ -175,6 +175,34 @@ export class WeekLogService {
 
     if (!weekLog) {
       throw new NotFoundException(`WeekLog with ID ${id} not found`);
+    }
+
+    return weekLog;
+  }
+
+  async syncDaysWithSessions(weekLogId: string, userId: string) {
+    const weekLog = await this.findOne(weekLogId, userId);
+    if (!weekLog) throw new NotFoundException('WeekLog not found');
+
+    const sessions = await this.workoutSessionModel.find({
+      weekLogId,
+      userId,
+    });
+
+    let updated = false;
+
+    for (const day of weekLog.days) {
+      const session = sessions.find((s) => isSameDay(s.date, day.date));
+
+      if (session) {
+        day.workoutSessionId = new Types.ObjectId(session._id as any);
+        day.status = 'complete';
+        updated = true;
+      }
+    }
+
+    if (updated) {
+      await (weekLog as any).save();
     }
 
     return weekLog;
