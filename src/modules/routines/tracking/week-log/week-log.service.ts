@@ -84,12 +84,36 @@ export class WeekLogService {
     return weekLog;
   }
 
-  async findActiveWeekLog(userId: string): Promise<WeekLog | null> {
+  // async findActiveWeekLog(userId: string): Promise<WeekLog | null> {
+  //   const weekLog = await this.routinePlanModel
+  //     .findOne({ userId, completed: false })
+  //     .exec();
+
+  //   return weekLog;
+  // }
+
+  async findActiveWeekLog(userId: string): Promise<any | null> {
     const weekLog = await this.routinePlanModel
       .findOne({ userId, completed: false })
+      .populate('days.workoutSessionId')
       .exec();
 
-    return weekLog;
+    if (!weekLog) return null;
+
+    const weekLogObj = weekLog.toObject();
+
+    return {
+      ...weekLogObj,
+      id: weekLogObj._id.toString(), // 👈 esto es lo que falta
+      days: weekLogObj.days.map((day) => {
+        const session = day.workoutSessionId as any;
+        return {
+          ...day,
+          workoutSessionId: session?._id ? session._id.toString() : session,
+          exercises: session?.exercises || [],
+        };
+      }),
+    };
   }
 
   async update(

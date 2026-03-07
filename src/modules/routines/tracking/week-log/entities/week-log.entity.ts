@@ -1,6 +1,5 @@
-// week-log.type.ts (o similar en el backend)
-
 import { ObjectType, Field, ID, Int } from '@nestjs/graphql';
+import { ExercisePerformance } from '../../workout-session/entities/workout-session.entity';
 
 @ObjectType()
 export class WeekLogDay {
@@ -15,6 +14,9 @@ export class WeekLogDay {
 
   @Field(() => String, { nullable: true })
   workoutSessionId?: string | null;
+
+  @Field(() => [ExercisePerformance], { nullable: true })
+  exercises?: ExercisePerformance[];
 
   @Field(() => [String])
   extraSessionIds: string[];
@@ -52,7 +54,6 @@ export class WeekLog {
 
 @ObjectType()
 export class ActiveWeekLogResponse {
-
   @Field(() => Boolean)
   hasActiveWeek: boolean;
 
