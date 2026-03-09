@@ -1,98 +1,186 @@
 <p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
+  <img src="https://nestjs.com/img/logo-small.svg" alt="WaveFit API Logo" width="120" />
 </p>
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+<h1 align="center">🏋️ WaveFit API</h1>
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
+<p align="center">
+  <strong>Backend para tu compañero de entrenamiento personal.</strong><br/>
+  API GraphQL para gestionar ejercicios, rutinas y seguimiento de entrenamiento.
 </p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
-## Description
+<p align="center">
+  <img src="https://img.shields.io/badge/NestJS-11-E0234E?style=for-the-badge&logo=nestjs&logoColor=white" />
+  <img src="https://img.shields.io/badge/GraphQL-Apollo-E10098?style=for-the-badge&logo=graphql&logoColor=white" />
+  <img src="https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white" />
+  <img src="https://img.shields.io/badge/TypeScript-5.7-3178C6?style=for-the-badge&logo=typescript&logoColor=white" />
+</p>
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+<p align="center">
+  <a href="https://wave-fit.vercel.app/">🌐 Ver Demo Frontend</a> •
+  <a href="https://github.com/PabloKazalukian/wave-fit">🔗 Repositorio Frontend</a>
+</p>
 
-## Project setup
+---
+
+## ✨ Funcionalidades
+
+### Disponibles
+
+- 📋 **Gestión de ejercicios** — CRUD completo del catálogo de ejercicios
+- 🗓️ **Planificación de rutinas** — RoutinePlan → RoutineDay → Exercises
+- 💪 **Seguimiento de entrenamiento** — WorkoutSession, WeekLog, ExtraSession
+- 🔐 **Autenticación segura** — JWT (cookie HttpOnly) + Google OAuth (PKCE)
+- 📝 **Auditoría de cambios** — Registro automático de modificaciones en la DB
+
+### Próximamente
+
+- 📈 **Estadísticas avanzadas** — Endpoints para analíticas de rendimiento
+- 🔄 **WebSockets** — Actualizaciones en tiempo real
+
+---
+
+## 🛠️ Stack Tecnológico
+
+| Categoría     | Tecnología         |
+| ------------- | ------------------ |
+| **Framework** | NestJS 11          |
+| **API**       | GraphQL (Apollo)   |
+| **Database**  | MongoDB (Mongoose) |
+| **Auth**      | Passport + JWT     |
+| **OAuth**     | Google (PKCE)      |
+| **Testing**   | Jest               |
+| **Deploy**    | Render             |
+
+> 🔗 **Frontend:** Angular 20 + TailwindCSS + Apollo — [Ver repositorio](https://github.com/PabloKazalukian/wave-fit) | [Demo en producción](https://wave-fit.vercel.app/)
+
+---
+
+## 🚀 Instalación
+
+### Pre-requisitos
+
+- Node.js (v18+)
+- MongoDB (local o Atlas)
+- npm
+
+### Setup
 
 ```bash
-$ npm install
+# Clonar el repositorio
+git clone https://github.com/PabloKazalukian/wave-fit-api.git
+cd wave-fit-api
+
+# Instalar dependencias
+npm install
+
+# Configurar variables de entorno
+cp .env.example .env
+# Editar .env con tus credenciales
+
+# Compilar TypeScript
+npm run build
+
+# Correr en modo desarrollo
+npm run start:dev
 ```
 
-## Compile and run the project
+La API está disponible en `http://localhost:3000/`
+
+---
+
+## 📂 Estructura del Proyecto
+
+```
+src/
+├── app.module.ts              # Módulo raíz
+├── main.ts                    # Entry point
+├── common/                    # Filters, interceptors, guards
+├── modules/
+│   ├── auth/                  # JWT + Google OAuth
+│   │   ├── guards/
+│   │   ├── google/
+│   │   ├── auth.service.ts
+│   │   ├── auth.resolver.ts
+│   │   └── jwt.strategy.ts
+│   ├── user/                  # Gestión de usuarios
+│   ├── routines/
+│   │   ├── templates/
+│   │   │   ├── exercise/      # Catálogo de ejercicios
+│   │   │   ├── routine-day/  # Días de rutina
+│   │   │   └── routine-plan/ # Planes semanales
+│   │   └── tracking/
+│   │       ├── workout-session/
+│   │       ├── week-log/
+│   │       └── extra-session/
+│   └── audit-logs/           # Registro de cambios
+└── documents/
+    └── config/                # Documentación técnica
+```
+
+---
+
+## 📡 GraphQL Playground
+
+En desarrollo, podés acceder al Playground en:
+
+```
+http://localhost:3000/graphql
+```
+
+### Ejemplo de Query
+
+```graphql
+query {
+  me {
+    id
+    email
+    name
+  }
+}
+```
+
+### Ejemplo de Mutation (Login)
+
+```graphql
+mutation {
+  login(identifier: "user@example.com", password: "password123")
+}
+```
+
+---
+
+## 📖 Documentación
+
+La documentación técnica se encuentra en [`/documents`](./documents/config/):
+
+- [Flujos de login](./documents/config/login_flows.md) — Email/password y Google OAuth
+- [Configuración de cookies](./documents/config/cookie_configuration.md) — HttpOnly, Secure, SameSite
+- [Autenticación](./documents/config/authentication.md) — Principios y diseño
+- [Módulo Auth](./documents/config/auth_module.md) — Arquitectura detallada
+
+---
+
+## 🧪 Tests
 
 ```bash
-# development
-$ npm run start
+# Tests unitarios
+npm test
 
-# watch mode
-$ npm run start:dev
+# Tests con coverage
+npm run test:cov
 
-# production mode
-$ npm run start:prod
+# Tests e2e
+npm run test:e2e
+
+# Modo watch
+npm run test:watch
 ```
 
-## Run tests
+---
 
-```bash
-# unit tests
-$ npm run test
+## 👤 Autor
 
-# e2e tests
-$ npm run test:e2e
+**[Pablo Kazalukian](https://github.com/PabloKazalukian)**
 
-# test coverage
-$ npm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+> 🔗 [Repositorio Frontend](https://github.com/PabloKazalukian/wave-fit)
