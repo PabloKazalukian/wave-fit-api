@@ -2,7 +2,7 @@ import 'module-alias/register';
 import cookieParser from 'cookie-parser';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { GraphQLExceptionFilter } from './common/filters/gpl-exeption.filter';
+import { GraphQLExceptionFilter } from './common/filters/gql-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -17,7 +17,7 @@ async function bootstrap() {
     credentials: true,
   });
 
-  app.useGlobalFilters(new GraphQLExceptionFilter());
+  // app.useGlobalFilters(new GraphQLExceptionFilter());
 
   const port = process.env.PORT || 3000;
   await app.listen(port);

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { APP_FILTER } from '@nestjs/core';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { UserModule } from '../../src/modules/user/user.module';
@@ -14,6 +15,7 @@ import { GoogleModule } from '../../src/modules/auth/google/google.module';
 import { AuditLogsModule } from '../../src/modules/audit-logs/audit-logs.module';
 import { rootMongooseTestModule } from './db-handler';
 import { AppModule } from 'src/app.module';
+import { GraphQLExceptionFilter } from '../../src/common/filters/gql-exception.filter';
 
 /**
  * Módulo NestJS para tests e2e.
@@ -43,6 +45,12 @@ import { AppModule } from 'src/app.module';
     ExtraSessionModule,
     GoogleModule,
     AuditLogsModule,
+  ],
+  providers: [
+    {
+      provide: APP_FILTER,
+      useClass: GraphQLExceptionFilter,
+    },
   ],
 })
 export class AppTestModule {}

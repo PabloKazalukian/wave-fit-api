@@ -9,18 +9,22 @@ import { Error as MongooseError } from 'mongoose';
 export class GraphQLExceptionFilter implements GqlExceptionFilter {
   private readonly logger = new Logger(GraphQLExceptionFilter.name);
 
-  catch(exception: unknown, host: ArgumentsHost) {
+  catch(exception: any, host: ArgumentsHost) {
     const gqlHost = GqlArgumentsHost.create(host);
     const info = gqlHost.getInfo();
 
     // Log completo del error para debugging
     this.logger.error(
-      `Error en ${info.fieldName}:`,
+      `Error en ${info?.fieldName || 'unknown'}:`,
       exception instanceof Error ? exception.stack : exception,
     );
 
     // 1. Excepciones HTTP de NestJS (las más comunes)
-    if (exception instanceof HttpException) {
+    // Usamos una comprobación más robusta por si acaso hay problemas con instanceof en ciertos entornos
+    if (
+      exception instanceof HttpException ||
+      (exception?.getStatus && exception?.getResponse)
+    ) {
       return this.handleHttpException(exception);
     }
 
@@ -49,8 +53,12 @@ export class GraphQLExceptionFilter implements GqlExceptionFilter {
   }
 
   private handleHttpException(exception: HttpException): GraphQLError {
-    const status = exception.getStatus();
-    const response = exception.getResponse();
+    const status =
+      typeof exception.getStatus === 'function' ? exception.getStatus() : 500;
+    const response =
+      typeof exception.getResponse === 'function'
+        ? exception.getResponse()
+        : exception;
 
     const message =
       typeof response === 'string'
@@ -60,7 +68,8 @@ export class GraphQLExceptionFilter implements GqlExceptionFilter {
     return new GraphQLError(message, {
       extensions: {
         code: this.getHttpErrorCode(status),
-        statusCode: status,
+        status: status, // Agregamos status al mismo nivel que code para mayor facilidad
+        originalError: response, // Incluimos la respuesta original para debugging
       },
     });
   }
@@ -141,7 +150,7 @@ export class GraphQLExceptionFilter implements GqlExceptionFilter {
     return (
       error instanceof Error &&
       'code' in error &&
-      typeof error.code === 'number'
+      typeof (error as any).code === 'number'
     );
   }
 

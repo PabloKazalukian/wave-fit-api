@@ -10,6 +10,7 @@ import {
   createTestUser,
   getTestUserCredentials,
 } from '../../fixtures/user.fixture';
+import cookieParser from 'cookie-parser';
 
 function getCookieWithToken(loginResponse: any): string {
   const cookies = loginResponse.headers['set-cookie'] as
@@ -20,6 +21,33 @@ function getCookieWithToken(loginResponse: any): string {
   const cookieArray = Array.isArray(cookies) ? cookies : [cookies];
   const tokenCookie = cookieArray.find((c: string) => c.startsWith('token='));
   return tokenCookie || '';
+}
+
+function createWeekLog(app: INestApplication<App>, cookie: string) {
+  const today = new Date();
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - today.getDay());
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+  return request(app.getHttpServer())
+    .post('/graphql')
+    .set('Cookie', [cookie || ''])
+    .send({
+      query: `
+          mutation {
+            createWeekLog(createWeekLogInput: {
+              startDate: "${startOfWeek.toISOString()}",
+              endDate: "${endOfWeek.toISOString()}",
+            }) {
+              id
+              startDate
+              endDate
+            }
+          }
+        `,
+    })
+    .expect(200);
 }
 
 describe('activeWeekLog (e2e)', () => {
@@ -35,6 +63,8 @@ describe('activeWeekLog (e2e)', () => {
     app = module.createNestApplication();
     userService = module.get<UserService>(UserService);
     weekLogService = module.get<WeekLogService>(WeekLogService);
+
+    app.use(cookieParser());
 
     await app.init();
   });
@@ -105,13 +135,13 @@ describe('activeWeekLog (e2e)', () => {
 
     await request(app.getHttpServer())
       .post('/graphql')
-      .set('Cookie', cookie)
+      .set('Cookie', [cookie || ''])
       .send({
         query: `
           mutation {
-            createWeekLog(input: {
+            createWeekLog(createWeekLogInput: {
               startDate: "${startOfWeek.toISOString()}",
-              endDate: "${endOfWeek.toISOString()}"
+              endDate: "${endOfWeek.toISOString()}",
             }) {
               id
               startDate
@@ -162,5 +192,47 @@ describe('activeWeekLog (e2e)', () => {
 
     expect(response.body.errors).toBeDefined();
     expect(response.body.errors[0].message).toContain('authorization');
+  });
+
+  it('should fail when week already exists', async () => {
+    const startOfWeeks = new Date();
+    const endOfWeeks = new Date();
+    endOfWeeks.setDate(endOfWeeks.getDate() + 6);
+
+    // crear week
+    const loginResponse = await request(app.getHttpServer())
+      .post('/graphql')
+      .send({
+        query: `
+        mutation {
+            login(identifier: "${getTestUserCredentials().identifier}", password: "${getTestUserCredentials().password}")
+            }
+            `,
+      });
+    const cookie = getCookieWithToken(loginResponse);
+    await createWeekLog(app, cookie);
+
+    // intentar crear otra
+    const response = await request(app.getHttpServer())
+      .post('/graphql')
+      .set('Cookie', cookie)
+      .send({
+        query: `
+          mutation {
+            createWeekLog(createWeekLogInput: {
+              startDate: "${startOfWeeks.toISOString()}",
+              endDate: "${endOfWeeks.toISOString()}",
+            }) {
+              id
+              startDate
+              endDate
+            }
+          }
+        `,
+      })
+      .expect(200);
+
+    expect(response.body.errors).toBeDefined();
+    expect(response.body.errors[0].extensions.code).toBe('CONFLICT');
   });
 });

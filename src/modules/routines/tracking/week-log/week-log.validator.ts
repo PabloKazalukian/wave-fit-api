@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
 } from '@nestjs/common';
@@ -28,7 +29,7 @@ export class WeekLogValidator {
     });
 
     if (existing) {
-      throw new ForbiddenException('Already active week');
+      throw new ConflictException('Already active week');
     }
   }
 
