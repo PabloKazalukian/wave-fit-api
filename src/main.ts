@@ -12,7 +12,7 @@ async function bootstrap() {
   app.enableCors({
     origin:
       process.env.NODE_ENV === 'production'
-        ? 'https://wave-fit-front.onrender.com' // Assuming this or similar, we can refine via ENV var later
+        ? ['https://wave-fit-front.onrender.com', 'https://wave-fit.vercel.app']
         : 'http://localhost:4200',
     credentials: true,
   });
