@@ -34,7 +34,10 @@ export class RoutinePlanService {
       throw new NotFoundException(`ID "${id}" no es válido`);
     }
 
-    const plan = await this.routinePlanModel.findById(id).exec();
+    const plan = await this.routinePlanModel
+      .findById(id)
+      .populate('week.day')
+      .exec();
 
     if (!plan) {
       throw new NotFoundException(`Plan con ID "${id}" no encontrado`);

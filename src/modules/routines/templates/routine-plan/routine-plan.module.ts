@@ -15,5 +15,6 @@ import { AuditLogsModule } from 'src/modules/audit-logs/audit-logs.module';
     AuditLogsModule,
   ],
   providers: [RoutinePlanResolver, RoutinePlanService],
+  exports: [RoutinePlanService],
 })
 export class RoutinePlanModule {}

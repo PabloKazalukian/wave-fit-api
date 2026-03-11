@@ -8,9 +8,11 @@ import {
   WorkoutSession,
   WorkoutSessionSchema,
 } from '../workout-session/schema/workout-session.schema';
+import { RoutinePlanModule } from '../../templates/routine-plan/routine-plan.module';
 
 @Module({
   imports: [
+    RoutinePlanModule,
     MongooseModule.forFeature([
       { name: WeekLog.name, schema: WeekLogSchema },
       { name: WorkoutSession.name, schema: WorkoutSessionSchema },

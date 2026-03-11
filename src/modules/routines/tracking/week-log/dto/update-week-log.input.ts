@@ -7,6 +7,7 @@ import {
   IsArray,
   IsMongoId,
 } from 'class-validator';
+import { ExercisePerformance } from '../../workout-session/schema/exercise-performance.schema';
 
 // update-week-log-day.input.ts
 @InputType()
@@ -18,6 +19,9 @@ export class UpdateWeekLogDayInput {
   @IsOptional()
   @IsMongoId()
   workoutSessionId?: string;
+
+  @Field()
+  isRest: boolean;
 
   @Field(() => [String], { nullable: true })
   @IsOptional()
@@ -52,6 +56,9 @@ export class UpdateWeekLogInput {
   @IsOptional()
   @IsMongoId()
   planId?: string;
+
+  @Field()
+  userId?: string;
 
   @Field(() => [UpdateWeekLogDayInput], { nullable: true }) // ✅ reemplaza workoutSessionIds
   @IsOptional()

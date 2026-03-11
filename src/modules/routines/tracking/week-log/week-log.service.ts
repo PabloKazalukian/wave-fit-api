@@ -11,49 +11,87 @@ import {
 import { WeekLog } from './schema/week-log.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types, UpdateQuery } from 'mongoose';
-import { addDays, differenceInDays, parseISO, isSameDay } from 'date-fns';
+import { addDays, parseISO, isSameDay } from 'date-fns';
 import { WeekLogValidator } from './week-log.validator';
 import { WorkoutSession } from '../workout-session/schema/workout-session.schema';
+import { RoutinePlanService } from '../../templates/routine-plan/routine-plan.service';
 
 @Injectable()
 export class WeekLogService {
   constructor(
-    @InjectModel(WeekLog.name) private routinePlanModel: Model<WeekLog>,
+    @InjectModel(WeekLog.name) private weekLogModel: Model<WeekLog>,
+    private routinePlanSv: RoutinePlanService,
     @InjectModel(WorkoutSession.name)
     private workoutSessionModel: Model<WorkoutSession>,
     private readonly validator: WeekLogValidator,
   ) {}
+
   async create(createWeekLogInput: CreateWeekLogInput, userId: Types.ObjectId) {
     const { startDate, endDate, planId } = createWeekLogInput;
 
     await this.validator.validateCreation(
       createWeekLogInput,
       userId,
-      this.routinePlanModel,
+      this.weekLogModel,
     );
 
     let isRestMap: boolean[] = new Array(7).fill(false);
+    let plan: any = null;
 
     if (planId) {
-      const plan = await this.routinePlanModel.db
-        .collection('routineplans')
-        .findOne({ _id: new Types.ObjectId(planId) });
+      plan = await this.routinePlanSv.findOne(planId);
 
       if (plan?.week?.length === 7) {
         isRestMap = plan.week.map((d) => d.isRest);
       }
     }
 
-    const days = Array.from({ length: 7 }).map((_, index) => ({
-      order: index + 1,
-      date: addDays(startDate, index),
-      isRest: isRestMap[index] ?? false,
-      workoutSessionId: null,
-      extraSessionIds: [],
-      status: 'pending',
-    }));
+    const weekLogId = new Types.ObjectId();
+    const sessionsToInsert: any[] = [];
 
-    const weekLog = new this.routinePlanModel({
+    const days = Array.from({ length: 7 }).map((_, index) => {
+      let workoutSessionId: Types.ObjectId | null = null;
+
+      if (plan && plan.week && plan.week.length === 7 && !isRestMap[index]) {
+        const planDay = plan.week[index];
+        if (planDay && planDay.day) {
+          const routineDay = planDay.day;
+          const exercises = routineDay.exercises?.map((e: any) => ({
+            exerciseId: (e.exercise._id || e.exercise.id || e.exercise).toString(),
+            series: 0,
+            sets: [],
+          })) || [];
+
+          const sessionObjectId = new Types.ObjectId();
+          workoutSessionId = sessionObjectId;
+          sessionsToInsert.push({
+            _id: sessionObjectId,
+            userId: userId.toString(),
+            weekLogId: weekLogId.toString(),
+            date: addDays(startDate, index),
+            routineDayId: routineDay._id.toString(),
+            exercises,
+            status: 'not_started',
+          });
+        }
+      }
+
+      return {
+        order: index + 1,
+        date: addDays(startDate, index),
+        isRest: isRestMap[index] ?? false,
+        workoutSessionId,
+        extraSessionIds: [],
+        status: 'pending',
+      };
+    });
+
+    if (sessionsToInsert.length > 0) {
+      await this.workoutSessionModel.insertMany(sessionsToInsert);
+    }
+
+    const weekLog = new this.weekLogModel({
+      _id: weekLogId,
       userId,
       startDate,
       endDate,
@@ -66,16 +104,14 @@ export class WeekLogService {
   }
 
   async findAllByUser(userId: string): Promise<WeekLog[] | undefined> {
-    return this.routinePlanModel.find({ userId }).exec();
+    return this.weekLogModel.find({ userId }).exec();
   }
 
   async findOne(
     id: string,
     userId: string,
   ): Promise<WeekLog | null | undefined> {
-    const weekLog = await this.routinePlanModel
-      .findOne({ _id: id, userId })
-      .exec();
+    const weekLog = await this.weekLogModel.findOne({ _id: id, userId }).exec();
 
     if (!weekLog) {
       throw new NotFoundException(`Week log con ID "${id}" no encontrado`);
@@ -85,7 +121,7 @@ export class WeekLogService {
   }
 
   // async findActiveWeekLog(userId: string): Promise<WeekLog | null> {
-  //   const weekLog = await this.routinePlanModel
+  //   const weekLog = await this.weekLogModel
   //     .findOne({ userId, completed: false })
   //     .exec();
 
@@ -93,7 +129,7 @@ export class WeekLogService {
   // }
 
   async findActiveWeekLog(userId: string): Promise<any | null> {
-    const weekLog = await this.routinePlanModel
+    const weekLog = await this.weekLogModel
       .findOne({ userId, completed: false })
       .populate('days.workoutSessionId')
       .exec();
@@ -121,7 +157,7 @@ export class WeekLogService {
     updateWeekLogInput: UpdateWeekLogInput,
     userId: string,
   ) {
-    const weekLog = await this.routinePlanModel.findById(id);
+    const weekLog = await this.weekLogModel.findById(id);
     if (!weekLog) throw new NotFoundException(`WeekLog ${id} not found`);
 
     this.validator.validateOwnership(weekLog, userId);
@@ -166,9 +202,7 @@ export class WeekLogService {
   }
 
   async updateDay(input: UpdateWeekLogDayInput, userId: string) {
-    const weekLog = await this.routinePlanModel.findById(
-      input.workoutSessionId,
-    );
+    const weekLog = await this.weekLogModel.findById(input.workoutSessionId);
 
     if (!weekLog) throw new NotFoundException('WeekLog not found');
 
@@ -190,7 +224,7 @@ export class WeekLogService {
     updateQuery: UpdateQuery<WeekLog>,
     options?: { new?: boolean; runValidators?: boolean },
   ): Promise<WeekLog> {
-    const weekLog = await this.routinePlanModel
+    const weekLog = await this.weekLogModel
       .findByIdAndUpdate(id, updateQuery, {
         new: options?.new ?? true,
         runValidators: options?.runValidators ?? true,
@@ -233,6 +267,6 @@ export class WeekLogService {
   }
 
   remove(id: string) {
-    return this.routinePlanModel.deleteOne({ _id: id }).exec();
+    return this.weekLogModel.deleteOne({ _id: id }).exec();
   }
 }
