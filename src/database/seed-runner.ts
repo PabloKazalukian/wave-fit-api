@@ -90,7 +90,9 @@ export class SeedService implements OnApplicationBootstrap {
       }
 
       // 3️⃣ Routine Plan
-      const planCount = await this.routinePlanModel.findOne({ name: 'PPL' });
+      const planCount = await this.routinePlanModel.findOne({
+        name: 'PPL 6 días — Principiante/Intermedio',
+      });
       if (!planCount) {
         const savedDays = await this.routineDayModel.find(); // traer los existentes
         const routinePlanData = buildRoutinePlan(savedDays);
@@ -98,7 +100,7 @@ export class SeedService implements OnApplicationBootstrap {
         this.logger.log(`✅ Rutina PPL creada`);
       } else {
         this.logger.log(
-          `⏭️  Routine plan ya existente (${planCount}), omitiendo...`,
+          `⏭️  Routine plan ya existente (${planCount._id}), omitiendo...`,
         );
       }
 

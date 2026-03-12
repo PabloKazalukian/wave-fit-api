@@ -327,7 +327,7 @@ export function buildRoutinePlan(savedDays: any[]) {
     name: 'PPL 6 días — Principiante/Intermedio',
     description:
       'Push Pull Legs con doble frecuencia semanal. Alterna entre variantes A y B para máxima progresión.',
-    weekly_distribution: '6/7',
+    weekly_distribution: '6',
     week: [
       { day: findDay('Push A'), isRest: false, order: 1 },
       { day: findDay('Pull A'), isRest: false, order: 2 },

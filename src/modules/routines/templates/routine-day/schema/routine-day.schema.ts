@@ -45,47 +45,5 @@ export type RoutineDayDocument = HydratedDocument<RoutineDay>;
 
 export const RoutineDaySchema = SchemaFactory.createForClass(RoutineDay);
 
-/*
-  🔥 Transform definitivo
-  - Convierte _id → id
-  - Convierte ObjectIds a string
-  - Mantiene estructura correcta de exercises
-*/
-
-RoutineDaySchema.set('toJSON', {
-  virtuals: true,
-  versionKey: false,
-  transform: (_, ret: any) => {
-    ret.id = ret._id.toString();
-    delete ret._id;
-
-    if (Array.isArray(ret.exercises)) {
-      ret.exercises = ret.exercises.map((e: any) => {
-        let exerciseVal;
-        if (e.exercise && typeof e.exercise === 'object' && e.exercise._id) {
-          // Si está poblado, lo mantenemos y le seteamos 'id'
-          e.exercise.id = e.exercise._id.toString();
-          delete e.exercise._id;
-          exerciseVal = e.exercise;
-        } else {
-          // Si no está poblado, extraemos solo el string del id
-          exerciseVal = e.exercise?.toString();
-        }
-
-        return {
-          exercise: exerciseVal,
-          order: e.order,
-        };
-      });
-    }
-
-    if (ret.planId) {
-      ret.planId = ret.planId.toString();
-    }
-
-    return ret;
-  },
-});
-
 RoutineDaySchema.index({ type: 1 });
 RoutineDaySchema.index({ 'exercises.exercise': 1 });

@@ -27,8 +27,8 @@ export class RoutineDayResolver {
   ) {}
 
   @ResolveField(() => ID, { name: 'id' })
-  id(@Parent() routineDay: any | RoutineDay) {
-    return (routineDay._id || routineDay.id)?.toString();
+  id(@Parent() routineDay: RoutineDay) {
+    return routineDay.id;
   }
   @Mutation(() => RoutineDay)
   createRoutineDay(
@@ -64,21 +64,12 @@ export class RoutineDayResolver {
   }
 
   @ResolveField(() => [RoutineDayExercise], { nullable: 'itemsAndList' })
-  exercises(@Parent() routineDay: any) {
-    if (!routineDay.exercises?.length) return [];
-
-    // Devolvemos el array con el objeto 'exercise' extraído correctamente más el 'order'
-    return routineDay.exercises.map((e: any) => {
-      return {
-        exercise:
-          typeof e.exercise === 'object' ? e.exercise : { id: e.exercise },
-        order: e.order,
-      };
-    });
+  exercises(@Parent() routineDay: RoutineDay) {
+    return routineDay.exercises || [];
   }
 
   @Mutation(() => RoutineDay)
-  removeRoutineDay(@Args('id', { type: () => Int }) id: number) {
+  removeRoutineDay(@Args('id', { type: () => String }) id: string) {
     return this.routineDayService.remove(id);
   }
 }
