@@ -42,7 +42,7 @@ export class RoutinePlanResolver {
 
   @ResolveField(() => [RoutineDay], { name: 'routineDays' })
   async resolveRoutineDays(
-    @Parent() plan: RoutinePlanSchema,
+    @Parent() plan: RoutinePlan,
   ): Promise<RoutineDay[]> {
     if (!plan.week || plan.week.length === 0) {
       return [];
@@ -61,7 +61,7 @@ export class RoutinePlanResolver {
 
     const populatedMap = new Map<string, any>();
     populatedDays.forEach((day) => {
-      populatedMap.set(day.id || day._id.toString(), day);
+      populatedMap.set(day.id, day);
     });
 
     // Reconstruir respetando orden

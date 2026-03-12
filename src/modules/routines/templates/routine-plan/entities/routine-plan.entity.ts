@@ -20,4 +20,11 @@ export class RoutinePlan {
 
   @Field({ nullable: true })
   createdBy?: string;
+
+  // Propiedad interna para el resolver, no expuesta en GraphQL directamente
+  week?: {
+    day?: string;
+    isRest: boolean;
+    order: number;
+  }[];
 }
