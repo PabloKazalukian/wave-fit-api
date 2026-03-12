@@ -316,29 +316,26 @@ export function buildRoutineDays(savedExercises: any[]) {
   ];
 }
 
-// ─────────────────────────────────────────────
-// 3. ROUTINE PLAN
-//    week[0] = Lunes (order: 1) ... week[6] = Domingo (order: 7)
-// ─────────────────────────────────────────────
-
 export function buildRoutinePlan(savedDays: any[]) {
-  const findDay = (title: string) =>
-    savedDays.find((d) => d.title === title)?._id;
+  const findDay = (title: string) => {
+    const day = savedDays.find((d) => d.title === title);
+    // Extraer _id ya sea de doc Mongoose o de objeto plano
+    return day?._id ?? undefined;
+  };
 
   return {
     name: 'PPL 6 días — Principiante/Intermedio',
     description:
       'Push Pull Legs con doble frecuencia semanal. Alterna entre variantes A y B para máxima progresión.',
-    weekly_distribution: 'Push / Pull / Legs / Descanso / Push / Pull / Legs',
-    // createdBy: undefined → es una rutina global del sistema
+    weekly_distribution: '6/7',
     week: [
-      { day: findDay('Push A'), isRest: false, order: 1 }, // Lunes
-      { day: findDay('Pull A'), isRest: false, order: 2 }, // Martes
-      { day: findDay('Legs A'), isRest: false, order: 3 }, // Miércoles
-      { day: undefined, isRest: true, order: 4 }, // Jueves
-      { day: findDay('Push B'), isRest: false, order: 5 }, // Viernes
-      { day: findDay('Pull B'), isRest: false, order: 6 }, // Sábado
-      { day: findDay('Legs B'), isRest: false, order: 7 }, // Domingo
+      { day: findDay('Push A'), isRest: false, order: 1 },
+      { day: findDay('Pull A'), isRest: false, order: 2 },
+      { day: findDay('Legs A'), isRest: false, order: 3 },
+      { day: undefined, isRest: true, order: 4 },
+      { day: findDay('Push B'), isRest: false, order: 5 },
+      { day: findDay('Pull B'), isRest: false, order: 6 },
+      { day: findDay('Legs B'), isRest: false, order: 7 },
     ],
   };
 }

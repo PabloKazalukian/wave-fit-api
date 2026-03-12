@@ -17,6 +17,7 @@ import { WeekLogModule } from './modules/routines/tracking/week-log/week-log.mod
 import { ExtraSessionModule } from './modules/routines/tracking/extra-session/extra-session.module';
 import { GoogleModule } from './modules/auth/google/google.module';
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
+import { SeedModule } from './database/seed.module';
 
 // console.log('DB_MONGO_PASSWORD:', process.env.DB_MONGO_PASSWORD);
 @Module({
@@ -44,6 +45,7 @@ import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
     ExtraSessionModule,
     GoogleModule,
     AuditLogsModule,
+    SeedModule,
   ],
   controllers: [AppController],
   providers: [

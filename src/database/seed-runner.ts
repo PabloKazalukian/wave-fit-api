@@ -25,33 +25,82 @@ export class SeedService implements OnApplicationBootstrap {
     await this.run();
   }
 
+  // async run() {
+  //   const alreadySeeded = await this.exerciseModel.countDocuments({
+  //     name: SEEDED_EXERCISES[0].name,
+  //   });
+
+  //   if (alreadySeeded > 0) {
+  //     this.logger.log('⏭️  Seed ya ejecutado, omitiendo...');
+  //     return;
+  //   }
+
+  //   this.logger.log('🌱 Ejecutando seed...');
+
+  //   try {
+  //     // 1️⃣ Exercises
+  //     const savedExercises =
+  //       await this.exerciseModel.insertMany(SEEDED_EXERCISES);
+  //     this.logger.log(`✅ ${savedExercises.length} ejercicios insertados`);
+
+  //     // 2️⃣ Routine Days (con referencias a exercises)
+  //     const routineDaysData = buildRoutineDays(savedExercises);
+  //     const savedDays = await this.routineDayModel.insertMany(routineDaysData);
+  //     this.logger.log(`✅ ${savedDays.length} días de rutina insertados`);
+
+  //     // 3️⃣ Routine Plan (con referencias a days)
+  //     const routinePlanData = buildRoutinePlan(savedDays);
+  //     await this.routinePlanModel.create(routinePlanData);
+  //     this.logger.log(`✅ Rutina PPL creada`);
+
+  //     this.logger.log('🎉 Seed completado exitosamente');
+  //   } catch (error) {
+  //     this.logger.error('❌ Error durante el seed:', error);
+  //     throw error;
+  //   }
+  // }
   async run() {
-    const alreadySeeded = await this.exerciseModel.countDocuments({
-      name: SEEDED_EXERCISES[0].name,
-    });
-
-    if (alreadySeeded > 0) {
-      this.logger.log('⏭️  Seed ya ejecutado, omitiendo...');
-      return;
-    }
-
-    this.logger.log('🌱 Ejecutando seed...');
+    this.logger.log('🌱 Verificando seed...');
 
     try {
       // 1️⃣ Exercises
-      const savedExercises =
-        await this.exerciseModel.insertMany(SEEDED_EXERCISES);
-      this.logger.log(`✅ ${savedExercises.length} ejercicios insertados`);
+      const exerciseCount = await this.exerciseModel.countDocuments();
+      if (exerciseCount === 0) {
+        const savedExercises =
+          await this.exerciseModel.insertMany(SEEDED_EXERCISES);
+        this.logger.log(`✅ ${savedExercises.length} ejercicios insertados`);
+      } else {
+        this.logger.log(
+          `⏭️  Ejercicios ya existentes (${exerciseCount}), omitiendo...`,
+        );
+      }
 
-      // 2️⃣ Routine Days (con referencias a exercises)
-      const routineDaysData = buildRoutineDays(savedExercises);
-      const savedDays = await this.routineDayModel.insertMany(routineDaysData);
-      this.logger.log(`✅ ${savedDays.length} días de rutina insertados`);
+      // 2️⃣ Routine Days
+      const dayCount = await this.routineDayModel.countDocuments();
+      if (dayCount === 0) {
+        const savedExercises = await this.exerciseModel.find(); // traer los existentes
+        const routineDaysData = buildRoutineDays(savedExercises);
+        const savedDays =
+          await this.routineDayModel.insertMany(routineDaysData);
+        this.logger.log(`✅ ${savedDays.length} días de rutina insertados`);
+      } else {
+        this.logger.log(
+          `⏭️  Routine days ya existentes (${dayCount}), omitiendo...`,
+        );
+      }
 
-      // 3️⃣ Routine Plan (con referencias a days)
-      const routinePlanData = buildRoutinePlan(savedDays);
-      await this.routinePlanModel.create(routinePlanData);
-      this.logger.log(`✅ Rutina PPL creada`);
+      // 3️⃣ Routine Plan
+      const planCount = await this.routinePlanModel.findOne({ name: 'PPL' });
+      if (!planCount) {
+        const savedDays = await this.routineDayModel.find(); // traer los existentes
+        const routinePlanData = buildRoutinePlan(savedDays);
+        await this.routinePlanModel.create(routinePlanData);
+        this.logger.log(`✅ Rutina PPL creada`);
+      } else {
+        this.logger.log(
+          `⏭️  Routine plan ya existente (${planCount}), omitiendo...`,
+        );
+      }
 
       this.logger.log('🎉 Seed completado exitosamente');
     } catch (error) {

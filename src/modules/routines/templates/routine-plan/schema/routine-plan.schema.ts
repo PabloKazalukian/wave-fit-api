@@ -53,7 +53,7 @@ RoutinePlanSchema.index({ 'week.day': 1 });
 RoutinePlanSchema.set('toJSON', {
   virtuals: true,
   transform: function (doc: any, ret: any) {
-    delete ret._id;
+    // delete ret._id;
     delete ret.__v;
     return ret;
   },
@@ -62,7 +62,7 @@ RoutinePlanSchema.set('toJSON', {
 RoutinePlanSchema.set('toObject', {
   virtuals: true,
   transform: function (doc: any, ret: any) {
-    delete ret._id;
+    // delete ret._id;
     delete ret.__v;
     return ret;
   },

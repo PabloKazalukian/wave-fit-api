@@ -21,7 +21,7 @@ export class ExerciseResolver {
   }
 
   @Query(() => Exercise, { name: 'exercise' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
+  findOne(@Args('id', { type: () => String }) id: string) {
     return this.exerciseService.findOne(id);
   }
 
@@ -36,7 +36,7 @@ export class ExerciseResolver {
   }
 
   @Mutation(() => Exercise)
-  removeExercise(@Args('id', { type: () => Int }) id: number) {
+  removeExercise(@Args('id', { type: () => String }) id: string) {
     return this.exerciseService.remove(id);
   }
 }

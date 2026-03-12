@@ -36,14 +36,16 @@ export class RoutinePlanService {
 
     const plan = await this.routinePlanModel
       .findById(id)
-      .populate('week.day')
+      // .populate('week.day')
+      .lean({ virtuals: true })
       .exec();
 
     if (!plan) {
       throw new NotFoundException(`Plan con ID "${id}" no encontrado`);
     }
 
-    return plan;
+    return { ...plan, id: plan._id.toString() };
+    // return plan;
   }
 
   async findByTitle(title: string): Promise<RoutinePlan | null | undefined> {

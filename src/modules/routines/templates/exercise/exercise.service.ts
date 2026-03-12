@@ -1,47 +1,72 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateExerciseInput } from './dto/create-exercise.input';
 import { UpdateExerciseInput } from './dto/update-exercise.input';
-import { Exercise } from './schema/exercise.schema';
+import { Exercise as ExerciseSchema } from './schema/exercise.schema';
+import { Exercise } from './entities/exercise.entity';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import {
+  serializeMongo,
+  serializeMongoArray,
+} from 'src/common/utils/mongo.utils';
 
 @Injectable()
 export class ExerciseService {
   constructor(
-    @InjectModel(Exercise.name) private ExerciseModel: Model<Exercise>,
+    @InjectModel(ExerciseSchema.name)
+    private ExerciseModel: Model<ExerciseSchema>,
   ) {}
-  async create(
-    createExerciseInput: CreateExerciseInput,
-  ): Promise<Exercise | undefined> {
+  async create(createExerciseInput: CreateExerciseInput): Promise<Exercise> {
     const { name } = createExerciseInput;
-    const existing = await this.ExerciseModel.findOne({ name }).exec();
+    const existing = await this.ExerciseModel.findOne({ name }).lean().exec();
     if (existing) {
       throw new BadRequestException({
         message: `Ya existe un ejercicio con el nombre "${name}"`,
         code: 'DUPLICATE_NAME',
       });
     }
-    const createdExercise = new this.ExerciseModel(createExerciseInput);
-    return createdExercise.save();
+    const createdExercise = await this.ExerciseModel.create(createExerciseInput);
+    return serializeMongo<Exercise>(createdExercise);
   }
 
-  async findAll() {
-    return this.ExerciseModel.find().exec();
+  async findAll(): Promise<Exercise[]> {
+    const exercises = await this.ExerciseModel.find().lean().exec();
+    return serializeMongoArray<Exercise>(exercises);
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} exercise`;
+  async findOne(id: string): Promise<Exercise | null> {
+    const exercise = await this.ExerciseModel.findById(id).lean().exec();
+    return exercise ? serializeMongo<Exercise>(exercise) : null;
   }
 
-  findByIds(ids: string[]) {
-    return this.ExerciseModel.find({ _id: { $in: ids } });
+  async findByIds(ids: string[]): Promise<Exercise[]> {
+    const exercises = await this.ExerciseModel.find({ _id: { $in: ids } })
+      .lean()
+      .exec();
+    return serializeMongoArray<Exercise>(exercises);
   }
 
-  update(id: number, updateExerciseInput: UpdateExerciseInput) {
-    return `This action updates a #${id} exercise`;
+  async update(
+    id: string,
+    updateExerciseInput: UpdateExerciseInput,
+  ): Promise<Exercise> {
+    const updated = await this.ExerciseModel.findByIdAndUpdate(
+      id,
+      updateExerciseInput,
+      { new: true },
+    )
+      .lean()
+      .exec();
+
+    if (!updated) {
+      throw new BadRequestException(`Exercise with id ${id} not found`);
+    }
+
+    return serializeMongo<Exercise>(updated);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} exercise`;
+  async remove(id: string): Promise<boolean> {
+    const result = await this.ExerciseModel.findByIdAndDelete(id).exec();
+    return !!result;
   }
 }
