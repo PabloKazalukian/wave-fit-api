@@ -315,12 +315,12 @@ describe('WeekLog Creation (e2e)', () => {
     const day1 = (await routineDayService.create({
       title: 'Upper Body',
       type: [ExerciseCategory.CHEST],
-      exercises: [{ exercise: ex1._id, order: 1 }],
+      exercises: [{ exercise: ex1.id, order: 1 }],
     })) as any;
     const day2 = (await routineDayService.create({
       title: 'Lower Body',
       type: [ExerciseCategory.LEGS],
-      exercises: [{ exercise: ex2._id, order: 1 }],
+      exercises: [{ exercise: ex2.id, order: 1 }],
     })) as any;
 
     expect(day1).toBeDefined();
@@ -328,9 +328,9 @@ describe('WeekLog Creation (e2e)', () => {
 
     // 3. Create Routine Plan
     const routineDaysIds = [
-      day1._id.toString(), // Day 0
+      day1.id, // Day 0
       null, // Day 1
-      day2._id.toString(), // Day 2
+      day2.id, // Day 2
       null, // Day 3
       null, // Day 4
       null, // Day 5
@@ -362,7 +362,7 @@ describe('WeekLog Creation (e2e)', () => {
             createWeekLog(createWeekLogInput: {
               startDate: "${startOfWeek.toISOString()}",
               endDate: "${endOfWeek.toISOString()}",
-              planId: "${plan._id.toString()}"
+              planId: "${plan.id}"
             }) {
               id
               planId
@@ -386,7 +386,7 @@ describe('WeekLog Creation (e2e)', () => {
     expect(response.status).toBe(200);
     expect(response.body.data).toBeDefined();
     const data = response.body.data.createWeekLog;
-    expect(data.planId).toBe(plan._id.toString());
+    expect(data.planId).toBe(plan.id);
     expect(data.days.length).toBe(7);
 
     // Verify day 1 (order 1) has a workout session
@@ -410,7 +410,7 @@ describe('WeekLog Creation (e2e)', () => {
     expect(activeWeek).toBeDefined();
     const session1 = activeWeek.days[0].exercises;
     expect(session1.length).toBe(1);
-    expect(session1[0].exerciseId).toBe(ex1._id.toString());
+    expect(session1[0].exerciseId).toBe(ex1.id);
     expect(session1[0].sets.length).toBe(0);
     expect(session1[0].series).toBe(0);
   });

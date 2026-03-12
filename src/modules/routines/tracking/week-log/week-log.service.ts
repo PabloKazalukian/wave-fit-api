@@ -15,11 +15,14 @@ import { addDays, parseISO, isSameDay } from 'date-fns';
 import { WeekLogValidator } from './week-log.validator';
 import { WorkoutSession } from '../workout-session/schema/workout-session.schema';
 import { RoutinePlanService } from '../../templates/routine-plan/routine-plan.service';
+import { RoutinePlan as RoutinePlanSchema } from '../../templates/routine-plan/schema/routine-plan.schema';
 
 @Injectable()
 export class WeekLogService {
   constructor(
     @InjectModel(WeekLog.name) private weekLogModel: Model<WeekLog>,
+    @InjectModel(RoutinePlanSchema.name)
+    private routinePlanModel: Model<RoutinePlanSchema>,
     private routinePlanSv: RoutinePlanService,
     @InjectModel(WorkoutSession.name)
     private workoutSessionModel: Model<WorkoutSession>,
@@ -39,7 +42,11 @@ export class WeekLogService {
     let plan: any = null;
 
     if (planId) {
-      plan = await this.routinePlanSv.findOne(planId);
+      plan = await this.routinePlanModel
+        .findById(planId)
+        .populate('week.day')
+        .lean()
+        .exec();
 
       if (plan?.week?.length === 7) {
         isRestMap = plan.week.map((d) => d.isRest);

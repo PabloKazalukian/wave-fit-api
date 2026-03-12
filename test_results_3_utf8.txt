@@ -1,0 +1,66 @@
+﻿  console.log
+    [dotenv@17.2.3] injecting env (22) from .env -- tip: ÔÜÖ´©Å  suppress all logs with { quiet: true }
+
+      at _log (../node_modules/dotenv/lib/main.js:142:11)
+
+node.exe : (node:17192) [MONGOOSE] 
+Warning: Duplicate schema index on 
+{"name":1} found. This is often due 
+to declaring an index using both 
+"index: true" and "schema.index()". 
+Please remove the duplicate index 
+definition.
+En línea: 1 Carácter: 1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Users\pablo\AppData\Roaming\ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpe 
+   cified: ((node:17192) [M...dex d  
+  efinition.:String) [], RemoteExc   
+ eption
+    + FullyQualifiedErrorId : Native 
+   CommandError
+ 
+(Use `node --trace-warnings ...` to 
+show where the warning was created)
+  console.log
+    {
+      activeWeekLog: {
+        hasActiveWeek: true,
+        week: {
+          id: '69b327cbc2ca665f003915cc',
+          startDate: '2026-03-08T23:53:31.160Z',
+          endDate: '2026-03-14T23:53:31.160Z',
+          userId: '69b327cac2ca665f003915bb',
+          days: [Array],
+          planId: null,
+          notes: '',
+          completed: false
+        }
+      }
+    }
+
+      at Object.<anonymous> (e2e/week-log/create-week-log.spec.ts:192:13)
+
+PASS test/e2e/week-log/create-week-lo
+g.spec.ts (6.477 s)
+  WeekLog Creation (e2e)
+    ÔêÜ should create a basic 
+week-log without planId (395 ms)
+    ÔêÜ should completed the week 
+(118 ms)
+    ÔêÜ should exist a actived 
+week-log , the previus test, 
+completed (118 ms)
+    ÔêÜ should create a week-log 
+from a routine plan with linked 
+workout sessions (181 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       4 passed, 4 total
+Snapshots:   0 total
+Time:        6.772 s
+Ran all test suites matching test/e2e
+/week-log/create-week-log.spec.ts.

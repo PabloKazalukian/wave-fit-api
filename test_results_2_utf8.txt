@@ -1,0 +1,543 @@
+﻿  console.log
+    [dotenv@17.2.3] injecting env (22) from .env -- tip: ÔÜÖ´©Å  override existing env vars with { override: true }
+
+      at _log (../node_modules/dotenv/lib/main.js:142:11)
+
+node.exe : (node:15064) [MONGOOSE] 
+Warning: Duplicate schema index on 
+{"name":1} found. This is often due 
+to declaring an index using both 
+"index: true" and "schema.index()". 
+Please remove the duplicate index 
+definition.
+En línea: 1 Carácter: 1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Users\pablo\AppData\Roaming\ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpe 
+   cified: ((node:15064) [M...dex d  
+  efinition.:String) [], RemoteExc   
+ eption
+    + FullyQualifiedErrorId : Native 
+   CommandError
+ 
+(Use `node --trace-warnings ...` to 
+show where the warning was created)
+FAIL test/e2e/week-log/create-week-lo
+g.spec.ts
+  ÔùÅ WeekLog Creation (e2e) ÔÇ║ 
+should create a basic week-log 
+without planId
+
+    Nest can't resolve dependencies 
+of the WeekLogService (WeekLogModel, 
+?, RoutinePlanService, 
+WorkoutSessionModel, 
+WeekLogValidator). Please make sure 
+that the argument "RoutinePlanModel" 
+at index [1] is available in the 
+WeekLogModule context.
+
+    Potential solutions:
+    - Is WeekLogModule a valid 
+NestJS module?
+    - If "RoutinePlanModel" is a 
+provider, is it part of the current 
+WeekLogModule?
+    - If "RoutinePlanModel" is 
+exported from a separate @Module, is 
+that module imported within 
+WeekLogModule?
+      @Module({
+        imports: [ /* the Module 
+containing "RoutinePlanModel" */ ]
+      })
+
+    [0m [90m 65 |[39m
+     [90m 66 |[39m   
+beforeAll([36masync[39m () 
+[33m=>[39m {
+    [31m[1m>[22m[39m[90m 67 
+|[39m     [36mconst[39m 
+module[33m:[39m 
+[33mTestingModule[39m [33m=[39m 
+[36mawait[39m [33mTest[39m[33m.
+[39mcreateTestingModule({
+     [90m    |[39m                 
+                  
+[31m[1m^[22m[39m
+     [90m 68 |[39m       
+imports[33m:[39m 
+[[33mAppTestModule[39m][33m,[39m
+     [90m 69 |[39m     
+})[33m.[39mcompile()[33m;[39m
+     [90m 70 |[39m[0m
+
+      at TestingInjector.lookupCompon
+entInParentModules (../node_modules/@
+nestjs/core/injector/injector.js:286:
+19)
+      at TestingInjector.resolveCompo
+nentWrapper (../node_modules/@nestjs/
+testing/testing-injector.js:19:45)
+      at resolveParam (../node_module
+s/@nestjs/core/injector/injector.js:1
+41:38)
+          at async Promise.all 
+(index 1)
+      at TestingInjector.resolveConst
+ructorParams (../node_modules/@nestjs
+/core/injector/injector.js:169:27)
+      at 
+TestingInjector.loadInstance (../node
+_modules/@nestjs/core/injector/inject
+or.js:75:13)
+      at 
+TestingInjector.loadProvider (../node
+_modules/@nestjs/core/injector/inject
+or.js:103:9)
+      at ../node_modules/@nestjs/core
+/injector/instance-loader.js:56:13
+          at async Promise.all 
+(index 4)
+      at TestingInstanceLoader.create
+InstancesOfProviders (../node_modules
+/@nestjs/core/injector/instance-loade
+r.js:55:9)
+      at ../node_modules/@nestjs/core
+/injector/instance-loader.js:40:13
+          at async Promise.all 
+(index 24)
+      at TestingInstanceLoader.create
+Instances (../node_modules/@nestjs/co
+re/injector/instance-loader.js:39:9)
+      at TestingInstanceLoader.create
+InstancesOfDependencies (../node_modu
+les/@nestjs/core/injector/instance-lo
+ader.js:22:13)
+      at TestingInstanceLoader.create
+InstancesOfDependencies (../node_modu
+les/@nestjs/testing/testing-instance-
+loader.js:9:9)
+      at TestingModuleBuilder.createI
+nstancesOfDependencies (../node_modul
+es/@nestjs/testing/testing-module.bui
+lder.js:118:9)
+      at 
+TestingModuleBuilder.compile (../node
+_modules/@nestjs/testing/testing-modu
+le.builder.js:74:9)
+      at Object.<anonymous> (e2e/week
+-log/create-week-log.spec.ts:67:35)
+
+  ÔùÅ WeekLog Creation (e2e) ÔÇ║ 
+should completed the week
+
+    Nest can't resolve dependencies 
+of the WeekLogService (WeekLogModel, 
+?, RoutinePlanService, 
+WorkoutSessionModel, 
+WeekLogValidator). Please make sure 
+that the argument "RoutinePlanModel" 
+at index [1] is available in the 
+WeekLogModule context.
+
+    Potential solutions:
+    - Is WeekLogModule a valid 
+NestJS module?
+    - If "RoutinePlanModel" is a 
+provider, is it part of the current 
+WeekLogModule?
+    - If "RoutinePlanModel" is 
+exported from a separate @Module, is 
+that module imported within 
+WeekLogModule?
+      @Module({
+        imports: [ /* the Module 
+containing "RoutinePlanModel" */ ]
+      })
+
+    [0m [90m 65 |[39m
+     [90m 66 |[39m   
+beforeAll([36masync[39m () 
+[33m=>[39m {
+    [31m[1m>[22m[39m[90m 67 
+|[39m     [36mconst[39m 
+module[33m:[39m 
+[33mTestingModule[39m [33m=[39m 
+[36mawait[39m [33mTest[39m[33m.
+[39mcreateTestingModule({
+     [90m    |[39m                 
+                  
+[31m[1m^[22m[39m
+     [90m 68 |[39m       
+imports[33m:[39m 
+[[33mAppTestModule[39m][33m,[39m
+     [90m 69 |[39m     
+})[33m.[39mcompile()[33m;[39m
+     [90m 70 |[39m[0m
+
+      at TestingInjector.lookupCompon
+entInParentModules (../node_modules/@
+nestjs/core/injector/injector.js:286:
+19)
+      at TestingInjector.resolveCompo
+nentWrapper (../node_modules/@nestjs/
+testing/testing-injector.js:19:45)
+      at resolveParam (../node_module
+s/@nestjs/core/injector/injector.js:1
+41:38)
+          at async Promise.all 
+(index 1)
+      at TestingInjector.resolveConst
+ructorParams (../node_modules/@nestjs
+/core/injector/injector.js:169:27)
+      at 
+TestingInjector.loadInstance (../node
+_modules/@nestjs/core/injector/inject
+or.js:75:13)
+      at 
+TestingInjector.loadProvider (../node
+_modules/@nestjs/core/injector/inject
+or.js:103:9)
+      at ../node_modules/@nestjs/core
+/injector/instance-loader.js:56:13
+          at async Promise.all 
+(index 4)
+      at TestingInstanceLoader.create
+InstancesOfProviders (../node_modules
+/@nestjs/core/injector/instance-loade
+r.js:55:9)
+      at ../node_modules/@nestjs/core
+/injector/instance-loader.js:40:13
+          at async Promise.all 
+(index 24)
+      at TestingInstanceLoader.create
+Instances (../node_modules/@nestjs/co
+re/injector/instance-loader.js:39:9)
+      at TestingInstanceLoader.create
+InstancesOfDependencies (../node_modu
+les/@nestjs/core/injector/instance-lo
+ader.js:22:13)
+      at TestingInstanceLoader.create
+InstancesOfDependencies (../node_modu
+les/@nestjs/testing/testing-instance-
+loader.js:9:9)
+      at TestingModuleBuilder.createI
+nstancesOfDependencies (../node_modul
+es/@nestjs/testing/testing-module.bui
+lder.js:118:9)
+      at 
+TestingModuleBuilder.compile (../node
+_modules/@nestjs/testing/testing-modu
+le.builder.js:74:9)
+      at Object.<anonymous> (e2e/week
+-log/create-week-log.spec.ts:67:35)
+
+  ÔùÅ WeekLog Creation (e2e) ÔÇ║ 
+should exist a actived week-log , 
+the previus test, completed
+
+    Nest can't resolve dependencies 
+of the WeekLogService (WeekLogModel, 
+?, RoutinePlanService, 
+WorkoutSessionModel, 
+WeekLogValidator). Please make sure 
+that the argument "RoutinePlanModel" 
+at index [1] is available in the 
+WeekLogModule context.
+
+    Potential solutions:
+    - Is WeekLogModule a valid 
+NestJS module?
+    - If "RoutinePlanModel" is a 
+provider, is it part of the current 
+WeekLogModule?
+    - If "RoutinePlanModel" is 
+exported from a separate @Module, is 
+that module imported within 
+WeekLogModule?
+      @Module({
+        imports: [ /* the Module 
+containing "RoutinePlanModel" */ ]
+      })
+
+    [0m [90m 65 |[39m
+     [90m 66 |[39m   
+beforeAll([36masync[39m () 
+[33m=>[39m {
+    [31m[1m>[22m[39m[90m 67 
+|[39m     [36mconst[39m 
+module[33m:[39m 
+[33mTestingModule[39m [33m=[39m 
+[36mawait[39m [33mTest[39m[33m.
+[39mcreateTestingModule({
+     [90m    |[39m                 
+                  
+[31m[1m^[22m[39m
+     [90m 68 |[39m       
+imports[33m:[39m 
+[[33mAppTestModule[39m][33m,[39m
+     [90m 69 |[39m     
+})[33m.[39mcompile()[33m;[39m
+     [90m 70 |[39m[0m
+
+      at TestingInjector.lookupCompon
+entInParentModules (../node_modules/@
+nestjs/core/injector/injector.js:286:
+19)
+      at TestingInjector.resolveCompo
+nentWrapper (../node_modules/@nestjs/
+testing/testing-injector.js:19:45)
+      at resolveParam (../node_module
+s/@nestjs/core/injector/injector.js:1
+41:38)
+          at async Promise.all 
+(index 1)
+      at TestingInjector.resolveConst
+ructorParams (../node_modules/@nestjs
+/core/injector/injector.js:169:27)
+      at 
+TestingInjector.loadInstance (../node
+_modules/@nestjs/core/injector/inject
+or.js:75:13)
+      at 
+TestingInjector.loadProvider (../node
+_modules/@nestjs/core/injector/inject
+or.js:103:9)
+      at ../node_modules/@nestjs/core
+/injector/instance-loader.js:56:13
+          at async Promise.all 
+(index 4)
+      at TestingInstanceLoader.create
+InstancesOfProviders (../node_modules
+/@nestjs/core/injector/instance-loade
+r.js:55:9)
+      at ../node_modules/@nestjs/core
+/injector/instance-loader.js:40:13
+          at async Promise.all 
+(index 24)
+      at TestingInstanceLoader.create
+Instances (../node_modules/@nestjs/co
+re/injector/instance-loader.js:39:9)
+      at TestingInstanceLoader.create
+InstancesOfDependencies (../node_modu
+les/@nestjs/core/injector/instance-lo
+ader.js:22:13)
+      at TestingInstanceLoader.create
+InstancesOfDependencies (../node_modu
+les/@nestjs/testing/testing-instance-
+loader.js:9:9)
+      at TestingModuleBuilder.createI
+nstancesOfDependencies (../node_modul
+es/@nestjs/testing/testing-module.bui
+lder.js:118:9)
+      at 
+TestingModuleBuilder.compile (../node
+_modules/@nestjs/testing/testing-modu
+le.builder.js:74:9)
+      at Object.<anonymous> (e2e/week
+-log/create-week-log.spec.ts:67:35)
+
+  ÔùÅ WeekLog Creation (e2e) ÔÇ║ 
+should create a week-log from a 
+routine plan with linked workout 
+sessions
+
+    Nest can't resolve dependencies 
+of the WeekLogService (WeekLogModel, 
+?, RoutinePlanService, 
+WorkoutSessionModel, 
+WeekLogValidator). Please make sure 
+that the argument "RoutinePlanModel" 
+at index [1] is available in the 
+WeekLogModule context.
+
+    Potential solutions:
+    - Is WeekLogModule a valid 
+NestJS module?
+    - If "RoutinePlanModel" is a 
+provider, is it part of the current 
+WeekLogModule?
+    - If "RoutinePlanModel" is 
+exported from a separate @Module, is 
+that module imported within 
+WeekLogModule?
+      @Module({
+        imports: [ /* the Module 
+containing "RoutinePlanModel" */ ]
+      })
+
+    [0m [90m 65 |[39m
+     [90m 66 |[39m   
+beforeAll([36masync[39m () 
+[33m=>[39m {
+    [31m[1m>[22m[39m[90m 67 
+|[39m     [36mconst[39m 
+module[33m:[39m 
+[33mTestingModule[39m [33m=[39m 
+[36mawait[39m [33mTest[39m[33m.
+[39mcreateTestingModule({
+     [90m    |[39m                 
+                  
+[31m[1m^[22m[39m
+     [90m 68 |[39m       
+imports[33m:[39m 
+[[33mAppTestModule[39m][33m,[39m
+     [90m 69 |[39m     
+})[33m.[39mcompile()[33m;[39m
+     [90m 70 |[39m[0m
+
+      at TestingInjector.lookupCompon
+entInParentModules (../node_modules/@
+nestjs/core/injector/injector.js:286:
+19)
+      at TestingInjector.resolveCompo
+nentWrapper (../node_modules/@nestjs/
+testing/testing-injector.js:19:45)
+      at resolveParam (../node_module
+s/@nestjs/core/injector/injector.js:1
+41:38)
+          at async Promise.all 
+(index 1)
+      at TestingInjector.resolveConst
+ructorParams (../node_modules/@nestjs
+/core/injector/injector.js:169:27)
+      at 
+TestingInjector.loadInstance (../node
+_modules/@nestjs/core/injector/inject
+or.js:75:13)
+      at 
+TestingInjector.loadProvider (../node
+_modules/@nestjs/core/injector/inject
+or.js:103:9)
+      at ../node_modules/@nestjs/core
+/injector/instance-loader.js:56:13
+          at async Promise.all 
+(index 4)
+      at TestingInstanceLoader.create
+InstancesOfProviders (../node_modules
+/@nestjs/core/injector/instance-loade
+r.js:55:9)
+      at ../node_modules/@nestjs/core
+/injector/instance-loader.js:40:13
+          at async Promise.all 
+(index 24)
+      at TestingInstanceLoader.create
+Instances (../node_modules/@nestjs/co
+re/injector/instance-loader.js:39:9)
+      at TestingInstanceLoader.create
+InstancesOfDependencies (../node_modu
+les/@nestjs/core/injector/instance-lo
+ader.js:22:13)
+      at TestingInstanceLoader.create
+InstancesOfDependencies (../node_modu
+les/@nestjs/testing/testing-instance-
+loader.js:9:9)
+      at TestingModuleBuilder.createI
+nstancesOfDependencies (../node_modul
+es/@nestjs/testing/testing-module.bui
+lder.js:118:9)
+      at 
+TestingModuleBuilder.compile (../node
+_modules/@nestjs/testing/testing-modu
+le.builder.js:74:9)
+      at Object.<anonymous> (e2e/week
+-log/create-week-log.spec.ts:67:35)
+
+
+  ÔùÅ Test suite failed to run
+
+    TypeError: Cannot read 
+properties of undefined (reading 
+'close')
+
+    [0m [90m 102 |[39m   
+afterAll([36masync[39m () 
+[33m=>[39m {
+     [90m 103 |[39m     
+[36mawait[39m 
+closeInMongodConnection()[33m;[39m
+    [31m[1m>[22m[39m[90m 104 
+|[39m     [36mawait[39m 
+app[33m.[39mclose()[33m;[39m
+     [90m     |[39m               
+[31m[1m^[22m[39m
+     [90m 105 |[39m   })[33m;[39m
+     [90m 106 |[39m
+     [90m 107 |[39m   
+it([32m'should create a basic 
+week-log without 
+planId'[39m[33m,[39m 
+[36masync[39m () [33m=>[39m {[0m
+
+      at Object.<anonymous> (e2e/week
+-log/create-week-log.spec.ts:104:15)
+
+Test Suites: 1 failed, 1 total
+Tests:       4 failed, 4 total
+Snapshots:   0 total
+Time:        4.075 s
+Ran all test suites matching test/e2e
+/week-log/create-week-log.spec.ts.
+
+ReferenceError: You are trying to 
+`import` a file after the Jest 
+environment has been torn down. From 
+e2e/week-log/create-week-log.spec.ts.
+
+      at applyMethods (../node_module
+s/mongoose/lib/helpers/model/applyMet
+hods.js:15:17)
+      at Function.compile (../node_mo
+dules/mongoose/lib/model.js:4906:3)
+      at Mongoose._model (../node_mod
+ules/mongoose/lib/mongoose.js:669:27)
+      at NativeConnection.model (../n
+ode_modules/mongoose/lib/connection.j
+s:1471:23)
+      at InstanceWrapper.useFactory 
+[as metatype] (../node_modules/@nestj
+s/mongoose/lib/mongoose.providers.ts:
+24:26)
+      at 
+TestingInjector.instantiateClass (../
+node_modules/@nestjs/core/injector/in
+jector.js:422:55)
+      at callback (../node_modules/@n
+estjs/core/injector/injector.js:70:45
+)
+      at TestingInjector.resolveConst
+ructorParams (../node_modules/@nestjs
+/core/injector/injector.js:170:24)
+      at 
+TestingInjector.loadInstance (../node
+_modules/@nestjs/core/injector/inject
+or.js:75:13)
+      at 
+TestingInjector.loadProvider (../node
+_modules/@nestjs/core/injector/inject
+or.js:103:9)
+      at ../node_modules/@nestjs/core
+/injector/instance-loader.js:56:13
+          at async Promise.all 
+(index 3)
+      at TestingInstanceLoader.create
+InstancesOfProviders (../node_modules
+/@nestjs/core/injector/instance-loade
+r.js:55:9)
+      at ../node_modules/@nestjs/core
+/injector/instance-loader.js:40:13
+          at async Promise.all 
+(index 10)
+Jest did not exit one second after 
+the test run has completed.
+
+'This usually means that there are 
+asynchronous operations that weren't 
+stopped in your tests. Consider 
+running Jest with 
+`--detectOpenHandles` to 
+troubleshoot this issue.
