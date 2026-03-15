@@ -91,6 +91,10 @@ export class WeekLogResolver {
       throw new UnauthorizedException('User not authenticated');
     }
 
+    if (!updateWeekLogInput.id) {
+      throw new BadRequestException('Week log id is required');
+    }
+
     return this.weekLogService.update(
       updateWeekLogInput.id,
       updateWeekLogInput,

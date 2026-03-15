@@ -189,7 +189,7 @@ describe('WeekLog Creation (e2e)', () => {
       });
 
     expect(findActiveWeekLogResponse.status).toBe(200);
-    console.log(findActiveWeekLogResponse.body.data);
+    // console.log(findActiveWeekLogResponse.body.data);
     const dataFindActiveWeekLog =
       findActiveWeekLogResponse.body.data.activeWeekLog.hasActiveWeek;
     expect(dataFindActiveWeekLog).toBe(true);
@@ -406,6 +406,8 @@ describe('WeekLog Creation (e2e)', () => {
     const activeWeek = await weekLogService.findActiveWeekLog(
       users[0].id.toString(),
     );
+
+    console.log(activeWeek);
 
     expect(activeWeek).toBeDefined();
     const session1 = activeWeek.days[0].exercises;
