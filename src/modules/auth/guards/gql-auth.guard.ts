@@ -11,7 +11,7 @@ import { GqlExecutionContext } from '@nestjs/graphql';
 export class GqlAuthGuard extends AuthGuard(['jwt', 'google-token']) {
   getRequest(context: ExecutionContext) {
     const ctx = GqlExecutionContext.create(context);
-    // console.log(ctx.getContext().req.cookies);
+    // (ctx.getContext().req.cookies);
 
     return ctx.getContext().req;
   }

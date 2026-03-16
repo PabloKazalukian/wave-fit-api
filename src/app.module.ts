@@ -19,7 +19,6 @@ import { GoogleModule } from './modules/auth/google/google.module';
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
 import { SeedModule } from './database/seed.module';
 
-// console.log('DB_MONGO_PASSWORD:', process.env.DB_MONGO_PASSWORD);
 @Module({
   imports: [
     ConfigModule.forRoot({
