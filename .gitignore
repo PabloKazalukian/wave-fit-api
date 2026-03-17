@@ -19,6 +19,8 @@ lerna-debug.log*
 # package-lock.json
 package-lock.json
 
+/documents/as.md
+
 # Tests
 /coverage
 /.nyc_output
