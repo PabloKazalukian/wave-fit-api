@@ -60,7 +60,7 @@ export class WeekLog {
 
 export const WeekLogSchema = SchemaFactory.createForClass(WeekLog);
 
-WeekLogSchema.index({ userId: 1, startDate: 1 }, { unique: true });
+WeekLogSchema.index({ userId: 1, startDate: 1 });
 WeekLogSchema.index({ userId: 1, completed: 1 });
 WeekLogSchema.index({ 'days.workoutSessionId': 1 });
 WeekLogSchema.index({ 'days.extraSessionIds': 1 });
