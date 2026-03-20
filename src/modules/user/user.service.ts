@@ -56,19 +56,19 @@ export class UserService {
     return this.userModel.findOne({ email: email }).exec();
   }
 
-  async findOne(id: String) {
+  async findOne(id: string) {
     return this.userModel.findById(id);
   }
 
-  async findOneByName(name: String) {
+  async findOneByName(name: string) {
     return this.userModel.findOne({ name: name }).exec();
   }
 
-  async update(id: String, updateUserInput: UpdateUserInput) {
+  async update(id: string, updateUserInput: UpdateUserInput) {
     return this.userModel.updateOne({ _id: id }, updateUserInput).exec();
   }
 
-  async remove(id: String) {
+  async remove(id: string) {
     return this.userModel.deleteOne({ _id: id }).exec();
   }
 

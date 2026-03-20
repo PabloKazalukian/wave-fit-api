@@ -14,7 +14,9 @@ export class RoutineDayService {
     private routineDayModel: Model<RoutineDaySchema>,
   ) {}
 
-  async create(createRoutineDayInput: CreateRoutineDayInput): Promise<RoutineDay> {
+  async create(
+    createRoutineDayInput: CreateRoutineDayInput,
+  ): Promise<RoutineDay> {
     const created = await this.routineDayModel.create(createRoutineDayInput);
     return serializeMongo<RoutineDay>(created);
   }

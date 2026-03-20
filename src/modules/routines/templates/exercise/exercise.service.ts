@@ -25,7 +25,8 @@ export class ExerciseService {
         code: 'DUPLICATE_NAME',
       });
     }
-    const createdExercise = await this.ExerciseModel.create(createExerciseInput);
+    const createdExercise =
+      await this.ExerciseModel.create(createExerciseInput);
     return serializeMongo<Exercise>(createdExercise);
   }
 

@@ -41,9 +41,7 @@ export class RoutinePlanResolver {
   }
 
   @ResolveField(() => [RoutineDay], { name: 'routineDays' })
-  async resolveRoutineDays(
-    @Parent() plan: RoutinePlan,
-  ): Promise<RoutineDay[]> {
+  async resolveRoutineDays(@Parent() plan: RoutinePlan): Promise<RoutineDay[]> {
     if (!plan.week || plan.week.length === 0) {
       return [];
     }

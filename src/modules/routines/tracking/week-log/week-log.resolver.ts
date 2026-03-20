@@ -35,7 +35,7 @@ export class WeekLogResolver {
     );
   }
 
-  @Query(() => [WeekLog], { name: 'weekLog' })
+  @Query(() => [WeekLog], { name: 'findAll' })
   async findAll(@Context() context) {
     if (!Types.ObjectId.isValid(context?.req?.user?.id)) {
       throw new BadRequestException('Invalid user id');
@@ -44,7 +44,7 @@ export class WeekLogResolver {
     return this.weekLogService.findAllByUser(context?.req?.user?.id);
   }
 
-  @Query(() => WeekLog, { name: 'weekLog' })
+  @Query(() => WeekLog, { name: 'findOne' })
   async findOne(
     @Args('id', { type: () => String }) id: string,
     @Context() context,

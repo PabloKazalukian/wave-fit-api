@@ -30,7 +30,7 @@ export class GraphQLExceptionFilter implements GqlExceptionFilter {
 
     // 2. Errores de MongoDB (duplicados, validación, etc)
     if (this.isMongoError(exception)) {
-      return this.handleMongoError(exception as MongoError);
+      return this.handleMongoError(exception);
     }
 
     // 3. Errores de validación de Mongoose

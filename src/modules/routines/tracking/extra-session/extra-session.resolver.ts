@@ -9,7 +9,10 @@ export class ExtraSessionResolver {
   constructor(private readonly extraSessionService: ExtraSessionService) {}
 
   @Mutation(() => ExtraSession)
-  createExtraSession(@Args('createExtraSessionInput') createExtraSessionInput: CreateExtraSessionInput) {
+  createExtraSession(
+    @Args('createExtraSessionInput')
+    createExtraSessionInput: CreateExtraSessionInput,
+  ) {
     return this.extraSessionService.create(createExtraSessionInput);
   }
 
@@ -24,8 +27,14 @@ export class ExtraSessionResolver {
   }
 
   @Mutation(() => ExtraSession)
-  updateExtraSession(@Args('updateExtraSessionInput') updateExtraSessionInput: UpdateExtraSessionInput) {
-    return this.extraSessionService.update(updateExtraSessionInput.id, updateExtraSessionInput);
+  updateExtraSession(
+    @Args('updateExtraSessionInput')
+    updateExtraSessionInput: UpdateExtraSessionInput,
+  ) {
+    return this.extraSessionService.update(
+      updateExtraSessionInput.id,
+      updateExtraSessionInput,
+    );
   }
 
   @Mutation(() => ExtraSession)

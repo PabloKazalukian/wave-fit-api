@@ -15,7 +15,7 @@ export function serializeMongo<T>(doc: any): T {
 
   // Handle MongoDB ObjectId
   if (doc instanceof Types.ObjectId || doc?._bsontype === 'ObjectId') {
-    return doc.toString() as any;
+    return doc.toString();
   }
 
   // If it's not an object, return as is

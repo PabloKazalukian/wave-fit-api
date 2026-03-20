@@ -48,7 +48,10 @@ export class RoutinePlanService {
   }
 
   async findByTitle(title: string): Promise<RoutinePlan | null> {
-    const doc = await this.routinePlanModel.findOne({ name: title }).lean().exec();
+    const doc = await this.routinePlanModel
+      .findOne({ name: title })
+      .lean()
+      .exec();
     return doc ? serializeMongo<RoutinePlan>(doc) : null;
   }
 

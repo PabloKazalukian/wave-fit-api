@@ -14,7 +14,6 @@ import { Model, Types, UpdateQuery } from 'mongoose';
 import { addDays, parseISO, isSameDay } from 'date-fns';
 import { WeekLogValidator } from './week-log.validator';
 import { WorkoutSession } from '../workout-session/schema/workout-session.schema';
-import { RoutinePlanService } from '../../templates/routine-plan/routine-plan.service';
 import { RoutinePlan as RoutinePlanSchema } from '../../templates/routine-plan/schema/routine-plan.schema';
 
 @Injectable()
@@ -23,7 +22,6 @@ export class WeekLogService {
     @InjectModel(WeekLog.name) private weekLogModel: Model<WeekLog>,
     @InjectModel(RoutinePlanSchema.name)
     private routinePlanModel: Model<RoutinePlanSchema>,
-    private routinePlanSv: RoutinePlanService,
     @InjectModel(WorkoutSession.name)
     private workoutSessionModel: Model<WorkoutSession>,
     private readonly validator: WeekLogValidator,
@@ -38,60 +36,22 @@ export class WeekLogService {
       this.weekLogModel,
     );
 
-    let isRestMap: boolean[] = new Array(7).fill(false);
     let plan: any = null;
-
     if (planId) {
       plan = await this.routinePlanModel
         .findById(planId)
         .populate('week.day')
         .lean()
         .exec();
-
-      if (plan?.week?.length === 7) {
-        isRestMap = plan.week.map((d) => d.isRest);
-      }
     }
 
     const weekLogId = new Types.ObjectId();
-    const sessionsToInsert: any[] = [];
-
-    const days = Array.from({ length: 7 }).map((_, index) => {
-      let workoutSessionId: Types.ObjectId | null = null;
-
-      if (plan && plan.week && plan.week.length === 7 && !isRestMap[index]) {
-        const planDay = plan.week[index];
-        if (planDay && planDay.day) {
-          const routineDay = planDay.day;
-          const exercises = routineDay.exercises?.map((e: any) => ({
-            exerciseId: (e.exercise._id || e.exercise.id || e.exercise).toString(),
-            series: 0,
-            sets: [],
-          })) || [];
-
-          const sessionObjectId = new Types.ObjectId();
-          workoutSessionId = sessionObjectId;
-          sessionsToInsert.push({
-            _id: sessionObjectId,
-            userId: userId.toString(),
-            weekLogId: weekLogId.toString(),
-            date: addDays(startDate, index),
-            routineDayId: routineDay._id.toString(),
-            exercises,
-            status: 'not_started',
-          });
-        }
-      }
-
-      return {
-        order: index + 1,
-        date: addDays(startDate, index),
-        isRest: isRestMap[index] ?? false,
-        workoutSessionId,
-        extraSessionIds: [],
-        status: 'pending',
-      };
-    });
+    const { days, sessionsToInsert } = this.createInitialDaysAndSessions(
+      userId.toString(),
+      weekLogId.toString(),
+      startDate,
+      plan,
+    );
 
     if (sessionsToInsert.length > 0) {
       await this.workoutSessionModel.insertMany(sessionsToInsert);
@@ -107,33 +67,31 @@ export class WeekLogService {
       completed: false,
     });
 
-    return weekLog.save();
+    await weekLog.save();
+    return this.findOne(weekLog._id.toString(), userId.toString());
   }
 
-  async findAllByUser(userId: string): Promise<WeekLog[] | undefined> {
-    return this.weekLogModel.find({ userId }).exec();
+  async findAllByUser(userId: string): Promise<any[]> {
+    const weekLogs = await this.weekLogModel
+      .find({ userId })
+      .populate('days.workoutSessionId')
+      .exec();
+
+    return weekLogs.map((wl) => this.mapWeekLog(wl));
   }
 
-  async findOne(
-    id: string,
-    userId: string,
-  ): Promise<WeekLog | null | undefined> {
-    const weekLog = await this.weekLogModel.findOne({ _id: id, userId }).exec();
+  async findOne(id: string, userId: string): Promise<any> {
+    const weekLog = await this.weekLogModel
+      .findOne({ _id: id, userId })
+      .populate('days.workoutSessionId')
+      .exec();
 
     if (!weekLog) {
       throw new NotFoundException(`Week log con ID "${id}" no encontrado`);
     }
 
-    return weekLog;
+    return this.mapWeekLog(weekLog);
   }
-
-  // async findActiveWeekLog(userId: string): Promise<WeekLog | null> {
-  //   const weekLog = await this.weekLogModel
-  //     .findOne({ userId, completed: false })
-  //     .exec();
-
-  //   return weekLog;
-  // }
 
   async findActiveWeekLog(userId: string): Promise<any | null> {
     const weekLog = await this.weekLogModel
@@ -143,13 +101,17 @@ export class WeekLogService {
 
     if (!weekLog) return null;
 
-    const weekLogObj = weekLog.toObject();
+    return this.mapWeekLog(weekLog);
+  }
+
+  private mapWeekLog(weekLog: any): any {
+    const weekLogObj = weekLog.toObject ? weekLog.toObject() : weekLog;
 
     return {
       ...weekLogObj,
-      id: weekLogObj._id.toString(), // 👈 esto es lo que falta
+      id: weekLogObj._id.toString(),
       days: weekLogObj.days.map((day) => {
-        const session = day.workoutSessionId as any;
+        const session = day.workoutSessionId;
         return {
           ...day,
           workoutSessionId: session?._id ? session._id.toString() : session,
@@ -170,42 +132,10 @@ export class WeekLogService {
     this.validator.validateOwnership(weekLog, userId);
     this.validator.validateUpdate(updateWeekLogInput);
 
-    if (updateWeekLogInput.startDate)
-      weekLog.startDate = parseISO(updateWeekLogInput.startDate);
-    if (updateWeekLogInput.endDate)
-      weekLog.endDate = parseISO(updateWeekLogInput.endDate);
-    if (updateWeekLogInput.planId !== undefined)
-      weekLog.planId = updateWeekLogInput.planId
-        ? new Types.ObjectId(updateWeekLogInput.planId)
-        : undefined;
-    if (updateWeekLogInput.notes !== undefined)
-      weekLog.notes = updateWeekLogInput.notes;
-    if (updateWeekLogInput.completed !== undefined)
-      weekLog.completed = updateWeekLogInput.completed;
+    this.applyUpdateInput(weekLog, updateWeekLogInput);
 
-    // ✅ Actualizar días individualmente por order
-    if (updateWeekLogInput.days?.length) {
-      for (const dayInput of updateWeekLogInput.days) {
-        const day = weekLog.days.find((d) => d.order === dayInput.order);
-        if (!day) continue;
-
-        if (dayInput.workoutSessionId !== undefined) {
-          day.workoutSessionId = dayInput.workoutSessionId
-            ? new Types.ObjectId(dayInput.workoutSessionId)
-            : null;
-        }
-        if (dayInput.extraSessionIds !== undefined) {
-          day.extraSessionIds = dayInput.extraSessionIds.map(
-            (id) => new Types.ObjectId(id),
-          );
-        }
-        if (dayInput.status !== undefined) {
-          day.status = dayInput.status;
-        }
-      }
-    }
-
-    return weekLog.save();
+    await weekLog.save();
+    return this.findOne(id, userId);
   }
 
   async updateDay(input: UpdateWeekLogDayInput, userId: string) {
@@ -222,8 +152,7 @@ export class WeekLogService {
     if (input.status) day.status = input.status;
 
     await weekLog.save();
-
-    return weekLog;
+    return this.findOne(weekLog._id.toString(), userId);
   }
 
   async findByIdAndUpdate(
@@ -242,11 +171,13 @@ export class WeekLogService {
       throw new NotFoundException(`WeekLog with ID ${id} not found`);
     }
 
-    return weekLog;
+    return this.mapWeekLog(weekLog);
   }
 
   async syncDaysWithSessions(weekLogId: string, userId: string) {
-    const weekLog = await this.findOne(weekLogId, userId);
+    const weekLog = await this.weekLogModel
+      .findOne({ _id: weekLogId, userId })
+      .exec();
     if (!weekLog) throw new NotFoundException('WeekLog not found');
 
     const sessions = await this.workoutSessionModel.find({
@@ -267,13 +198,108 @@ export class WeekLogService {
     }
 
     if (updated) {
-      await (weekLog as any).save();
+      await weekLog.save();
     }
 
-    return weekLog;
+    return this.findOne(weekLogId, userId);
   }
 
   remove(id: string) {
     return this.weekLogModel.deleteOne({ _id: id }).exec();
+  }
+
+  private createInitialDaysAndSessions(
+    userId: string,
+    weekLogId: string,
+    startDate: Date,
+    plan?: any,
+  ) {
+    const sessionsToInsert: any[] = [];
+    let isRestMap: boolean[] = new Array(7).fill(false);
+
+    if (plan?.week?.length === 7) {
+      isRestMap = plan.week.map((d) => d.isRest);
+    }
+
+    const days = Array.from({ length: 7 }).map((_, index) => {
+      let workoutSessionId: Types.ObjectId | null = null;
+
+      if (plan && plan.week && plan.week.length === 7 && !isRestMap[index]) {
+        const planDay = plan.week[index];
+        if (planDay && planDay.day) {
+          const routineDay = planDay.day;
+          const exercises =
+            routineDay.exercises?.map((e: any) => ({
+              exerciseId: (
+                e.exercise._id ||
+                e.exercise.id ||
+                e.exercise
+              ).toString(),
+              series: 0,
+              sets: [],
+            })) || [];
+
+          const sessionObjectId = new Types.ObjectId();
+          workoutSessionId = sessionObjectId;
+          sessionsToInsert.push({
+            _id: sessionObjectId,
+            userId,
+            weekLogId,
+            date: addDays(startDate, index),
+            routineDayId: routineDay._id.toString(),
+            exercises,
+            status: 'not_started',
+          });
+        }
+      }
+
+      return {
+        order: index + 1,
+        date: addDays(startDate, index),
+        isRest: isRestMap[index] ?? false,
+        workoutSessionId,
+        extraSessionIds: [],
+        status: 'pending',
+      };
+    });
+
+    return { days, sessionsToInsert };
+  }
+
+  private applyUpdateInput(
+    weekLog: WeekLog,
+    updateInput: UpdateWeekLogInput,
+  ): void {
+    if (updateInput.startDate)
+      weekLog.startDate = parseISO(updateInput.startDate);
+    if (updateInput.endDate) weekLog.endDate = parseISO(updateInput.endDate);
+    if (updateInput.planId !== undefined)
+      weekLog.planId = updateInput.planId
+        ? new Types.ObjectId(updateInput.planId)
+        : undefined;
+    if (updateInput.notes !== undefined) weekLog.notes = updateInput.notes;
+    if (updateInput.completed !== undefined)
+      weekLog.completed = updateInput.completed;
+
+    if (updateInput.days?.length) {
+      for (const dayInput of updateInput.days) {
+        const day = weekLog.days.find((d) => d.order === dayInput.order);
+        if (!day) continue;
+
+        if (dayInput.workoutSessionId !== undefined) {
+          day.workoutSessionId = dayInput.workoutSessionId
+            ? new Types.ObjectId(dayInput.workoutSessionId)
+            : null;
+        }
+        if (dayInput.extraSessionIds !== undefined) {
+          day.extraSessionIds = dayInput.extraSessionIds.map(
+            (id) => new Types.ObjectId(id),
+          );
+        }
+        if (dayInput.status !== undefined) {
+          day.status = dayInput.status;
+        }
+      }
+    }
   }
 }
