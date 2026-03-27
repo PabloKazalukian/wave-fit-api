@@ -71,6 +71,10 @@ export class UpdateWeekLogInput {
   completed?: boolean;
 
   @Field({ nullable: true })
+  @IsBoolean()
+  active?: boolean;
+
+  @Field({ nullable: true })
   @IsOptional()
   @IsString()
   notes?: string;

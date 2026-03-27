@@ -14,7 +14,6 @@ import { ExtraSessionModule } from '../../src/modules/routines/tracking/extra-se
 import { GoogleModule } from '../../src/modules/auth/google/google.module';
 import { AuditLogsModule } from '../../src/modules/audit-logs/audit-logs.module';
 import { rootMongooseTestModule } from './db-handler';
-import { AppModule } from 'src/app.module';
 import { GraphQLExceptionFilter } from '../../src/common/filters/gql-exception.filter';
 
 /**

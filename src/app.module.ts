@@ -18,6 +18,7 @@ import { ExtraSessionModule } from './modules/routines/tracking/extra-session/ex
 import { GoogleModule } from './modules/auth/google/google.module';
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
 import { SeedModule } from './database/seed.module';
+import { CommonResolver } from './common/common.resolver';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { SeedModule } from './database/seed.module';
   controllers: [AppController],
   providers: [
     AppService,
+    CommonResolver,
     {
       provide: APP_FILTER,
       useClass: GraphQLExceptionFilter,

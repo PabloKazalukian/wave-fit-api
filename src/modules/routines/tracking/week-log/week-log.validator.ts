@@ -25,7 +25,7 @@ export class WeekLogValidator {
 
     const existing = await weekLogModel.findOne({
       userId,
-      completed: false,
+      active: true,
     });
 
     if (existing) {

@@ -54,6 +54,9 @@ export class WeekLog {
   @Prop({ type: Boolean, default: false, index: true })
   completed: boolean;
 
+  @Prop({ type: Boolean, default: true, index: true })
+  active: boolean;
+
   @Prop({ type: String, default: '' })
   notes?: string;
 }

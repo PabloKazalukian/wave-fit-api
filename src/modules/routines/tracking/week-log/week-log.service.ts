@@ -95,7 +95,7 @@ export class WeekLogService {
 
   async findActiveWeekLog(userId: string): Promise<any | null> {
     const weekLog = await this.weekLogModel
-      .findOne({ userId, completed: false })
+      .findOne({ userId, active: true })
       .populate('days.workoutSessionId')
       .exec();
 
@@ -278,8 +278,7 @@ export class WeekLogService {
         ? new Types.ObjectId(updateInput.planId)
         : undefined;
     if (updateInput.notes !== undefined) weekLog.notes = updateInput.notes;
-    if (updateInput.completed !== undefined)
-      weekLog.completed = updateInput.completed;
+    if (updateInput.active !== undefined) weekLog.active = updateInput.active;
 
     if (updateInput.days?.length) {
       for (const dayInput of updateInput.days) {
