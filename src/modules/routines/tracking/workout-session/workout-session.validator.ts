@@ -19,12 +19,12 @@ export class WorkoutSessionValidator {
   ) {
     this.validateOwnership(weekLog, userId);
     this.validateDateInsideWeek(input.date, weekLog);
-    await this.validateNoDuplicate(
-      input.weekLogId,
-      userId,
-      input.date,
-      sessionModel,
-    );
+    // await this.validateNoDuplicate(
+    //   input.weekLogId,
+    //   userId,
+    //   input.date,
+    //   sessionModel,
+    // );
     this.validateExercises(input.exercises);
   }
 
