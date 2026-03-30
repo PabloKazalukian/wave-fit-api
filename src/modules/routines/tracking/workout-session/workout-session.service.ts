@@ -25,12 +25,14 @@ export class WorkoutSessionService {
     input: CreateWorkoutSessionInput,
     userId: string,
   ): Promise<WorkoutSession> {
-    const weekLog = await this.weekLogService.findOne(input.weekLogId, userId);
-
-    if (!weekLog) {
-      throw new NotFoundException(
-        `Week log con ID "${input.weekLogId}" no encontrado`,
-      );
+    let weekLog = null;
+    if (input.weekLogId) {
+      weekLog = await this.weekLogService.findOne(input.weekLogId, userId);
+      if (!weekLog) {
+        throw new NotFoundException(
+          `Week log con ID "${input.weekLogId}" no encontrado`,
+        );
+      }
     }
 
     await this.validator.validateCreation(
@@ -42,7 +44,7 @@ export class WorkoutSessionService {
 
     const session = await this.sessionModel.create({
       userId: new Types.ObjectId(userId),
-      weekLogId: new Types.ObjectId(input.weekLogId),
+      weekLogId: input.weekLogId ? new Types.ObjectId(input.weekLogId) : null,
       date: new Date(input.date),
       routineDayId: input.routineDayId
         ? new Types.ObjectId(input.routineDayId)
@@ -62,6 +64,23 @@ export class WorkoutSessionService {
   findOne(id: string, userId: string) {
     return this.sessionModel
       .findOne({ _id: id, userId })
+      .populate('exercises')
+      .exec();
+  }
+
+  async findByDate(date: string, userId: string) {
+    const searchDate = new Date(date);
+    const nextDay = new Date(searchDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    return this.sessionModel
+      .findOne({
+        userId,
+        date: {
+          $gte: searchDate,
+          $lt: nextDay,
+        },
+      })
       .populate('exercises')
       .exec();
   }

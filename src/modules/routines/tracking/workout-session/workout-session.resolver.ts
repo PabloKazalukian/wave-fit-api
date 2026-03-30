@@ -48,6 +48,17 @@ export class WorkoutSessionResolver {
     return this.workoutSessionService.findOne(id, context?.req?.user?.id);
   }
 
+  @Query(() => WorkoutSession, { name: 'workoutSessionByDate', nullable: true })
+  findByDate(
+    @Args('date', { type: () => String }) date: string,
+    @Context() context,
+  ) {
+    if (!Types.ObjectId.isValid(context?.req?.user?.id)) {
+      throw new BadRequestException('Invalid user id');
+    }
+    return this.workoutSessionService.findByDate(date, context?.req?.user?.id);
+  }
+
   @Mutation(() => WorkoutSession)
   updateWorkoutSession(
     @Args('updateWorkoutSessionInput')

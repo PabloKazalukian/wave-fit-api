@@ -16,8 +16,8 @@ export class WorkoutSession {
   @Prop({ type: String, required: true })
   userId: string;
 
-  @Prop({ type: String, required: true })
-  weekLogId: string;
+  @Prop({ type: String, default: null })
+  weekLogId: string | null;
 
   @Prop({ type: Date, required: true })
   date: Date;

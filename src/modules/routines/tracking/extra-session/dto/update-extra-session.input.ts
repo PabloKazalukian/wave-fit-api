@@ -1,10 +1,13 @@
 import { CreateExtraSessionInput } from './create-extra-session.input';
-import { InputType, Field, Int, PartialType } from '@nestjs/graphql';
+import { InputType, Field, PartialType } from '@nestjs/graphql';
+import { IsString, IsMongoId } from 'class-validator';
 
 @InputType()
 export class UpdateExtraSessionInput extends PartialType(
   CreateExtraSessionInput,
 ) {
-  @Field(() => Int)
-  id: number;
+  @Field()
+  @IsString()
+  @IsMongoId()
+  id: string;
 }

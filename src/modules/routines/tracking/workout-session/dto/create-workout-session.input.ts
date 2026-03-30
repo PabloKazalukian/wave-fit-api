@@ -48,11 +48,11 @@ export class ExercisePerformanceInput {
 
 @InputType()
 export class CreateWorkoutSessionInput {
-  @Field()
-  @IsNotEmpty()
+  @Field({ nullable: true })
+  @IsOptional()
   @IsString()
   @IsMongoId()
-  weekLogId: string;
+  weekLogId?: string;
 
   @Field()
   @IsNotEmpty()

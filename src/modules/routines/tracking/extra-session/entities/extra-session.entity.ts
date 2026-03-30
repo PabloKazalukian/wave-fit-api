@@ -5,17 +5,26 @@ export class ExtraSession {
   @Field(() => ID)
   id: string;
 
-  @Field()
-  type: string; // "cardio", "yoga", "deporte", etc.
+  @Field(() => ID)
+  userId: string;
+
+  @Field(() => ID)
+  workoutSessionId: string;
 
   @Field()
-  discipline: string; // "running", "bicicleta", "fútbol", etc.
+  type: string;
 
-  @Field(() => Float)
-  duration: number; // en minutos
+  @Field()
+  date: Date;
+
+  @Field()
+  discipline: string;
 
   @Field(() => Int)
-  intensityLevel: number; // escala 1–5
+  duration: number;
+
+  @Field(() => Int)
+  intensityLevel: number;
 
   @Field(() => Float, { nullable: true })
   calories?: number;

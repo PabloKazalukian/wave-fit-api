@@ -14,17 +14,13 @@ export class WorkoutSessionValidator {
   async validateCreation(
     input: CreateWorkoutSessionInput,
     userId: string,
-    weekLog: WeekLog,
+    weekLog: WeekLog | null,
     sessionModel: Model<WorkoutSession>,
   ) {
-    this.validateOwnership(weekLog, userId);
-    this.validateDateInsideWeek(input.date, weekLog);
-    // await this.validateNoDuplicate(
-    //   input.weekLogId,
-    //   userId,
-    //   input.date,
-    //   sessionModel,
-    // );
+    if (weekLog) {
+      this.validateOwnership(weekLog, userId);
+      this.validateDateInsideWeek(input.date, weekLog);
+    }
     this.validateExercises(input.exercises);
   }
 
