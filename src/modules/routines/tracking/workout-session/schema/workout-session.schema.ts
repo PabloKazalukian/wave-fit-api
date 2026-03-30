@@ -33,6 +33,9 @@ export class WorkoutSession {
 
   @Prop({ type: String })
   notes?: string;
+
+  @Prop({ type: Boolean, default: false })
+  edited: boolean;
 }
 
 export type WorkoutSessionDocument = WorkoutSession & Document;

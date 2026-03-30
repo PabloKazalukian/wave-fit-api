@@ -63,10 +63,12 @@ export class WorkoutSessionResolver {
   updateWorkoutSession(
     @Args('updateWorkoutSessionInput')
     updateWorkoutSessionInput: UpdateWorkoutSessionInput,
+    @Context() context,
   ) {
     return this.workoutSessionService.update(
       updateWorkoutSessionInput.id,
       updateWorkoutSessionInput,
+      context?.req?.user?.id,
     );
   }
 

@@ -85,8 +85,39 @@ export class WorkoutSessionService {
       .exec();
   }
 
-  update(id: string, updateWorkoutSessionInput: UpdateWorkoutSessionInput) {
-    return `This action updates a #${id} workoutSession`;
+  async update(
+    id: string,
+    updateWorkoutSessionInput: UpdateWorkoutSessionInput,
+    userId: string,
+  ): Promise<WorkoutSession> {
+    const existing = await this.sessionModel.findOne({ _id: id, userId });
+    if (!existing) {
+      throw new NotFoundException(`Workout Session with ID "${id}" not found`);
+    }
+
+    await this.validator.validateUpdateWorkoutSession(
+      updateWorkoutSessionInput,
+      userId,
+      existing,
+    );
+
+    const updated = await this.sessionModel
+      .findByIdAndUpdate(
+        id,
+        {
+          ...updateWorkoutSessionInput,
+          edited: true,
+        },
+        { new: true },
+      )
+      .populate('exercises')
+      .exec();
+
+    if (!updated) {
+      throw new NotFoundException(`Workout Session with ID "${id}" no existe`);
+    }
+
+    return updated;
   }
 
   remove(id: string) {

@@ -7,6 +7,7 @@ import { WeekLog } from '../week-log/schema/week-log.schema';
 import { ExercisePerformance } from './schema/exercise-performance.schema';
 import { WorkoutSession } from './schema/workout-session.schema';
 import { CreateWorkoutSessionInput } from './dto/create-workout-session.input';
+import { UpdateWorkoutSessionInput } from './dto/update-workout-session.input';
 import { Model, Types } from 'mongoose';
 
 @Injectable()
@@ -68,6 +69,22 @@ export class WorkoutSessionValidator {
           `Exercise ${exercise.exerciseId}: series must match sets length`,
         );
       }
+    }
+  }
+
+  async validateUpdateWorkoutSession(
+    input: UpdateWorkoutSessionInput,
+    userId: string,
+    existingSession: WorkoutSession,
+  ) {
+    if (existingSession.userId.toString() !== userId) {
+      throw new ForbiddenException(
+        'You do not have permission to update this workout session',
+      );
+    }
+
+    if (input.exercises) {
+      this.validateExercises(input.exercises as any);
     }
   }
 }

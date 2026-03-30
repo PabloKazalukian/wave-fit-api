@@ -55,4 +55,7 @@ export class WorkoutSession {
 
   @Field()
   updatedAt: Date;
+
+  @Field(() => Boolean, { defaultValue: false })
+  edited: boolean;
 }

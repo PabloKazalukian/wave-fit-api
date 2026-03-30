@@ -79,4 +79,8 @@ export class CreateWorkoutSessionInput {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @Field(() => Boolean, { nullable: true })
+  @IsOptional()
+  edited?: boolean;
 }
