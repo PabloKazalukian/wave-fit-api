@@ -73,7 +73,14 @@ export class WorkoutSessionResolver {
   }
 
   @Mutation(() => WorkoutSession)
-  removeWorkoutSession(@Args('id', { type: () => Int }) id: string) {
-    return this.workoutSessionService.remove(id);
+  @Audit('DELETE_WORKOUT_SESSION', 'Tracking')
+  removeWorkoutSession(
+    @Args('id', { type: () => String }) id: string,
+    @Context() context,
+  ) {
+    if (!Types.ObjectId.isValid(context?.req?.user?.id)) {
+      throw new BadRequestException('Invalid user id');
+    }
+    return this.workoutSessionService.remove(id, context?.req?.user?.id);
   }
 }

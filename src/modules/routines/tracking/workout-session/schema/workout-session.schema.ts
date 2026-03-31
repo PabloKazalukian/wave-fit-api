@@ -36,6 +36,12 @@ export class WorkoutSession {
 
   @Prop({ type: Boolean, default: false })
   edited: boolean;
+
+  @Prop({ type: Boolean, default: false })
+  deleted: boolean;
+
+  @Prop({ type: Date })
+  deletedAt?: Date;
 }
 
 export type WorkoutSessionDocument = WorkoutSession & Document;

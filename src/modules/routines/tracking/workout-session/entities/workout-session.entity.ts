@@ -58,4 +58,10 @@ export class WorkoutSession {
 
   @Field(() => Boolean, { defaultValue: false })
   edited: boolean;
+
+  @Field(() => Boolean, { defaultValue: false })
+  deleted: boolean;
+
+  @Field({ nullable: true })
+  deletedAt?: Date;
 }

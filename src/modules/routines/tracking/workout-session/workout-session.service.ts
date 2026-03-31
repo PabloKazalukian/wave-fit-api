@@ -58,12 +58,12 @@ export class WorkoutSessionService {
   }
 
   findAllByUser(userId: string): Promise<WorkoutSession[]> {
-    return this.sessionModel.find({ userId }).populate('exercises').exec();
+    return this.sessionModel.find({ userId, deleted: { $ne: true } }).populate('exercises').exec();
   }
 
   findOne(id: string, userId: string) {
     return this.sessionModel
-      .findOne({ _id: id, userId })
+      .findOne({ _id: id, userId, deleted: { $ne: true } })
       .populate('exercises')
       .exec();
   }
@@ -76,6 +76,7 @@ export class WorkoutSessionService {
     return this.sessionModel
       .findOne({
         userId,
+        deleted: { $ne: true },
         date: {
           $gte: searchDate,
           $lt: nextDay,
@@ -90,7 +91,7 @@ export class WorkoutSessionService {
     updateWorkoutSessionInput: UpdateWorkoutSessionInput,
     userId: string,
   ): Promise<WorkoutSession> {
-    const existing = await this.sessionModel.findOne({ _id: id, userId });
+    const existing = await this.sessionModel.findOne({ _id: id, userId, deleted: { $ne: true } });
     if (!existing) {
       throw new NotFoundException(`Workout Session with ID "${id}" not found`);
     }
@@ -120,7 +121,21 @@ export class WorkoutSessionService {
     return updated;
   }
 
-  remove(id: string) {
-    return `This action removes a #${id} workoutSession`;
+  async remove(id: string, userId: string) {
+    const existing = await this.sessionModel.findOne({ _id: id, userId, deleted: { $ne: true } });
+    if (!existing) {
+      throw new NotFoundException(`Workout Session with ID "${id}" not found`);
+    }
+
+    const updated = await this.sessionModel.findByIdAndUpdate(
+      id,
+      {
+        deleted: true,
+        deletedAt: new Date(),
+      },
+      { new: true },
+    ).populate('exercises').exec();
+
+    return updated;
   }
 }
