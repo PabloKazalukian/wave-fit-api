@@ -96,17 +96,27 @@ export class WorkoutSessionService {
       throw new NotFoundException(`Workout Session with ID "${id}" not found`);
     }
 
+    // Normalize exercises: always derive series from the actual sets count
+    if (updateWorkoutSessionInput.exercises) {
+      updateWorkoutSessionInput.exercises = updateWorkoutSessionInput.exercises.map((ex) => ({
+        ...ex,
+        series: ex.sets?.length ?? ex.series,
+      }));
+    }
+
     await this.validator.validateUpdateWorkoutSession(
       updateWorkoutSessionInput,
       userId,
       existing,
     );
 
+    const { id: _, ...updateData } = updateWorkoutSessionInput;
+
     const updated = await this.sessionModel
       .findByIdAndUpdate(
         id,
         {
-          ...updateWorkoutSessionInput,
+          ...updateData,
           edited: true,
         },
         { new: true },

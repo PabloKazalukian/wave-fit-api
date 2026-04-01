@@ -60,6 +60,7 @@ export class WorkoutSessionResolver {
   }
 
   @Mutation(() => WorkoutSession)
+  @Audit('UPDATE_WORKOUT_SESSION', 'Tracking')
   updateWorkoutSession(
     @Args('updateWorkoutSessionInput')
     updateWorkoutSessionInput: UpdateWorkoutSessionInput,
