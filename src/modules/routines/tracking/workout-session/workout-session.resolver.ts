@@ -1,4 +1,4 @@
-import { Resolver, Query, Mutation, Args, Int, Context } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args, Context } from '@nestjs/graphql';
 import { WorkoutSessionService } from './workout-session.service';
 import { WorkoutSession } from './entities/workout-session.entity';
 import { CreateWorkoutSessionInput } from './dto/create-workout-session.input';

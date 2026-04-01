@@ -58,7 +58,10 @@ export class WorkoutSessionService {
   }
 
   findAllByUser(userId: string): Promise<WorkoutSession[]> {
-    return this.sessionModel.find({ userId, deleted: { $ne: true } }).populate('exercises').exec();
+    return this.sessionModel
+      .find({ userId, deleted: { $ne: true } })
+      .populate('exercises')
+      .exec();
   }
 
   findOne(id: string, userId: string) {
@@ -91,17 +94,22 @@ export class WorkoutSessionService {
     updateWorkoutSessionInput: UpdateWorkoutSessionInput,
     userId: string,
   ): Promise<WorkoutSession> {
-    const existing = await this.sessionModel.findOne({ _id: id, userId, deleted: { $ne: true } });
+    const existing = await this.sessionModel.findOne({
+      _id: id,
+      userId,
+      deleted: { $ne: true },
+    });
     if (!existing) {
       throw new NotFoundException(`Workout Session with ID "${id}" not found`);
     }
 
     // Normalize exercises: always derive series from the actual sets count
     if (updateWorkoutSessionInput.exercises) {
-      updateWorkoutSessionInput.exercises = updateWorkoutSessionInput.exercises.map((ex) => ({
-        ...ex,
-        series: ex.sets?.length ?? ex.series,
-      }));
+      updateWorkoutSessionInput.exercises =
+        updateWorkoutSessionInput.exercises.map((ex) => ({
+          ...ex,
+          series: ex.sets?.length ?? ex.series,
+        }));
     }
 
     await this.validator.validateUpdateWorkoutSession(
@@ -132,19 +140,26 @@ export class WorkoutSessionService {
   }
 
   async remove(id: string, userId: string) {
-    const existing = await this.sessionModel.findOne({ _id: id, userId, deleted: { $ne: true } });
+    const existing = await this.sessionModel.findOne({
+      _id: id,
+      userId,
+      deleted: { $ne: true },
+    });
     if (!existing) {
       throw new NotFoundException(`Workout Session with ID "${id}" not found`);
     }
 
-    const updated = await this.sessionModel.findByIdAndUpdate(
-      id,
-      {
-        deleted: true,
-        deletedAt: new Date(),
-      },
-      { new: true },
-    ).populate('exercises').exec();
+    const updated = await this.sessionModel
+      .findByIdAndUpdate(
+        id,
+        {
+          deleted: true,
+          deletedAt: new Date(),
+        },
+        { new: true },
+      )
+      .populate('exercises')
+      .exec();
 
     return updated;
   }
