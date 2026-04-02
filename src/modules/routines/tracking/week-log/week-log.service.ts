@@ -85,6 +85,7 @@ export class WeekLogService {
   }
 
   async findOne(id: string, userId: string): Promise<any> {
+    // console.log('[findOne] Start - id:', id, 'userId:', userId);
     const weekLog = await this.weekLogModel
       .findOne({ _id: id, userId })
       .populate('days.workoutSessionId')
@@ -94,7 +95,9 @@ export class WeekLogService {
       throw new NotFoundException(`Week log con ID "${id}" no encontrado`);
     }
 
-    return this.mapWeekLog(weekLog);
+    const result = this.mapWeekLog(weekLog);
+    // console.log('[findOne] Returning result');
+    return result;
   }
 
   async findActiveWeekLog(userId: string): Promise<any | null> {
@@ -111,7 +114,7 @@ export class WeekLogService {
   private mapWeekLog(weekLog: any): any {
     const weekLogObj = weekLog.toObject ? weekLog.toObject() : weekLog;
 
-    return {
+    const mapped = {
       ...weekLogObj,
       id: weekLogObj._id.toString(),
       days: weekLogObj.days.map((day) => {
@@ -123,6 +126,8 @@ export class WeekLogService {
         };
       }),
     };
+
+    return mapped;
   }
 
   async update(
@@ -356,83 +361,122 @@ export class WeekLogService {
     date: string,
     userId: string,
   ): Promise<any> {
-    const routineDay = await this.routineDayService.findOne(routineDayId);
-    if (!routineDay) {
-      throw new NotFoundException(
-        `RoutineDay con ID "${routineDayId}" no encontrado`,
-      );
-    }
+    try {
+      // 1. Validar que existe el routineDay
+      const routineDay = await this.routineDayService.findOne(routineDayId);
+      if (!routineDay) {
+        throw new NotFoundException(
+          `RoutineDay con ID "${routineDayId}" no encontrado`,
+        );
+      }
 
-    const weekLog = await this.findActiveWeekLog(userId);
-    if (!weekLog) {
-      throw new BadRequestException('No hay un WeekLog activo para el usuario');
-    }
+      // 2. Obtener weekLog activo
+      const weekLog = await this.findActiveWeekLog(userId);
+      if (!weekLog) {
+        throw new BadRequestException(
+          'No hay un WeekLog activo para el usuario',
+        );
+      }
 
-    const searchDate = new Date(date);
-    const nextDay = new Date(searchDate);
-    nextDay.setDate(nextDay.getDate() + 1);
+      // 3. Parsear fecha
+      const searchDate = new Date(date);
 
-    const existingSession = await this.workoutSessionModel
-      .findOne({
-        userId: new Types.ObjectId(userId),
-        deleted: { $ne: true },
-        date: {
-          $gte: searchDate,
-          $lt: nextDay,
-        },
-      })
-      .exec();
-
-    const exercises =
-      routineDay.exercises?.map((e: any) => ({
-        exerciseId: (
-          e.exercise?._id ||
-          e.exercise?.id ||
-          e.exercise ||
-          e.exerciseId ||
-          ''
-        ).toString(),
-        series: 0,
-        sets: [],
-      })) || [];
-
-    let sessionId: Types.ObjectId;
-
-    if (existingSession) {
-      existingSession.exercises = exercises;
-      existingSession.routineDayId = routineDayId;
-      existingSession.status = 'not_started';
-      await existingSession.save();
-      sessionId = existingSession._id;
-    } else {
-      const newSession = await this.workoutSessionModel.create({
-        userId: new Types.ObjectId(userId),
-        weekLogId: weekLog.id,
-        date: searchDate,
-        routineDayId,
-        exercises,
-        status: 'not_started',
-        notes: '',
+      // 4. Encontrar el día en el weekLog
+      const dayToUpdate = weekLog.days.find((d) => {
+        const dayDate = new Date(d.date);
+        dayDate.setUTCHours(0, 0, 0, 0);
+        return dayDate.getTime() === searchDate.getTime();
       });
-      sessionId = newSession._id;
-    }
 
-    const dayToUpdate = weekLog.days.find((d: any) =>
-      isSameDay(new Date(d.date), searchDate),
-    );
+      if (!dayToUpdate) {
+        throw new BadRequestException(
+          `La fecha ${date} no pertenece al WeekLog activo`,
+        );
+      }
 
-    if (dayToUpdate) {
+      // 5. Preparar exercises para el workout-session
+      const exercises =
+        routineDay.exercises?.map((e: any) => ({
+          exerciseId: (
+            e.exercise?._id ||
+            e.exercise?.id ||
+            e.exercise ||
+            e.exerciseId ||
+            ''
+          ).toString(),
+          series: 0,
+          sets: [],
+        })) || [];
+
+      let sessionId: Types.ObjectId;
+
+      // 6. Verificar si ya existe un workout-session para este día
+      console.log(
+        '[assignRoutineToDay] dayToUpdate.workoutSessionId',
+        dayToUpdate.workoutSessionId,
+      );
+      if (dayToUpdate.workoutSessionId) {
+        // Ya existe, actualizarlo
+        const existingSession = await this.workoutSessionModel
+          .findById(dayToUpdate.workoutSessionId)
+          .exec();
+
+        if (existingSession) {
+          existingSession.exercises = exercises;
+          existingSession.routineDayId = routineDayId;
+          existingSession.status = 'not_started'; // Resetear a not_started
+          existingSession.edited = false; // Resetear flag de editado
+          await existingSession.save();
+          sessionId = existingSession._id;
+        } else {
+          // El ID existe pero el documento no, crear uno nuevo
+          const newSession = await this.workoutSessionModel.create({
+            userId: new Types.ObjectId(userId),
+            weekLogId: weekLog._id.toString(),
+            date: searchDate,
+            routineDayId,
+            exercises,
+            status: 'not_started',
+            notes: '',
+            edited: false,
+            deleted: false,
+          });
+          sessionId = newSession._id;
+        }
+      } else {
+        // No existe, crear nuevo workout-session
+        const newSession = await this.workoutSessionModel.create({
+          userId: new Types.ObjectId(userId),
+          weekLogId: weekLog._id.toString(),
+          date: searchDate,
+          routineDayId,
+          exercises,
+          status: 'not_started',
+          notes: '',
+          edited: false,
+          deleted: false,
+        });
+        sessionId = newSession._id;
+      }
+
+      // 7. Actualizar el día en el weekLog
       await this.weekLogModel.updateOne(
-        { _id: weekLog.id, 'days.order': dayToUpdate.order },
+        { _id: weekLog._id, 'days.order': dayToUpdate.order },
         {
           $set: {
             'days.$.workoutSessionId': sessionId,
-            'days.$.status': 'complete',
+            'days.$.isRest': false, // Ya no es día de descanso
+            'days.$.status': 'pending', // Status del day = pending (workout asignado pero no completado)
           },
         },
       );
-    }
 
-    return this.weekLogModel.findById(weekLog.id);
+      // 8. Retornar el weekLog actualizado
+      const result = await this.findOne(weekLog._id.toString(), userId);
+      return result;
+    } catch (error) {
+      console.error('[assignRoutineToDay] Error:', error);
+      throw error;
+    }
   }
 }
