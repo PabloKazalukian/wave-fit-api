@@ -6,6 +6,7 @@ import {
   UpdateWeekLogDayInput,
   UpdateWeekLogInput,
 } from './dto/update-week-log.input';
+import { RemoveWorkoutSessionFromDayInput } from './dto/remove-workout-session-from-day.input';
 import {
   BadRequestException,
   UnauthorizedException,
@@ -147,6 +148,18 @@ export class WeekLogResolver {
       routineDayId,
       date,
       context?.req?.user?.id,
+    );
+  }
+
+  @Mutation(() => WeekLog)
+  async removeWorkoutSessionFromDay(
+    @Args('input') input: RemoveWorkoutSessionFromDayInput,
+    @Context() context,
+  ) {
+    const userId = context.req.user?.id;
+    return this.weekLogService.removeWorkoutSessionFromDay(
+      input.workoutSessionId,
+      userId,
     );
   }
 }

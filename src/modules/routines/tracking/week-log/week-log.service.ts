@@ -305,6 +305,51 @@ export class WeekLogService {
     }
   }
 
+  async removeWorkoutSessionFromDay(
+    workoutSessionId: string,
+    userId: string,
+  ): Promise<any> {
+    const weekLog = await this.weekLogModel
+      .findOne({
+        userId: userId,
+        active: true,
+        // 'days.workoutSessionId': new Types.ObjectId(workoutSessionId),
+      })
+      .exec();
+
+    if (!weekLog) {
+      throw new NotFoundException(
+        `No se encontró un WeekLlog con el workoutSessionId "${workoutSessionId}"`,
+      );
+    }
+
+    this.validator.validateOwnership(weekLog, userId);
+
+    const day = weekLog.days.find(
+      (d) =>
+        d.workoutSessionId &&
+        d.workoutSessionId.toString() === workoutSessionId,
+    );
+
+    if (!day) {
+      throw new NotFoundException(
+        `No se encontró un día con el workoutSessionId "${workoutSessionId}"`,
+      );
+    }
+
+    day.workoutSessionId = null;
+    day.status = 'pending';
+
+    await weekLog.save();
+
+    await this.workoutSessionModel.findByIdAndUpdate(workoutSessionId, {
+      deleted: true,
+      deletedAt: new Date(),
+    });
+
+    return this.findOne(weekLog._id.toString(), userId);
+  }
+
   async assignRoutineToDay(
     routineDayId: string,
     date: string,
@@ -326,7 +371,7 @@ export class WeekLogService {
     const nextDay = new Date(searchDate);
     nextDay.setDate(nextDay.getDate() + 1);
 
-    let existingSession = await this.workoutSessionModel
+    const existingSession = await this.workoutSessionModel
       .findOne({
         userId: new Types.ObjectId(userId),
         deleted: { $ne: true },
