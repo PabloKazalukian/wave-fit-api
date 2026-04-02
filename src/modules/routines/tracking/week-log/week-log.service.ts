@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -15,6 +16,7 @@ import { addDays, parseISO, isSameDay } from 'date-fns';
 import { WeekLogValidator } from './week-log.validator';
 import { WorkoutSession } from '../workout-session/schema/workout-session.schema';
 import { RoutinePlan as RoutinePlanSchema } from '../../templates/routine-plan/schema/routine-plan.schema';
+import { RoutineDayService } from '../../templates/routine-day/routine-day.service';
 
 @Injectable()
 export class WeekLogService {
@@ -25,6 +27,7 @@ export class WeekLogService {
     @InjectModel(WorkoutSession.name)
     private workoutSessionModel: Model<WorkoutSession>,
     private readonly validator: WeekLogValidator,
+    private routineDayService: RoutineDayService,
   ) {}
 
   async create(createWeekLogInput: CreateWeekLogInput, userId: Types.ObjectId) {
@@ -300,5 +303,90 @@ export class WeekLogService {
         }
       }
     }
+  }
+
+  async assignRoutineToDay(
+    routineDayId: string,
+    date: string,
+    userId: string,
+  ): Promise<any> {
+    const routineDay = await this.routineDayService.findOne(routineDayId);
+    if (!routineDay) {
+      throw new NotFoundException(
+        `RoutineDay con ID "${routineDayId}" no encontrado`,
+      );
+    }
+
+    const weekLog = await this.findActiveWeekLog(userId);
+    if (!weekLog) {
+      throw new BadRequestException('No hay un WeekLog activo para el usuario');
+    }
+
+    const searchDate = new Date(date);
+    const nextDay = new Date(searchDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    let existingSession = await this.workoutSessionModel
+      .findOne({
+        userId: new Types.ObjectId(userId),
+        deleted: { $ne: true },
+        date: {
+          $gte: searchDate,
+          $lt: nextDay,
+        },
+      })
+      .exec();
+
+    const exercises =
+      routineDay.exercises?.map((e: any) => ({
+        exerciseId: (
+          e.exercise?._id ||
+          e.exercise?.id ||
+          e.exercise ||
+          e.exerciseId ||
+          ''
+        ).toString(),
+        series: 0,
+        sets: [],
+      })) || [];
+
+    let sessionId: Types.ObjectId;
+
+    if (existingSession) {
+      existingSession.exercises = exercises;
+      existingSession.routineDayId = routineDayId;
+      existingSession.status = 'not_started';
+      await existingSession.save();
+      sessionId = existingSession._id;
+    } else {
+      const newSession = await this.workoutSessionModel.create({
+        userId: new Types.ObjectId(userId),
+        weekLogId: weekLog.id,
+        date: searchDate,
+        routineDayId,
+        exercises,
+        status: 'not_started',
+        notes: '',
+      });
+      sessionId = newSession._id;
+    }
+
+    const dayToUpdate = weekLog.days.find((d: any) =>
+      isSameDay(new Date(d.date), searchDate),
+    );
+
+    if (dayToUpdate) {
+      await this.weekLogModel.updateOne(
+        { _id: weekLog.id, 'days.order': dayToUpdate.order },
+        {
+          $set: {
+            'days.$.workoutSessionId': sessionId,
+            'days.$.status': 'complete',
+          },
+        },
+      );
+    }
+
+    return this.findOne(weekLog.id, userId);
   }
 }

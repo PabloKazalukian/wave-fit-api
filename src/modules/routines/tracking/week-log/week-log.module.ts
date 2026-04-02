@@ -13,15 +13,19 @@ import {
   RoutinePlan,
   RoutinePlanSchema,
 } from '../../templates/routine-plan/schema/routine-plan.schema';
+import { RoutineDayModule } from '../../templates/routine-day/routine-day.module';
+import { AuditLogsModule } from 'src/modules/audit-logs/audit-logs.module';
 
 @Module({
   imports: [
     RoutinePlanModule,
+    RoutineDayModule,
     MongooseModule.forFeature([
       { name: WeekLog.name, schema: WeekLogSchema },
       { name: WorkoutSession.name, schema: WorkoutSessionSchema },
       { name: RoutinePlan.name, schema: RoutinePlanSchema },
     ]),
+    AuditLogsModule,
   ],
   providers: [WeekLogResolver, WeekLogService, WeekLogValidator],
   exports: [WeekLogService],

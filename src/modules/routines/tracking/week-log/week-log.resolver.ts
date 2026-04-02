@@ -10,12 +10,16 @@ import {
   BadRequestException,
   UnauthorizedException,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { GqlAuthGuard } from '../../../../modules/auth/guards/gql-auth.guard';
 import { Types } from 'mongoose';
+import { AuditInterceptor } from 'src/modules/audit-logs/audit-logs.interceptor';
+import { Audit } from 'src/modules/audit-logs/audit-logs.decorator';
 
 @Resolver(() => WeekLog)
 @UseGuards(GqlAuthGuard)
+@UseInterceptors(AuditInterceptor)
 export class WeekLogResolver {
   constructor(private readonly weekLogService: WeekLogService) {}
 
@@ -127,5 +131,22 @@ export class WeekLogResolver {
     @Context() context,
   ) {
     return this.weekLogService.remove(id);
+  }
+
+  @Mutation(() => WeekLog)
+  @Audit('ASSIGN_ROUTINE_TO_DAY', 'WeekLog')
+  async assignRoutineToDay(
+    @Args('routineDayId', { type: () => String }) routineDayId: string,
+    @Args('date', { type: () => String }) date: string,
+    @Context() context,
+  ) {
+    if (!Types.ObjectId.isValid(context?.req?.user?.id)) {
+      throw new BadRequestException('Invalid user id');
+    }
+    return this.weekLogService.assignRoutineToDay(
+      routineDayId,
+      date,
+      context?.req?.user?.id,
+    );
   }
 }
