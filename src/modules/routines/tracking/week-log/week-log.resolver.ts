@@ -29,24 +29,27 @@ export class WeekLogResolver {
     @Args('createWeekLogInput') createWeekLogInput: CreateWeekLogInput,
     @Context() context,
   ) {
-    // const userId = context.req.user.id;
-    if (!Types.ObjectId.isValid(context?.req?.user?.id)) {
+    const userId = context?.req?.user?._id?.toString() || context?.req?.user?.id || context?.req?.user?.userId;
+
+    if (!userId || !Types.ObjectId.isValid(userId)) {
       throw new BadRequestException('Invalid user id');
     }
 
     return this.weekLogService.create(
       createWeekLogInput,
-      context?.req?.user?.id,
+      userId,
     );
   }
 
   @Query(() => [WeekLog], { name: 'findAll' })
   async findAll(@Context() context) {
-    if (!Types.ObjectId.isValid(context?.req?.user?.id)) {
+    const userId = context?.req?.user?._id?.toString() || context?.req?.user?.id || context?.req?.user?.userId;
+
+    if (!userId || !Types.ObjectId.isValid(userId)) {
       throw new BadRequestException('Invalid user id');
     }
 
-    return this.weekLogService.findAllByUser(context?.req?.user?.id);
+    return this.weekLogService.findAllByUser(userId);
   }
 
   @Query(() => WeekLog, { name: 'findOne' })
@@ -54,21 +57,23 @@ export class WeekLogResolver {
     @Args('id', { type: () => String }) id: string,
     @Context() context,
   ) {
-    if (!Types.ObjectId.isValid(context?.req?.user?.id)) {
+    const userId = context?.req?.user?._id?.toString() || context?.req?.user?.id || context?.req?.user?.userId;
+
+    if (!userId || !Types.ObjectId.isValid(userId)) {
       throw new BadRequestException('Invalid user id');
     }
-    return this.weekLogService.findOne(id, context?.req?.user?.id);
+    return this.weekLogService.findOne(id, userId);
   }
 
   @Query(() => ActiveWeekLogResponse, { name: 'activeWeekLog' })
   async findActiveWeekLog(@Context() context) {
-    if (!Types.ObjectId.isValid(context?.req?.user?.id)) {
+    const userId = context?.req?.user?._id?.toString() || context?.req?.user?.id || context?.req?.user?.userId;
+
+    if (!userId || !Types.ObjectId.isValid(userId)) {
       throw new BadRequestException('Invalid user id');
     }
 
-    const week = await this.weekLogService.findActiveWeekLog(
-      context?.req?.user?.id,
-    );
+    const week = await this.weekLogService.findActiveWeekLog(userId);
 
     if (!week) {
       return { hasActiveWeek: false };
@@ -79,10 +84,12 @@ export class WeekLogResolver {
 
   @Query(() => WeekLog, { name: 'currentWorkoutSession' })
   async getCurrentWorkoutSession(@Context() context) {
-    if (!Types.ObjectId.isValid(context?.req?.user?.id)) {
+    const userId = context?.req?.user?._id?.toString() || context?.req?.user?.id || context?.req?.user?.userId;
+
+    if (!userId || !Types.ObjectId.isValid(userId)) {
       throw new BadRequestException('Invalid user id');
     }
-    return this.weekLogService.findActiveWeekLog(context?.req?.user?.id);
+    return this.weekLogService.findActiveWeekLog(userId);
   }
 
   @Mutation(() => WeekLog)
@@ -141,13 +148,15 @@ export class WeekLogResolver {
     @Args('date', { type: () => String }) date: string,
     @Context() context,
   ) {
-    if (!Types.ObjectId.isValid(context?.req?.user?.id)) {
+    const userId = context?.req?.user?._id?.toString() || context?.req?.user?.id || context?.req?.user?.userId;
+
+    if (!userId || !Types.ObjectId.isValid(userId)) {
       throw new BadRequestException('Invalid user id');
     }
     return this.weekLogService.assignRoutineToDay(
       routineDayId,
       date,
-      context?.req?.user?.id,
+      userId,
     );
   }
 

@@ -68,6 +68,7 @@ export class WeekLogService {
       planId: planId ? new Types.ObjectId(planId) : null,
       days,
       completed: false,
+      active: true,
     });
 
     await weekLog.save();
@@ -432,6 +433,6 @@ export class WeekLogService {
       );
     }
 
-    return this.findOne(weekLog.id, userId);
+    return this.weekLogModel.findById(weekLog.id);
   }
 }
