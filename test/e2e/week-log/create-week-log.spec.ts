@@ -416,8 +416,6 @@ describe('WeekLog Creation (e2e)', () => {
       users[0].id.toString(),
     );
 
-    console.log(activeWeek);
-
     expect(activeWeek).toBeDefined();
     const session1 = activeWeek.days[0].exercises;
     expect(session1.length).toBe(1);

@@ -69,7 +69,6 @@ export class WeekLogRepository implements IWeekLogRepository {
     await weekLog.save();
 
     if (data.planId) {
-      console.log('data.planId', data.planId);
       await this.weekLogModel.updateOne(
         { _id: weekLog._id },
         { $set: { planId: new Types.ObjectId(data.planId) } },

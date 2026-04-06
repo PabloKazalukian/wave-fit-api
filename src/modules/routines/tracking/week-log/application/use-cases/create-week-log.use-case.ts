@@ -56,10 +56,6 @@ export class CreateWeekLogUseCase {
       await this.workoutSessionModel.insertMany(sessions);
     }
 
-    if (planId) {
-      console.log('wes', weekLog);
-    }
-
     // 4. Persistence
     const newWeekLog = await this.weekLogRepository.create(weekLog);
 

@@ -63,7 +63,6 @@ export class WeekLogService {
   }
 
   async findOne(id: string, userId: string): Promise<any> {
-    // console.log('[findOne] Start - id:', id, 'userId:', userId);
     const weekLog = await this.weekLogModel
       .findOne({ _id: id, userId })
       .populate('days.workoutSessionId')
@@ -74,7 +73,6 @@ export class WeekLogService {
     }
 
     const result = this.mapWeekLog(weekLog);
-    // console.log('[findOne] Returning result');
     return result;
   }
 
@@ -267,6 +265,8 @@ export class WeekLogService {
         : undefined;
     if (updateInput.notes !== undefined) weekLog.notes = updateInput.notes;
     if (updateInput.active !== undefined) weekLog.active = updateInput.active;
+    if (updateInput.completed !== undefined)
+      weekLog.completed = updateInput.completed;
 
     if (updateInput.days?.length) {
       for (const dayInput of updateInput.days) {
@@ -437,10 +437,7 @@ export class WeekLogService {
       let sessionId: Types.ObjectId;
 
       // 6. Verificar si ya existe un workout-session para este día
-      console.log(
-        '[assignRoutineToDay] dayToUpdate.workoutSessionId',
-        dayToUpdate.workoutSessionId,
-      );
+
       if (dayToUpdate.workoutSessionId) {
         // Ya existe, actualizarlo
         const existingSession = await this.workoutSessionModel
