@@ -9,6 +9,10 @@ import {
 } from 'class-validator';
 import { ExercisePerformance } from '../../../workout-session/schema/exercise-performance.schema';
 
+import { UpdateWorkoutSessionInput } from '../../../workout-session/dto/update-workout-session.input';
+import { Type } from 'class-transformer';
+import { ValidateNested } from 'class-validator';
+
 // update-week-log-day.input.ts
 @InputType()
 export class UpdateWeekLogDayInput {
@@ -20,8 +24,16 @@ export class UpdateWeekLogDayInput {
   @IsMongoId()
   workoutSessionId?: string;
 
-  @Field()
-  isRest: boolean;
+  @Field(() => UpdateWorkoutSessionInput, { nullable: true })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => UpdateWorkoutSessionInput)
+  workoutSession?: UpdateWorkoutSessionInput;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsBoolean()
+  isRest?: boolean;
 
   @Field(() => [String], { nullable: true })
   @IsOptional()

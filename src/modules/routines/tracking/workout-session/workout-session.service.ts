@@ -3,6 +3,8 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { CreateWorkoutSessionInput } from './dto/create-workout-session.input';
 import { UpdateWorkoutSessionInput } from './dto/update-workout-session.input';
@@ -18,6 +20,7 @@ export class WorkoutSessionService {
   constructor(
     @InjectModel(WorkoutSession.name)
     private sessionModel: Model<WorkoutSession>,
+    @Inject(forwardRef(() => WeekLogService))
     private weekLogService: WeekLogService,
     private readonly validator: WorkoutSessionValidator,
   ) {}

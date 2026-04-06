@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { WorkoutSessionService } from './workout-session.service';
 import { WorkoutSessionResolver } from './workout-session.resolver';
 import {
@@ -20,7 +20,7 @@ import { WorkoutSessionValidator } from './workout-session.validator';
       { name: WorkoutSession.name, schema: WorkoutSessionSchema },
       { name: ExercisePerformance.name, schema: ExercisePerformanceSchema },
     ]),
-    WeekLogModule,
+    forwardRef(() => WeekLogModule),
     AuditLogsModule,
   ],
   providers: [
@@ -28,5 +28,6 @@ import { WorkoutSessionValidator } from './workout-session.validator';
     WorkoutSessionService,
     WorkoutSessionValidator,
   ],
+  exports: [WorkoutSessionService, WorkoutSessionValidator],
 })
 export class WorkoutSessionModule {}

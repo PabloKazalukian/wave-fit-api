@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { WeekLogService } from './week-log.service';
 import { WeekLogResolver } from './week-log.resolver';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -10,6 +10,7 @@ import {
   WorkoutSession,
   WorkoutSessionSchema,
 } from '../workout-session/schema/workout-session.schema';
+import { WorkoutSessionModule } from '../workout-session/workout-session.module';
 import { RoutinePlanModule } from '../../templates/routine-plan/routine-plan.module';
 import {
   RoutinePlan,
@@ -24,6 +25,7 @@ import { WEEK_LOG_USE_CASES } from './application/use-cases';
 
 @Module({
   imports: [
+    forwardRef(() => WorkoutSessionModule),
     RoutinePlanModule,
     RoutineDayModule,
     MongooseModule.forFeature([

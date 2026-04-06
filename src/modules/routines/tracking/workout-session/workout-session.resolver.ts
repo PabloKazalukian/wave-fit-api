@@ -66,8 +66,12 @@ export class WorkoutSessionResolver {
     updateWorkoutSessionInput: UpdateWorkoutSessionInput,
     @Context() context,
   ) {
+    const id = updateWorkoutSessionInput.id;
+    if (!id || !Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid workout session id');
+    }
     return this.workoutSessionService.update(
-      updateWorkoutSessionInput.id,
+      id,
       updateWorkoutSessionInput,
       context?.req?.user?.id,
     );

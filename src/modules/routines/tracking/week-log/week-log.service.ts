@@ -1,8 +1,9 @@
 import {
   BadRequestException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { CreateWeekLogInput } from './presentation/dto/create-week-log.input';
 import {
@@ -14,7 +15,6 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types, UpdateQuery } from 'mongoose';
 import { addDays, parseISO, isSameDay } from 'date-fns';
 import { WorkoutSession } from '../workout-session/schema/workout-session.schema';
-import { RoutinePlan as RoutinePlanSchema } from '../../templates/routine-plan/schema/routine-plan.schema';
 import { RoutineDayService } from '../../templates/routine-day/routine-day.service';
 import { WeekLogValidator } from './application/validators/week-log.validator';
 import {
@@ -22,6 +22,7 @@ import {
   FindAllWeekLogsByUserUseCase,
 } from './application/use-cases';
 import { WeekLogDomain } from './domain/entities/week-log.domain';
+import { WorkoutSessionService } from '../workout-session/workout-session.service';
 
 @Injectable()
 export class WeekLogService {
@@ -33,6 +34,8 @@ export class WeekLogService {
     private routineDayService: RoutineDayService,
     private readonly createWeekLogUseCase: CreateWeekLogUseCase,
     private readonly findAllWeekLogsByUserUseCase: FindAllWeekLogsByUserUseCase,
+    @Inject(forwardRef(() => WorkoutSessionService))
+    private readonly workoutSessionService: WorkoutSessionService,
   ) {}
 
   async create(
@@ -116,7 +119,7 @@ export class WeekLogService {
     this.validator.validateOwnership(weekLog, userId);
     this.validator.validateUpdate(updateWeekLogInput);
 
-    this.applyUpdateInput(weekLog, updateWeekLogInput);
+    await this.applyUpdateInput(weekLog, updateWeekLogInput, userId);
 
     await weekLog.save();
     return this.findOne(id, userId);
@@ -250,10 +253,11 @@ export class WeekLogService {
     return { days, sessionsToInsert };
   }
 
-  private applyUpdateInput(
+  private async applyUpdateInput(
     weekLog: WeekLog,
     updateInput: UpdateWeekLogInput,
-  ): void {
+    userId: string,
+  ): Promise<void> {
     if (updateInput.startDate)
       weekLog.startDate = parseISO(updateInput.startDate);
     if (updateInput.endDate) weekLog.endDate = parseISO(updateInput.endDate);
@@ -269,7 +273,57 @@ export class WeekLogService {
         const day = weekLog.days.find((d) => d.order === dayInput.order);
         if (!day) continue;
 
-        if (dayInput.workoutSessionId !== undefined) {
+        // Nested WorkoutSession handling
+        if (dayInput.workoutSession) {
+          const wsInput = dayInput.workoutSession;
+          if (!day.workoutSessionId) {
+            // Case 1: No session in DB, create new one
+            if (wsInput.id) {
+              // If input has an ID but DB doesn't, we can either assign it or throw.
+              // Logic says: "detectar si el usuario creo un nuevo WS (sin id)".
+              // If it has an ID, maybe it's an assignment?
+              // But user said: "detectar si el usuario creo un nuevo WS(sin id obviamente) y asignara a ese WL-day un nuevo WS"
+              // "Validadara ahora que este WS este bien... y revisara si ese dia ya tiene o no un id de WS, si tiene devuleve ERRROR, sino hace la operacion."
+
+              // If wsInput.id exists, it might be an assignment by ID.
+              day.workoutSessionId = new Types.ObjectId(wsInput.id);
+            } else {
+              // New session creation
+              const newSession = await this.workoutSessionService.create(
+                {
+                  ...wsInput,
+                  weekLogId: (weekLog as any)._id.toString(),
+                  date: day.date.toISOString(),
+                } as any,
+                userId,
+              );
+              day.workoutSessionId = new Types.ObjectId(
+                (newSession as any)._id,
+              );
+            }
+          } else {
+            // Case 2: Day already has a session
+            if (wsInput.id && wsInput.id === day.workoutSessionId.toString()) {
+              // Update existing session
+              await this.workoutSessionService.update(
+                wsInput.id,
+                wsInput,
+                userId,
+              );
+            } else {
+              // IDs dont match or trying to create new on occupied day
+              throw new BadRequestException(
+                `Day ${day.order} already has a WorkoutSession assigned. Use removeWorkoutSessionFromDay first before assigning a new one.`,
+              );
+            }
+          }
+        }
+
+        // Only update workoutSessionId directly if nested workoutSession was NOT provided
+        if (
+          dayInput.workoutSessionId !== undefined &&
+          !dayInput.workoutSession
+        ) {
           day.workoutSessionId = dayInput.workoutSessionId
             ? new Types.ObjectId(dayInput.workoutSessionId)
             : null;
@@ -323,10 +377,7 @@ export class WeekLogService {
 
     await weekLog.save();
 
-    await this.workoutSessionModel.findByIdAndUpdate(workoutSessionId, {
-      deleted: true,
-      deletedAt: new Date(),
-    });
+    await this.workoutSessionService.remove(workoutSessionId, userId);
 
     return this.findOne(weekLog._id.toString(), userId);
   }
