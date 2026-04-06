@@ -126,6 +126,14 @@ export const SYNC_WEEK_LOG_DAYS = `
     }
 `;
 
+export const ASSIGN_ROUTINE_TO_DAY = `
+    mutation AssignRoutineToDay($routineDayId: String!, $date: String!) {
+        assignRoutineToDay(routineDayId: $routineDayId, date: $date) {
+            ${WEEK_LOG_FIELDS}
+        }
+    }
+`;
+
 export const FIND_ALL_TRACKING_BY_USER = `
     query findAll {
         findAll {
