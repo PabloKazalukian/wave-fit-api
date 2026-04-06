@@ -129,7 +129,6 @@ export class WeekLogDomain {
   ): { weekLog: WeekLogDomain; sessions: WorkoutSessionCreationData[] } {
     const sessionsToInsert: WorkoutSessionCreationData[] = [];
     let isRestMap: boolean[] = new Array(7).fill(false);
-    console.log('idde plan', planId);
 
     if (plan?.week?.length === 7) {
       isRestMap = plan.week.map((d) => d.isRest);
@@ -161,7 +160,8 @@ export class WeekLogDomain {
               userId,
               weekLogId,
               date: addDays(startDate, index),
-              routineDayId: routineDay.id?.toString() || routineDay._id?.toString() || '',
+              routineDayId:
+                routineDay.id?.toString() || routineDay._id?.toString() || '',
               exercises,
               status: 'not_started',
             });
@@ -179,7 +179,6 @@ export class WeekLogDomain {
       },
     );
 
-    console.log(planId);
     const weekLog = new WeekLogDomain(
       weekLogId,
       userId,
@@ -190,7 +189,6 @@ export class WeekLogDomain {
       false,
       true,
     );
-    console.log(weekLog);
 
     return { weekLog, sessions: sessionsToInsert };
   }

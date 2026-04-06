@@ -134,6 +134,14 @@ export const ASSIGN_ROUTINE_TO_DAY = `
     }
 `;
 
+export const REMOVE_WORKOUT_SESSION_FROM_DAY = `
+    mutation RemoveWorkoutSessionFromDay($input: RemoveWorkoutSessionFromDayInput!) {
+        removeWorkoutSessionFromDay(input: $input) {
+            ${WEEK_LOG_FIELDS}
+        }
+    }
+`;
+
 export const FIND_ALL_TRACKING_BY_USER = `
     query findAll {
         findAll {

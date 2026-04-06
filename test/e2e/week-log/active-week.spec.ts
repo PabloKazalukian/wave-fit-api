@@ -10,45 +10,8 @@ import {
   createTestUser,
   getTestUserCredentials,
 } from '../../fixtures/user.fixture';
+import { getCookieWithToken, createWeekLog } from '../helpers/week-log.helper';
 import cookieParser from 'cookie-parser';
-
-function getCookieWithToken(loginResponse: any): string {
-  const cookies = loginResponse.headers['set-cookie'] as
-    | string
-    | string[]
-    | undefined;
-  if (!cookies) return '';
-  const cookieArray = Array.isArray(cookies) ? cookies : [cookies];
-  const tokenCookie = cookieArray.find((c: string) => c.startsWith('token='));
-  return tokenCookie || '';
-}
-
-function createWeekLog(app: INestApplication<App>, cookie: string) {
-  const today = new Date();
-  const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - today.getDay());
-  const endOfWeek = new Date(startOfWeek);
-  endOfWeek.setDate(startOfWeek.getDate() + 6);
-
-  return request(app.getHttpServer())
-    .post('/graphql')
-    .set('Cookie', [cookie || ''])
-    .send({
-      query: `
-          mutation {
-            createWeekLog(createWeekLogInput: {
-              startDate: "${startOfWeek.toISOString()}",
-              endDate: "${endOfWeek.toISOString()}",
-            }) {
-              id
-              startDate
-              endDate
-            }
-          }
-        `,
-    })
-    .expect(200);
-}
 
 describe('activeWeekLog (e2e)', () => {
   let app: INestApplication<App>;

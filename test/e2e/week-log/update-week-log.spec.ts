@@ -18,87 +18,14 @@ import {
   WEEK_LOG_FIELDS,
   UPDATE_WEEK_LOG,
   ASSIGN_ROUTINE_TO_DAY,
+  REMOVE_WORKOUT_SESSION_FROM_DAY,
 } from '../../apollo/week-log.queries';
+import {
+  getCookieWithToken,
+  createWeekLog,
+  getActiveWeekLog,
+} from '../helpers/week-log.helper';
 import cookieParser from 'cookie-parser';
-
-function getCookieWithToken(loginResponse: any): string {
-  const cookies = loginResponse.headers['set-cookie'] as
-    | string
-    | string[]
-    | undefined;
-  if (!cookies) return '';
-  const cookieArray = Array.isArray(cookies) ? cookies : [cookies];
-  const tokenCookie = cookieArray.find((c: string) => c.startsWith('token='));
-  return tokenCookie || '';
-}
-
-function createWeekLog(app: INestApplication<App>, cookie: string) {
-  const today = new Date();
-  const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - today.getDay());
-  const endOfWeek = new Date(startOfWeek);
-  endOfWeek.setDate(startOfWeek.getDate() + 6);
-
-  return request(app.getHttpServer())
-    .post('/graphql')
-    .set('Cookie', [cookie || ''])
-    .send({
-      query: `
-          mutation {
-            createWeekLog(createWeekLogInput: {
-              startDate: "${startOfWeek.toISOString()}",
-              endDate: "${endOfWeek.toISOString()}",
-            }) {
-              id
-              startDate
-              endDate
-            }
-          }
-        `,
-    })
-    .expect(200);
-}
-
-function getActiveWeekLog(app: INestApplication<App>, cookie: string) {
-  return request(app.getHttpServer())
-    .post('/graphql')
-    .set('Cookie', [cookie || ''])
-    .send({
-      query: `
-        query findActiveWeekLog {
-          activeWeekLog {
-            hasActiveWeek
-            week {
-                id
-                startDate
-                endDate
-                userId
-                days {
-                  order
-                  date
-                  isRest
-                  workoutSessionId
-                  exercises {
-                      exerciseId
-                      series
-                      sets {
-                          weights
-                          reps
-                      }
-                      notes
-                  }
-                  extraSessionIds
-                  status
-                }
-                planId
-                notes
-                completed
-            }
-          }
-      }
-      `,
-    });
-}
 
 describe('UpdateWeekLog (e2e)', () => {
   let app: INestApplication<App>;
@@ -180,12 +107,12 @@ describe('UpdateWeekLog (e2e)', () => {
         },
       });
 
-    if (updateResponse.body.errors) {
-      console.log(
-        'GraphQL Errors:',
-        JSON.stringify(updateResponse.body.errors, null, 2),
-      );
-    }
+    // if (updateResponse.body.errors) {
+    //   console.log(
+    //     'GraphQL Errors:',
+    //     JSON.stringify(updateResponse.body.errors, null, 2),
+    //   );
+    // }
     expect(updateResponse.status).toBe(200);
     expect(updateResponse.body.data.updateWeekLog.completed).toBe(true);
     expect(updateResponse.body.data.updateWeekLog.days.length).toBe(7);
@@ -312,16 +239,251 @@ describe('UpdateWeekLog (e2e)', () => {
         },
       });
 
-    if (assignResponse.body.errors) {
-      console.log(
-        'GraphQL Errors:',
-        JSON.stringify(assignResponse.body.errors, null, 2),
-      );
-    }
+    // if (assignResponse.body.errors) {
+    //   console.log(
+    //     'GraphQL Errors:',
+    //     JSON.stringify(assignResponse.body.errors, null, 2),
+    //   );
+    // }
 
     expect(assignResponse.status).toBe(200);
     expect(
       assignResponse.body.data.assignRoutineToDay.days[0].workoutSessionId,
     ).toBeDefined();
+  });
+
+  it('should remove workout session from day', async () => {
+    const activeWeekResponse = await getActiveWeekLog(app, authCookie);
+    if (activeWeekResponse.body.data.activeWeekLog.hasActiveWeek) {
+      const week = activeWeekResponse.body.data.activeWeekLog.week;
+      await request(app.getHttpServer())
+        .post('/graphql')
+        .set('Cookie', [authCookie])
+        .send({
+          query: UPDATE_WEEK_LOG,
+          variables: {
+            updateWeekLogInput: {
+              id: week.id,
+              userId: week.userId,
+              completed: true,
+              active: false,
+            },
+          },
+        });
+    }
+
+    const ex1 = (await exerciseService.create({
+      name: 'Bench Press',
+      category: ExerciseCategory.CHEST,
+      usesWeight: false,
+    })) as any;
+
+    const day1 = (await routineDayService.create({
+      title: 'Chest Day',
+      type: [ExerciseCategory.CHEST],
+      exercises: [{ exercise: ex1.id, order: 1 }],
+    })) as any;
+
+    const routineDaysIds = [day1.id, null, null, null, null, null, null];
+
+    const plan = (await routinePlanService.create({
+      name: 'Test Plan',
+      description: 'A test plan',
+      weekly_distribution: '1 day',
+      routineDays: routineDaysIds as any,
+    })) as any;
+
+    const today = new Date();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+    const createWlResponse = await request(app.getHttpServer())
+      .post('/graphql')
+      .set('Cookie', [authCookie])
+      .send({
+        query: `
+          mutation {
+            createWeekLog(createWeekLogInput: {
+              startDate: "${startOfWeek.toISOString()}",
+              endDate: "${endOfWeek.toISOString()}",
+              planId: "${plan.id}"
+            }) {
+              id
+              planId
+              days {
+                order
+                workoutSessionId
+                status
+              }
+            }
+          }
+        `,
+      });
+
+    expect(createWlResponse.status).toBe(200);
+    const week = createWlResponse.body.data.createWeekLog;
+    expect(week.days[0].workoutSessionId).toBeDefined();
+    expect(week.days[0].status).toBe('pending');
+
+    const workoutSessionId = week.days[0].workoutSessionId;
+
+    const removeResponse = await request(app.getHttpServer())
+      .post('/graphql')
+      .set('Cookie', [authCookie])
+      .send({
+        query: REMOVE_WORKOUT_SESSION_FROM_DAY,
+        variables: {
+          input: {
+            workoutSessionId: workoutSessionId,
+          },
+        },
+      });
+
+    // if (removeResponse.body.errors) {
+    //   console.log(
+    //     'GraphQL Errors:',
+    //     JSON.stringify(removeResponse.body.errors, null, 2),
+    //   );
+    // }
+
+    expect(removeResponse.status).toBe(200);
+    expect(
+      removeResponse.body.data.removeWorkoutSessionFromDay.days[0]
+        .workoutSessionId,
+    ).toBeNull();
+    expect(
+      removeResponse.body.data.removeWorkoutSessionFromDay.days[0].status,
+    ).toBe('pending');
+  });
+
+  it('should fail when assigning routine to day that already has workout session', async () => {
+    const activeWeekResponse = await getActiveWeekLog(app, authCookie);
+    if (activeWeekResponse.body.data.activeWeekLog.hasActiveWeek) {
+      const week = activeWeekResponse.body.data.activeWeekLog.week;
+      await request(app.getHttpServer())
+        .post('/graphql')
+        .set('Cookie', [authCookie])
+        .send({
+          query: UPDATE_WEEK_LOG,
+          variables: {
+            updateWeekLogInput: {
+              id: week.id,
+              userId: week.userId,
+              completed: true,
+              active: false,
+            },
+          },
+        });
+    }
+
+    const ex1 = (await exerciseService.create({
+      name: 'Dumbbell Curl',
+      category: ExerciseCategory.BICEPS,
+      usesWeight: false,
+    })) as any;
+
+    const ex2 = (await exerciseService.create({
+      name: 'Tricep Extension',
+      category: ExerciseCategory.TRICEPS,
+      usesWeight: false,
+    })) as any;
+
+    const day1 = (await routineDayService.create({
+      title: 'Biceps',
+      type: [ExerciseCategory.BICEPS],
+      exercises: [{ exercise: ex1.id, order: 1 }],
+    })) as any;
+
+    const day2 = (await routineDayService.create({
+      title: 'Triceps',
+      type: [ExerciseCategory.TRICEPS],
+      exercises: [{ exercise: ex2.id, order: 1 }],
+    })) as any;
+
+    const routineDaysIds = [day1.id, day2.id, null, null, null, null, null];
+
+    const plan = (await routinePlanService.create({
+      name: 'Arms Plan',
+      description: 'Arms test plan',
+      weekly_distribution: '2 days',
+      routineDays: routineDaysIds as any,
+    })) as any;
+
+    const today = new Date();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+    const createWlResponse = await request(app.getHttpServer())
+      .post('/graphql')
+      .set('Cookie', [authCookie])
+      .send({
+        query: `
+          mutation {
+            createWeekLog(createWeekLogInput: {
+              startDate: "${startOfWeek.toISOString()}",
+              endDate: "${endOfWeek.toISOString()}",
+              planId: "${plan.id}"
+            }) {
+              id
+              userId
+              startDate
+              endDate
+              planId
+              days {
+                order
+                date
+                workoutSessionId
+              }
+            }
+          }
+        `,
+      });
+
+    expect(createWlResponse.status).toBe(200);
+    const week = createWlResponse.body.data.createWeekLog;
+    const originalWorkoutSessionId = week.days[1].workoutSessionId;
+
+    const updateResponse = await request(app.getHttpServer())
+      .post('/graphql')
+      .set('Cookie', [authCookie])
+      .send({
+        query: UPDATE_WEEK_LOG,
+        variables: {
+          updateWeekLogInput: {
+            id: week.id,
+            userId: week.userId,
+            startDate: week.startDate
+              ? week.startDate.replace('Z', '')
+              : undefined,
+            endDate: week.endDate ? week.endDate.replace('Z', '') : undefined,
+            days: [
+              { order: 1, workoutSessionId: null },
+              {
+                order: 2,
+                workoutSession: {
+                  id: '69d4320e2542b4c262114433',
+                },
+              },
+            ],
+          },
+        },
+      });
+
+    // if (updateResponse.body.errors) {
+    //   console.log(
+    //     'GraphQL Errors:',
+    //     JSON.stringify(updateResponse.body.errors, null, 2),
+    //   );
+    // }
+
+    expect(updateResponse.status).toBe(200);
+    expect(updateResponse.body.errors).toBeDefined();
+    expect(updateResponse.body.errors[0].message).toContain(
+      'already has a WorkoutSession',
+    );
   });
 });

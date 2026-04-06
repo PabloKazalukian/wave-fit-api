@@ -38,7 +38,6 @@ export class CreateWeekLogUseCase {
     let plan: any = null;
     if (planId) {
       plan = await this.routinePlanService.findOneWithDays(planId);
-      console.log('plan', plan, planId);
     }
 
     // 3. Domain Logic: Create the initial structure

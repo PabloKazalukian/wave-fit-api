@@ -14,6 +14,7 @@ import {
   createTestUser,
   getTestUserCredentials,
 } from '../../fixtures/user.fixture';
+import { getCookieWithToken } from '../helpers/week-log.helper';
 import cookieParser from 'cookie-parser';
 
 export const WEEK_LOG_FIELDS = `
@@ -42,17 +43,6 @@ export const WEEK_LOG_FIELDS = `
         status
     }
 `;
-
-function getCookieWithToken(loginResponse: any): string {
-  const cookies = loginResponse.headers['set-cookie'] as
-    | string
-    | string[]
-    | undefined;
-  if (!cookies) return '';
-  const cookieArray = Array.isArray(cookies) ? cookies : [cookies];
-  const tokenCookie = cookieArray.find((c: string) => c.startsWith('token='));
-  return tokenCookie || '';
-}
 
 describe('WeekLog Creation (e2e)', () => {
   let app: INestApplication<App>;
