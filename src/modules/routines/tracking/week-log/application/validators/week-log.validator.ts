@@ -2,20 +2,27 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  Inject,
   Injectable,
 } from '@nestjs/common';
-import { CreateWeekLogInput } from './dto/create-week-log.input';
-import { UpdateWeekLogInput } from './dto/update-week-log.input';
-import { WeekLog } from './schema/week-log.schema';
+import { CreateWeekLogInput } from '../../presentation/dto/create-week-log.input';
+import { UpdateWeekLogInput } from '../../presentation/dto/update-week-log.input';
+import { WeekLog } from '../../infrastructure/schemas/week-log.schema';
 import { Model, Types } from 'mongoose';
 import { differenceInDays, parseISO, isValid } from 'date-fns';
+import type { IWeekLogRepository } from '../../domain/interfaces/repositories/week-log.repository.interface';
+import { WEEK_LOG_REPOSITORY } from '../../domain/interfaces/repositories/week-log.repository.interface';
 
 @Injectable()
 export class WeekLogValidator {
+  constructor(
+    @Inject(WEEK_LOG_REPOSITORY)
+    private readonly weekLogRepository: IWeekLogRepository,
+  ) {}
+
   async validateCreation(
     createWeekLogInput: CreateWeekLogInput,
     userId: Types.ObjectId,
-    weekLogModel: Model<WeekLog>,
   ) {
     const { startDate, endDate } = createWeekLogInput;
 
@@ -23,12 +30,9 @@ export class WeekLogValidator {
       throw new ForbiddenException('Week must be exactly 7 days');
     }
 
-    const existing = await weekLogModel.findOne({
-      userId,
-      active: true,
-    });
+    const existing = await this.weekLogRepository.findActive(userId.toString());
 
-    if (existing) {
+    if (existing !== null) {
       throw new ConflictException('Already active week');
     }
   }

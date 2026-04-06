@@ -274,6 +274,7 @@ describe('WeekLog Creation (e2e)', () => {
             endDate: week.endDate ? week.endDate.replace('Z', '') : undefined,
             days: week.days.map(({ date, exercises, ...rest }: any) => rest),
             completed: true,
+            active: false,
           },
         },
       });
@@ -365,12 +366,20 @@ describe('WeekLog Creation (e2e)', () => {
               planId: "${plan.id}"
             }) {
               id
+              startDate
+              endDate
               planId
               days {
                 order
+                date
                 isRest
                 workoutSessionId
+                
+                extraSessionIds
+                status
               }
+              completed
+              notes
             }
           }
         `,

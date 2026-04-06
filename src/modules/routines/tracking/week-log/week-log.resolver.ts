@@ -1,12 +1,15 @@
 import { Resolver, Query, Mutation, Args, Int, Context } from '@nestjs/graphql';
 import { WeekLogService } from './week-log.service';
-import { ActiveWeekLogResponse, WeekLog } from './entities/week-log.entity';
-import { CreateWeekLogInput } from './dto/create-week-log.input';
+import {
+  ActiveWeekLogResponse,
+  WeekLog,
+} from './presentation/entities/week-log.entity';
+import { CreateWeekLogInput } from './presentation/dto/create-week-log.input';
 import {
   UpdateWeekLogDayInput,
   UpdateWeekLogInput,
-} from './dto/update-week-log.input';
-import { RemoveWorkoutSessionFromDayInput } from './dto/remove-workout-session-from-day.input';
+} from './presentation/dto/update-week-log.input';
+import { RemoveWorkoutSessionFromDayInput } from './presentation/dto/remove-workout-session-from-day.input';
 import {
   BadRequestException,
   UnauthorizedException,
@@ -38,11 +41,26 @@ export class WeekLogResolver {
       throw new BadRequestException('Invalid user id');
     }
 
-    return this.weekLogService.create(createWeekLogInput, userId);
+    const createdWeekLog = await this.weekLogService.create(
+      createWeekLogInput,
+      userId,
+    );
+
+    if (!createdWeekLog) {
+      throw new BadRequestException('Failed to create week log');
+    }
+
+    return this.weekLogService.findOne(createdWeekLog.id, userId);
   }
 
   @Query(() => [WeekLog], { name: 'findAll' })
-  async findAll(@Context() context) {
+  async findAll(
+    @Args('limit', { type: () => Int, nullable: true, defaultValue: 5 })
+    limit: number,
+    @Args('offset', { type: () => Int, nullable: true, defaultValue: 0 })
+    offset: number,
+    @Context() context,
+  ) {
     const userId =
       context?.req?.user?._id?.toString() ||
       context?.req?.user?.id ||
@@ -52,7 +70,7 @@ export class WeekLogResolver {
       throw new BadRequestException('Invalid user id');
     }
 
-    return this.weekLogService.findAllByUser(userId);
+    return this.weekLogService.findAllByUser(userId, limit, offset);
   }
 
   @Query(() => WeekLog, { name: 'findOne' })

@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { WeekLogResolver } from './week-log.resolver';
 import { WeekLogService } from './week-log.service';
-import { CreateWeekLogInput } from './dto/create-week-log.input';
-import { UpdateWeekLogInput } from './dto/update-week-log.input';
+import { CreateWeekLogInput } from './presentation/dto/create-week-log.input';
+import { UpdateWeekLogInput } from './presentation/dto/update-week-log.input';
 import { Types } from 'mongoose';
 import {
   BadRequestException,

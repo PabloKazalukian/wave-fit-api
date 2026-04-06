@@ -3,7 +3,7 @@ import {
   ForbiddenException,
   Injectable,
 } from '@nestjs/common';
-import { WeekLog } from '../week-log/schema/week-log.schema';
+import { WeekLog } from '../week-log/infrastructure/schemas/week-log.schema';
 import { ExercisePerformance } from './schema/exercise-performance.schema';
 import { WorkoutSession } from './schema/workout-session.schema';
 import { CreateWorkoutSessionInput } from './dto/create-workout-session.input';

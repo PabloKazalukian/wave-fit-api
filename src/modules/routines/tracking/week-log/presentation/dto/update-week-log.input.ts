@@ -7,7 +7,7 @@ import {
   IsArray,
   IsMongoId,
 } from 'class-validator';
-import { ExercisePerformance } from '../../workout-session/schema/exercise-performance.schema';
+import { ExercisePerformance } from '../../../workout-session/schema/exercise-performance.schema';
 
 // update-week-log-day.input.ts
 @InputType()

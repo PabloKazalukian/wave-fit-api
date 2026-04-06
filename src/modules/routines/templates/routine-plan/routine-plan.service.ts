@@ -47,6 +47,24 @@ export class RoutinePlanService {
     return serializeMongo<RoutinePlan>(plan);
   }
 
+  async findOneWithDays(id: string): Promise<RoutinePlan> {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new NotFoundException(`ID "${id}" no es válido`);
+    }
+
+    const plan = await this.routinePlanModel
+      .findById(id)
+      .populate('week.day')
+      .lean()
+      .exec();
+
+    if (!plan) {
+      throw new NotFoundException(`Plan con ID "${id}" no encontrado`);
+    }
+
+    return serializeMongo<RoutinePlan>(plan);
+  }
+
   async findByTitle(title: string): Promise<RoutinePlan | null> {
     const doc = await this.routinePlanModel
       .findOne({ name: title })

@@ -1,10 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { WeekLogService } from './week-log.service';
 import { getModelToken } from '@nestjs/mongoose';
-import { WeekLog } from './schema/week-log.schema';
+import { WeekLog } from './infrastructure/schemas/week-log.schema';
 import { Model, Types } from 'mongoose';
-import { CreateWeekLogInput } from './dto/create-week-log.input';
-import { UpdateWeekLogInput } from './dto/update-week-log.input';
+import { CreateWeekLogInput } from './presentation/dto/create-week-log.input';
+import { UpdateWeekLogInput } from './presentation/dto/update-week-log.input';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
 
 describe('WeekLogService', () => {

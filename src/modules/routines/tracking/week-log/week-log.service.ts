@@ -4,19 +4,23 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CreateWeekLogInput } from './dto/create-week-log.input';
+import { CreateWeekLogInput } from './presentation/dto/create-week-log.input';
 import {
   UpdateWeekLogDayInput,
   UpdateWeekLogInput,
-} from './dto/update-week-log.input';
-import { WeekLog } from './schema/week-log.schema';
+} from './presentation/dto/update-week-log.input';
+import { WeekLog } from './infrastructure/schemas/week-log.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types, UpdateQuery } from 'mongoose';
 import { addDays, parseISO, isSameDay } from 'date-fns';
-import { WeekLogValidator } from './week-log.validator';
 import { WorkoutSession } from '../workout-session/schema/workout-session.schema';
 import { RoutinePlan as RoutinePlanSchema } from '../../templates/routine-plan/schema/routine-plan.schema';
 import { RoutineDayService } from '../../templates/routine-day/routine-day.service';
+import { WeekLogValidator } from './application/validators/week-log.validator';
+import {
+  CreateWeekLogUseCase,
+  FindAllWeekLogsByUserUseCase,
+} from './application/use-cases';
 
 @Injectable()
 export class WeekLogService {
@@ -28,60 +32,61 @@ export class WeekLogService {
     private workoutSessionModel: Model<WorkoutSession>,
     private readonly validator: WeekLogValidator,
     private routineDayService: RoutineDayService,
+    private readonly createWeekLogUseCase: CreateWeekLogUseCase,
+    private readonly findAllWeekLogsByUserUseCase: FindAllWeekLogsByUserUseCase,
   ) {}
 
   async create(createWeekLogInput: CreateWeekLogInput, userId: Types.ObjectId) {
-    const { startDate, endDate, planId } = createWeekLogInput;
-
-    await this.validator.validateCreation(
+    // const { startDate, endDate, planId } = createWeekLogInput;
+    // await this.validator.validateCreation(createWeekLogInput, userId);
+    // let plan: any = null;
+    // if (planId) {
+    //   plan = await this.routinePlanModel
+    //     .findById(planId)
+    //     .populate('week.day')
+    //     .lean()
+    //     .exec();
+    // }
+    // const weekLogId = new Types.ObjectId();
+    // const { days, sessionsToInsert } = this.createInitialDaysAndSessions(
+    //   userId.toString(),
+    //   weekLogId.toString(),
+    //   startDate,
+    //   plan,
+    // );
+    // if (sessionsToInsert.length > 0) {
+    //   await this.workoutSessionModel.insertMany(sessionsToInsert);
+    // }
+    // const weekLog = new this.weekLogModel({
+    //   _id: weekLogId,
+    //   userId,
+    //   startDate,
+    //   endDate,
+    //   planId: planId ? new Types.ObjectId(planId) : null,
+    //   days,
+    //   completed: false,
+    //   active: true,
+    // });
+    // await weekLog.save();
+    // return this.findOne(weekLog._id.toString(), userId.toString());
+    return this.createWeekLogUseCase.execute(
       createWeekLogInput,
-      userId,
-      this.weekLogModel,
-    );
-
-    let plan: any = null;
-    if (planId) {
-      plan = await this.routinePlanModel
-        .findById(planId)
-        .populate('week.day')
-        .lean()
-        .exec();
-    }
-
-    const weekLogId = new Types.ObjectId();
-    const { days, sessionsToInsert } = this.createInitialDaysAndSessions(
       userId.toString(),
-      weekLogId.toString(),
-      startDate,
-      plan,
     );
-
-    if (sessionsToInsert.length > 0) {
-      await this.workoutSessionModel.insertMany(sessionsToInsert);
-    }
-
-    const weekLog = new this.weekLogModel({
-      _id: weekLogId,
-      userId,
-      startDate,
-      endDate,
-      planId: planId ? new Types.ObjectId(planId) : null,
-      days,
-      completed: false,
-      active: true,
-    });
-
-    await weekLog.save();
-    return this.findOne(weekLog._id.toString(), userId.toString());
   }
 
-  async findAllByUser(userId: string): Promise<any[]> {
-    const weekLogs = await this.weekLogModel
-      .find({ userId })
-      .populate('days.workoutSessionId')
-      .exec();
+  async findAllByUser(
+    userId: string,
+    limit: number = 5,
+    offset: number = 0,
+  ): Promise<any[]> {
+    const weekLogs = await this.findAllWeekLogsByUserUseCase.execute(
+      userId,
+      limit,
+      offset,
+    );
 
-    return weekLogs.map((wl) => this.mapWeekLog(wl));
+    return weekLogs;
   }
 
   async findOne(id: string, userId: string): Promise<any> {

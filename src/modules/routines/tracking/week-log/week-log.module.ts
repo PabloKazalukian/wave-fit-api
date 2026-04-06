@@ -2,8 +2,10 @@ import { Module } from '@nestjs/common';
 import { WeekLogService } from './week-log.service';
 import { WeekLogResolver } from './week-log.resolver';
 import { MongooseModule } from '@nestjs/mongoose';
-import { WeekLog, WeekLogSchema } from './schema/week-log.schema';
-import { WeekLogValidator } from './week-log.validator';
+import {
+  WeekLog,
+  WeekLogSchema,
+} from './infrastructure/schemas/week-log.schema';
 import {
   WorkoutSession,
   WorkoutSessionSchema,
@@ -15,6 +17,10 @@ import {
 } from '../../templates/routine-plan/schema/routine-plan.schema';
 import { RoutineDayModule } from '../../templates/routine-day/routine-day.module';
 import { AuditLogsModule } from 'src/modules/audit-logs/audit-logs.module';
+import { WeekLogValidator } from './application/validators/week-log.validator';
+import { WeekLogRepository } from './infrastructure/repositories/week-log.repository';
+import { WEEK_LOG_REPOSITORY } from './domain/interfaces/repositories/week-log.repository.interface';
+import { WEEK_LOG_USE_CASES } from './application/use-cases';
 
 @Module({
   imports: [
@@ -25,9 +31,19 @@ import { AuditLogsModule } from 'src/modules/audit-logs/audit-logs.module';
       { name: WorkoutSession.name, schema: WorkoutSessionSchema },
       { name: RoutinePlan.name, schema: RoutinePlanSchema },
     ]),
+
     AuditLogsModule,
   ],
-  providers: [WeekLogResolver, WeekLogService, WeekLogValidator],
+  providers: [
+    WeekLogResolver,
+    WeekLogService,
+    WeekLogValidator,
+    ...WEEK_LOG_USE_CASES,
+    {
+      provide: WEEK_LOG_REPOSITORY,
+      useClass: WeekLogRepository,
+    },
+  ],
   exports: [WeekLogService],
 })
 export class WeekLogModule {}

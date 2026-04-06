@@ -11,6 +11,7 @@ import { Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { WeekLogService } from '../week-log/week-log.service';
 import { WorkoutSessionValidator } from './workout-session.validator';
+import { WorkoutSessionCreationData } from '../week-log/domain/entities/week-log.domain';
 
 @Injectable()
 export class WorkoutSessionService {
@@ -69,6 +70,10 @@ export class WorkoutSessionService {
       .findOne({ _id: id, userId, deleted: { $ne: true } })
       .populate('exercises')
       .exec();
+  }
+
+  async insertMany(sessions: WorkoutSessionCreationData[]) {
+    return this.sessionModel.insertMany(sessions);
   }
 
   async findByDate(date: string, userId: string) {

@@ -1,5 +1,5 @@
 import { ObjectType, Field, ID, Int } from '@nestjs/graphql';
-import { ExercisePerformance } from '../../workout-session/entities/workout-session.entity';
+import { ExercisePerformance } from '../../../workout-session/entities/workout-session.entity';
 
 @ObjectType()
 export class WeekLogDay {
