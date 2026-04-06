@@ -1,19 +1,12 @@
-import {
-  ConflictException,
-  Inject,
-  Injectable,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Inject, Injectable, ForbiddenException } from '@nestjs/common';
 import { Model, Types } from 'mongoose';
 import { differenceInDays } from 'date-fns';
 import type { IWeekLogRepository } from '../../domain/interfaces/repositories/week-log.repository.interface';
 import { WEEK_LOG_REPOSITORY } from '../../domain/interfaces/repositories/week-log.repository.interface';
 import { CreateWeekLogInput } from '../../presentation/dto/create-week-log.input';
 import { WeekLogDomain } from '../../domain/entities/week-log.domain';
-import { RoutineDayService } from 'src/modules/routines/templates/routine-day/routine-day.service';
 import { WeekLogValidator } from '../validators/week-log.validator';
 import { RoutinePlanService } from 'src/modules/routines/templates/routine-plan/routine-plan.service';
-import { RoutinePlan as RoutinePlanSchema } from 'src/modules/routines/templates/routine-plan/schema/routine-plan.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { WorkoutSession } from '../../../workout-session/schema/workout-session.schema';
 
@@ -68,10 +61,10 @@ export class CreateWeekLogUseCase {
     }
 
     // 4. Persistence
-    const nu = await this.weekLogRepository.create(weekLog);
+    const newWeekLog = await this.weekLogRepository.create(weekLog);
 
     // 5. Return the created week log (populated)
-    const num = await this.weekLogRepository.findOne(nu.id, userId);
-    return num;
+    const result = await this.weekLogRepository.findOne(newWeekLog.id, userId);
+    return result;
   }
 }

@@ -21,13 +21,12 @@ import {
   CreateWeekLogUseCase,
   FindAllWeekLogsByUserUseCase,
 } from './application/use-cases';
+import { WeekLogDomain } from './domain/entities/week-log.domain';
 
 @Injectable()
 export class WeekLogService {
   constructor(
     @InjectModel(WeekLog.name) private weekLogModel: Model<WeekLog>,
-    @InjectModel(RoutinePlanSchema.name)
-    private routinePlanModel: Model<RoutinePlanSchema>,
     @InjectModel(WorkoutSession.name)
     private workoutSessionModel: Model<WorkoutSession>,
     private readonly validator: WeekLogValidator,
@@ -36,39 +35,10 @@ export class WeekLogService {
     private readonly findAllWeekLogsByUserUseCase: FindAllWeekLogsByUserUseCase,
   ) {}
 
-  async create(createWeekLogInput: CreateWeekLogInput, userId: Types.ObjectId) {
-    // const { startDate, endDate, planId } = createWeekLogInput;
-    // await this.validator.validateCreation(createWeekLogInput, userId);
-    // let plan: any = null;
-    // if (planId) {
-    //   plan = await this.routinePlanModel
-    //     .findById(planId)
-    //     .populate('week.day')
-    //     .lean()
-    //     .exec();
-    // }
-    // const weekLogId = new Types.ObjectId();
-    // const { days, sessionsToInsert } = this.createInitialDaysAndSessions(
-    //   userId.toString(),
-    //   weekLogId.toString(),
-    //   startDate,
-    //   plan,
-    // );
-    // if (sessionsToInsert.length > 0) {
-    //   await this.workoutSessionModel.insertMany(sessionsToInsert);
-    // }
-    // const weekLog = new this.weekLogModel({
-    //   _id: weekLogId,
-    //   userId,
-    //   startDate,
-    //   endDate,
-    //   planId: planId ? new Types.ObjectId(planId) : null,
-    //   days,
-    //   completed: false,
-    //   active: true,
-    // });
-    // await weekLog.save();
-    // return this.findOne(weekLog._id.toString(), userId.toString());
+  async create(
+    createWeekLogInput: CreateWeekLogInput,
+    userId: Types.ObjectId,
+  ): Promise<WeekLogDomain | null> {
     return this.createWeekLogUseCase.execute(
       createWeekLogInput,
       userId.toString(),

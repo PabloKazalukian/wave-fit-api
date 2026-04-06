@@ -19,6 +19,7 @@ import { GoogleModule } from './modules/auth/google/google.module';
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
 import { SeedModule } from './database/seed.module';
 import { CommonResolver } from './common/common.resolver';
+import { DayLogModule } from './modules/routines/tracking/day-log/day-log.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { CommonResolver } from './common/common.resolver';
     GoogleModule,
     AuditLogsModule,
     SeedModule,
+    DayLogModule,
   ],
   controllers: [AppController],
   providers: [
