@@ -15,7 +15,6 @@ import {
   getTestUserCredentials,
 } from '../../fixtures/user.fixture';
 import {
-  WEEK_LOG_FIELDS,
   UPDATE_WEEK_LOG,
   ASSIGN_ROUTINE_TO_DAY,
   REMOVE_WORKOUT_SESSION_FROM_DAY,
