@@ -5,7 +5,6 @@ import { UserService } from '../../user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException } from '@nestjs/common';
 import { GoogleTokenStrategy } from './google-token.strategy';
-import { UserRole } from '../../user/schema/user.schema';
 
 describe('GoogleAuth Integration', () => {
   let resolver: GoogleResolver;
