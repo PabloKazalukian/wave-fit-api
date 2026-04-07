@@ -12,12 +12,18 @@ import {
 import { Types } from 'mongoose';
 import { AuditInterceptor } from 'src/modules/audit-logs/audit-logs.interceptor';
 import { Audit } from 'src/modules/audit-logs/audit-logs.decorator';
+import { ExtraSessionDisciplineConfig, EXTRA_SESSION_DISCIPLINES } from './extra-session.catalog';
 
 @Resolver(() => ExtraSession)
 @UseGuards(GqlAuthGuard)
 @UseInterceptors(AuditInterceptor)
 export class ExtraSessionResolver {
   constructor(private readonly extraSessionService: ExtraSessionService) {}
+
+  @Query(() => [ExtraSessionDisciplineConfig], { name: 'extraSessionCatalog' })
+  getCatalog() {
+    return Object.values(EXTRA_SESSION_DISCIPLINES);
+  }
 
   @Mutation(() => ExtraSession)
   @Audit('CREATE_EXTRA_SESSION', 'WorkoutSession')

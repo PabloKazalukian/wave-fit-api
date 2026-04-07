@@ -1,10 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { CreateExtraSessionInput } from './dto/create-extra-session.input';
 import { UpdateExtraSessionInput } from './dto/update-extra-session.input';
 import { ExtraSession } from './schema/extra-session.schema';
 import { Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { WorkoutSession } from '../workout-session/schema/workout-session.schema';
+import { EXTRA_SESSION_DISCIPLINES } from './extra-session.catalog';
+import type { ExtraSessionDisciplineKey } from './extra-session.catalog';
 
 @Injectable()
 export class ExtraSessionService {
@@ -30,15 +32,22 @@ export class ExtraSessionService {
       );
     }
 
+    const config = EXTRA_SESSION_DISCIPLINES[input.discipline as ExtraSessionDisciplineKey];
+    if (!config) {
+      throw new BadRequestException(`Disciplina desconocida: ${input.discipline}`);
+    }
+
+    const calculatedCalories = input.calories || Math.round((config.avgCaloriesPerHour / 60) * input.duration);
+
     const extraSession = await this.extraSessionModel.create({
       userId: new Types.ObjectId(userId),
       workoutSessionId: new Types.ObjectId(input.workoutSessionId),
-      type: input.type,
+      category: config.category,
       date: new Date(input.date),
       discipline: input.discipline,
       duration: input.duration,
       intensityLevel: input.intensityLevel,
-      calories: input.calories,
+      calories: calculatedCalories,
       notes: input.notes || '',
     });
 
@@ -88,13 +97,27 @@ export class ExtraSessionService {
       throw new NotFoundException(`ExtraSession con ID "${id}" no encontrada`);
     }
 
-    if (input.type !== undefined) extraSession.type = input.type;
-    if (input.discipline !== undefined)
-      extraSession.discipline = input.discipline;
+    if (input.discipline !== undefined) {
+      const config = EXTRA_SESSION_DISCIPLINES[input.discipline as ExtraSessionDisciplineKey];
+      if (!config) {
+        throw new BadRequestException(`Disciplina desconocida: ${input.discipline}`);
+      }
+      extraSession.discipline = input.discipline as any;
+      extraSession.category = config.category;
+    }
     if (input.duration !== undefined) extraSession.duration = input.duration;
     if (input.intensityLevel !== undefined)
       extraSession.intensityLevel = input.intensityLevel;
-    if (input.calories !== undefined) extraSession.calories = input.calories;
+    
+    // Si envían calories explícitamente se actualiza.
+    if (input.calories !== undefined) {
+      extraSession.calories = input.calories;
+    } else if (input.duration !== undefined || input.discipline !== undefined) {
+        // Recalcular si cambiaron duracion o disciplina y NO pasaron las calorias nuevas
+        const config = EXTRA_SESSION_DISCIPLINES[extraSession.discipline as ExtraSessionDisciplineKey];
+        extraSession.calories = Math.round((config.avgCaloriesPerHour / 60) * extraSession.duration);
+    }
+    
     if (input.notes !== undefined) extraSession.notes = input.notes;
 
     return extraSession.save();

@@ -10,6 +10,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { GqlExecutionContext } from '@nestjs/graphql';
+import { AuditInterceptor } from 'src/modules/audit-logs/audit-logs.interceptor';
 
 describe('WeekLogResolver', () => {
   let resolver: WeekLogResolver;
@@ -76,7 +77,14 @@ describe('WeekLogResolver', () => {
           useValue: mockWeekLogService,
         },
       ],
-    }).compile();
+    })
+      .overrideInterceptor(AuditInterceptor)
+      .useValue({
+        intercept: jest
+          .fn()
+          .mockImplementation((context, next) => next.handle()),
+      })
+      .compile();
 
     resolver = module.get<WeekLogResolver>(WeekLogResolver);
     service = module.get<WeekLogService>(WeekLogService);
@@ -252,7 +260,7 @@ describe('WeekLogResolver', () => {
     it('should return empty array if user has no week logs', async () => {
       mockWeekLogService.findAllByUser.mockResolvedValue([]);
 
-      const result = await resolver.findAll(mockContext(validUserId));
+      const result = await resolver.findAll(mockContext(validUserId), 5, 5);
 
       expect(result).toEqual([]);
     });
@@ -265,7 +273,7 @@ describe('WeekLogResolver', () => {
 
       mockWeekLogService.findAllByUser.mockResolvedValue(mockWeekLogs);
 
-      const result = await resolver.findAll(mockContext(validUserId));
+      const result = await resolver.findAll(mockContext(validUserId), 5, 5);
 
       expect(service.findAllByUser).toHaveBeenCalledWith(validUserId);
       expect(result).toEqual(mockWeekLogs);
@@ -273,7 +281,7 @@ describe('WeekLogResolver', () => {
     });
 
     it('should require authentication', async () => {
-      await expect(resolver.findAll(undefined as any)).rejects.toThrow();
+      await expect(resolver.findAll(undefined as any, 5, 5)).rejects.toThrow();
     });
   });
 
@@ -595,9 +603,9 @@ describe('WeekLogResolver', () => {
         new Error('Database connection failed'),
       );
 
-      await expect(resolver.findAll(mockContext(validUserId))).rejects.toThrow(
-        'Database connection failed',
-      );
+      await expect(
+        resolver.findAll(mockContext(validUserId), 5, 5),
+      ).rejects.toThrow('Database connection failed');
     });
 
     it('should handle validation errors from service', async () => {

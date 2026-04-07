@@ -6,6 +6,7 @@ import { Model, Types } from 'mongoose';
 import { CreateWeekLogInput } from './presentation/dto/create-week-log.input';
 import { UpdateWeekLogInput } from './presentation/dto/update-week-log.input';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
+import { AuditInterceptor } from 'src/modules/audit-logs/audit-logs.interceptor';
 
 describe('WeekLogService', () => {
   let service: WeekLogService;
@@ -48,7 +49,14 @@ describe('WeekLogService', () => {
           useValue: mockWeekLogModel,
         },
       ],
-    }).compile();
+    })
+      .overrideInterceptor(AuditInterceptor)
+      .useValue({
+        intercept: jest
+          .fn()
+          .mockImplementation((context, next) => next.handle()),
+      })
+      .compile();
 
     service = module.get<WeekLogService>(WeekLogService);
   });

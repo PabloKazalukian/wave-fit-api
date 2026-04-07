@@ -55,11 +55,11 @@ export class WeekLogResolver {
 
   @Query(() => [WeekLog], { name: 'findAll' })
   async findAll(
+    @Context() context,
     @Args('limit', { type: () => Int, nullable: true, defaultValue: 5 })
     limit: number,
     @Args('offset', { type: () => Int, nullable: true, defaultValue: 0 })
     offset: number,
-    @Context() context,
   ) {
     const userId =
       context?.req?.user?._id?.toString() ||

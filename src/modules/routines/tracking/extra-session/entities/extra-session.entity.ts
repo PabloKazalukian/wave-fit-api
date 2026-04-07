@@ -1,4 +1,5 @@
 import { ObjectType, Field, ID, Float, Int } from '@nestjs/graphql';
+import { ExtraSessionCategory } from '../extra-session.catalog';
 
 @ObjectType()
 export class ExtraSession {
@@ -11,8 +12,8 @@ export class ExtraSession {
   @Field(() => ID)
   workoutSessionId: string;
 
-  @Field()
-  type: string;
+  @Field(() => ExtraSessionCategory)
+  category: ExtraSessionCategory;
 
   @Field()
   date: Date;

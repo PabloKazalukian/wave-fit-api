@@ -20,11 +20,6 @@ export class CreateExtraSessionInput {
 
   @Field()
   @IsNotEmpty()
-  @IsString()
-  type: string;
-
-  @Field()
-  @IsNotEmpty()
   @IsDateString()
   date: string;
 
