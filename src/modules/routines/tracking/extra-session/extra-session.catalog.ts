@@ -1,4 +1,4 @@
-import { ObjectType, Field, registerEnumType, Int } from '@nestjs/graphql';
+import { ObjectType, Field, registerEnumType, Float } from '@nestjs/graphql';
 
 export enum ExtraSessionCategory {
   CARDIO = 'cardio',
@@ -37,8 +37,8 @@ export class ExtraSessionDisciplineConfig {
   @Field(() => ExtraSessionCategory)
   category: ExtraSessionCategory;
 
-  @Field(() => Int)
-  avgCaloriesPerHour: number;
+  @Field(() => Float)
+  met: number;
 }
 
 export const EXTRA_SESSION_DISCIPLINES: Record<
@@ -50,31 +50,31 @@ export const EXTRA_SESSION_DISCIPLINES: Record<
     key: 'running',
     label: 'Running',
     category: ExtraSessionCategory.CARDIO,
-    avgCaloriesPerHour: 600,
+    met: 8,
   },
   cycling: {
     key: 'cycling',
     label: 'Ciclismo',
     category: ExtraSessionCategory.CARDIO,
-    avgCaloriesPerHour: 500,
+    met: 7.5,
   },
   stationary_bike: {
     key: 'stationary_bike',
     label: 'Bicicleta fija',
     category: ExtraSessionCategory.CARDIO,
-    avgCaloriesPerHour: 450,
+    met: 7,
   },
   swimming: {
     key: 'swimming',
     label: 'Natación',
     category: ExtraSessionCategory.CARDIO,
-    avgCaloriesPerHour: 650,
+    met: 8,
   },
   walking: {
     key: 'walking',
     label: 'Caminata',
     category: ExtraSessionCategory.CARDIO,
-    avgCaloriesPerHour: 250,
+    met: 3.5,
   },
 
   // 🔥 STRENGTH
@@ -82,13 +82,13 @@ export const EXTRA_SESSION_DISCIPLINES: Record<
     key: 'weightlifting',
     label: 'Levantamiento de pesas',
     category: ExtraSessionCategory.STRENGTH,
-    avgCaloriesPerHour: 400,
+    met: 5,
   },
   crossfit: {
     key: 'crossfit',
     label: 'CrossFit',
     category: ExtraSessionCategory.STRENGTH,
-    avgCaloriesPerHour: 700,
+    met: 9,
   },
 
   // 🔥 SPORT
@@ -96,19 +96,19 @@ export const EXTRA_SESSION_DISCIPLINES: Record<
     key: 'football',
     label: 'Fútbol',
     category: ExtraSessionCategory.SPORT,
-    avgCaloriesPerHour: 700,
+    met: 8,
   },
   basketball: {
     key: 'basketball',
     label: 'Básquet',
     category: ExtraSessionCategory.SPORT,
-    avgCaloriesPerHour: 650,
+    met: 7.5,
   },
   tennis: {
     key: 'tennis',
     label: 'Tenis',
     category: ExtraSessionCategory.SPORT,
-    avgCaloriesPerHour: 600,
+    met: 7,
   },
 
   // 🔥 MIND_BODY
@@ -116,18 +116,18 @@ export const EXTRA_SESSION_DISCIPLINES: Record<
     key: 'yoga',
     label: 'Yoga',
     category: ExtraSessionCategory.MIND_BODY,
-    avgCaloriesPerHour: 250,
+    met: 3,
   },
   pilates: {
     key: 'pilates',
     label: 'Pilates',
     category: ExtraSessionCategory.MIND_BODY,
-    avgCaloriesPerHour: 300,
+    met: 3.5,
   },
   mobility: {
     key: 'mobility',
     label: 'Movilidad / Stretching',
     category: ExtraSessionCategory.MIND_BODY,
-    avgCaloriesPerHour: 200,
+    met: 2.5,
   },
 };
