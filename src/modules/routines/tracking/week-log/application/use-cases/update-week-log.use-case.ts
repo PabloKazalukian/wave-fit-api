@@ -13,10 +13,7 @@ import { WeekLog } from '../../infrastructure/schemas/week-log.schema';
 import { WeekLogValidator } from '../validators/week-log.validator';
 import { WorkoutSessionService } from '../../../workout-session/workout-session.service';
 import { ExtraSessionService } from '../../../extra-session/extra-session.service';
-import {
-  UpdateDayInput,
-  UpdateWeekLogWorkoutSessionInput,
-} from '../../presentation/dto/update-week-log.input';
+import { UpdateDayInput } from '../../presentation/dto/update-week-log.input';
 import type { IWeekLogRepository } from '../../domain/interfaces/repositories/week-log.repository.interface';
 import { WEEK_LOG_REPOSITORY } from '../../domain/interfaces/repositories/week-log.repository.interface';
 
