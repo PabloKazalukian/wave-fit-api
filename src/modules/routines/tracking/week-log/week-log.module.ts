@@ -22,6 +22,7 @@ import { WeekLogValidator } from './application/validators/week-log.validator';
 import { WeekLogRepository } from './infrastructure/repositories/week-log.repository';
 import { WEEK_LOG_REPOSITORY } from './domain/interfaces/repositories/week-log.repository.interface';
 import { WEEK_LOG_USE_CASES } from './application/use-cases';
+import { ExtraSessionModule } from '../extra-session/extra-session.module';
 
 @Module({
   imports: [
@@ -33,8 +34,8 @@ import { WEEK_LOG_USE_CASES } from './application/use-cases';
       { name: WorkoutSession.name, schema: WorkoutSessionSchema },
       { name: RoutinePlan.name, schema: RoutinePlanSchema },
     ]),
-
     AuditLogsModule,
+    ExtraSessionModule,
   ],
   providers: [
     WeekLogResolver,

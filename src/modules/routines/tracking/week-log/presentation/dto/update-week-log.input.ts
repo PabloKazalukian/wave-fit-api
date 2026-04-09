@@ -6,14 +6,105 @@ import {
   IsDateString,
   IsArray,
   IsMongoId,
+  IsNotEmpty,
+  IsNumber,
+  Min,
+  Max,
+  ValidateNested,
 } from 'class-validator';
-import { ExercisePerformance } from '../../../workout-session/schema/exercise-performance.schema';
-
-import { UpdateWorkoutSessionInput } from '../../../workout-session/dto/update-workout-session.input';
 import { Type } from 'class-transformer';
-import { ValidateNested } from 'class-validator';
+import { UpdateWorkoutSessionInput } from '../../../workout-session/dto/update-workout-session.input';
 
-// update-week-log-day.input.ts
+// ─── ExtraSession data (sin workoutSessionId; lo resuelve el UseCase) ─────────
+@InputType()
+export class CreateExtraSessionWithoutWsInput {
+  @Field()
+  @IsNotEmpty()
+  @IsDateString()
+  date: string;
+
+  @Field()
+  @IsNotEmpty()
+  @IsString()
+  discipline: string;
+
+  @Field(() => Int)
+  @IsNotEmpty()
+  @IsNumber()
+  @Min(1)
+  duration: number;
+
+  @Field(() => Int)
+  @IsNotEmpty()
+  @IsNumber()
+  @Min(1)
+  @Max(5)
+  intensityLevel: number;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  calories?: number;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  notes?: string;
+}
+
+// ─── Day input unificado ───────────────────────────────────────────────────────
+@InputType()
+export class UpdateDayInput {
+  /** Identificador del día dentro del WeekLog (1-7) */
+  @Field(() => Int)
+  order: number;
+
+  /**
+   * ID de un WorkoutSession ya existente en DB para vincular al crear el ES.
+   * Prioridad: day.workoutSessionId > workoutSessionId > crear nuevo WS vacío.
+   */
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsMongoId()
+  workoutSessionId?: string;
+
+  /** Datos del WorkoutSession a crear/actualizar en este day. */
+  @Field(() => UpdateWorkoutSessionInput, { nullable: true })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => UpdateWorkoutSessionInput)
+  workoutSession?: UpdateWorkoutSessionInput;
+
+  /** Datos de la ExtraSession a crear (el workoutSessionId lo resuelve el UC). */
+  @Field(() => CreateExtraSessionWithoutWsInput, { nullable: true })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CreateExtraSessionWithoutWsInput)
+  extraSession?: CreateExtraSessionWithoutWsInput;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  status?: string;
+}
+
+// ─── Input unificado del mutation updateDay ────────────────────────────────────
+@InputType()
+export class UpdateWeekLogDayUnifiedInput {
+  @Field(() => String)
+  @IsMongoId()
+  id: string;
+
+  @Field(() => [UpdateDayInput])
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => UpdateDayInput)
+  days: UpdateDayInput[];
+}
+
+// ─── Legacy inputs (mantenidos para backwards compat hasta migración del front) ─
+
 @InputType()
 export class UpdateWeekLogDayInput {
   @Field(() => Int)
@@ -44,12 +135,22 @@ export class UpdateWeekLogDayInput {
   @Field({ nullable: true })
   @IsOptional()
   @IsString()
-  status?: string; // 'pending' | 'complete' | 'skipped'
+  status?: string;
 }
 
-// update-week-log.input.ts
 @InputType()
-export class UpdateWeekLogInput {
+export class UpdateWeekLogDayExtraSessionInput {
+  @Field(() => Int)
+  order: number;
+
+  @Field(() => CreateExtraSessionWithoutWsInput)
+  @ValidateNested()
+  @Type(() => CreateExtraSessionWithoutWsInput)
+  extraSession: CreateExtraSessionWithoutWsInput;
+}
+
+@InputType()
+export class UpdateWeekLogWorkoutSessionInput {
   @Field(() => String)
   @IsMongoId()
   id: string;
@@ -72,7 +173,7 @@ export class UpdateWeekLogInput {
   @Field()
   userId?: string;
 
-  @Field(() => [UpdateWeekLogDayInput], { nullable: true }) // ✅ reemplaza workoutSessionIds
+  @Field(() => [UpdateWeekLogDayInput], { nullable: true })
   @IsOptional()
   @IsArray()
   days?: UpdateWeekLogDayInput[];
@@ -90,4 +191,17 @@ export class UpdateWeekLogInput {
   @IsOptional()
   @IsString()
   notes?: string;
+}
+
+@InputType()
+export class UpdateWeekLogExtraSessionInput {
+  @Field(() => String)
+  @IsMongoId()
+  id: string;
+
+  @Field(() => [UpdateWeekLogDayExtraSessionInput])
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => UpdateWeekLogDayExtraSessionInput)
+  days: UpdateWeekLogDayExtraSessionInput[];
 }

@@ -7,7 +7,9 @@ import {
 import { CreateWeekLogInput } from './presentation/dto/create-week-log.input';
 import {
   UpdateWeekLogDayInput,
-  UpdateWeekLogInput,
+  UpdateWeekLogWorkoutSessionInput,
+  UpdateWeekLogExtraSessionInput,
+  UpdateWeekLogDayUnifiedInput,
 } from './presentation/dto/update-week-log.input';
 import { RemoveWorkoutSessionFromDayInput } from './presentation/dto/remove-workout-session-from-day.input';
 import {
@@ -123,8 +125,9 @@ export class WeekLogResolver {
   }
 
   @Mutation(() => WeekLog)
-  async updateWeekLog(
-    @Args('updateWeekLogInput') updateWeekLogInput: UpdateWeekLogInput,
+  async updateWeekLogWorkoutSession(
+    @Args('updateWeekLogInput')
+    updateWeekLogInput: UpdateWeekLogWorkoutSessionInput,
     @Context() context,
   ) {
     const userId = context.req.user?.id || context.req.user?.userId;
@@ -137,7 +140,7 @@ export class WeekLogResolver {
       throw new BadRequestException('Week log id is required');
     }
 
-    return this.weekLogService.update(
+    return this.weekLogService.updateWithWorkoutSession(
       updateWeekLogInput.id,
       updateWeekLogInput,
       userId,
@@ -145,14 +148,58 @@ export class WeekLogResolver {
   }
 
   @Mutation(() => WeekLog)
-  async updateWeekLogDay(
-    @Args('input') input: UpdateWeekLogDayInput,
+  async updateWeekLogExtraSession(
+    @Args('updateWeekLogInput')
+    updateWeekLogInput: UpdateWeekLogExtraSessionInput,
     @Context() context,
   ) {
-    const userId = context.req.user?.id;
+    const userId = context.req.user?.id || context.req.user?.userId;
+
+    if (!userId) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
+    if (!updateWeekLogInput.id) {
+      throw new BadRequestException('Week log id is required');
+    }
+
+    return this.weekLogService.updateWithExtraSession(
+      updateWeekLogInput.id,
+      updateWeekLogInput,
+      userId,
+    );
+  }
+
+  /**
+   * Mutation unificada que crea/actualiza WorkoutSession y/o ExtraSession
+   * en un día del WeekLog en una sola operación.
+   */
+  @Mutation(() => WeekLog)
+  async updateDay(
+    @Args('input') input: UpdateWeekLogDayUnifiedInput,
+    @Context() context,
+  ) {
+    const userId =
+      context?.req?.user?._id?.toString() ||
+      context?.req?.user?.id ||
+      context?.req?.user?.userId;
+
+    if (!userId || !Types.ObjectId.isValid(userId)) {
+      throw new BadRequestException('Invalid user id');
+    }
 
     return this.weekLogService.updateDay(input, userId);
   }
+
+  // @Mutation(() => WeekLog)
+  // async updateWeekLogDay(
+  //   @Args('input') input: UpdateWeekLogDayInput,
+  //   @Context() context,
+  // ) {
+  //   const userId = context.req.user?.id;
+
+  //   return this.weekLogService.updateDay(input, userId);
+  // }
 
   @Mutation(() => WeekLog)
   async syncWeekLogDays(

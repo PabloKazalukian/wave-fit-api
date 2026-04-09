@@ -103,8 +103,8 @@ export const CREATE_WEEK_LOG = `
 `;
 
 export const UPDATE_WEEK_LOG = `
-    mutation UpdateWeekLog($updateWeekLogInput: UpdateWeekLogInput!) {
-        updateWeekLog(updateWeekLogInput: $updateWeekLogInput) {
+    mutation UpdateWeekLogWorkoutSession($updateWeekLogInput: UpdateWeekLogWorkoutSessionInput!) {
+        updateWeekLogWorkoutSession(updateWeekLogInput: $updateWeekLogInput) {
             ${WEEK_LOG_FIELDS}
         }
     }

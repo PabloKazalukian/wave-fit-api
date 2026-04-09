@@ -6,7 +6,6 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { CreateWeekLogInput } from '../../presentation/dto/create-week-log.input';
-import { UpdateWeekLogInput } from '../../presentation/dto/update-week-log.input';
 import { WeekLog } from '../../infrastructure/schemas/week-log.schema';
 import { Model, Types } from 'mongoose';
 import { differenceInDays, parseISO, isValid } from 'date-fns';
@@ -43,7 +42,7 @@ export class WeekLogValidator {
     }
   }
 
-  validateUpdate(updateWeekLogInput: UpdateWeekLogInput) {
+  validateUpdate(updateWeekLogInput: { startDate?: string; endDate?: string }) {
     if (updateWeekLogInput.startDate) {
       this.validateLocalDateFormat(updateWeekLogInput.startDate);
     }
