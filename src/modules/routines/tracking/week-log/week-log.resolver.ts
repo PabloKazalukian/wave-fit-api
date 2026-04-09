@@ -6,16 +6,12 @@ import {
 } from './presentation/entities/week-log.entity';
 import { CreateWeekLogInput } from './presentation/dto/create-week-log.input';
 import {
-  UpdateWeekLogDayInput,
-  UpdateWeekLogWorkoutSessionInput,
-  UpdateWeekLogExtraSessionInput,
   UpdateWeekLogDayUnifiedInput,
   UpdateWeekLogInput,
 } from './presentation/dto/update-week-log.input';
 import { RemoveWorkoutSessionFromDayInput } from './presentation/dto/remove-workout-session-from-day.input';
 import {
   BadRequestException,
-  UnauthorizedException,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -123,52 +119,6 @@ export class WeekLogResolver {
       throw new BadRequestException('Invalid user id');
     }
     return this.weekLogService.findActiveWeekLog(userId);
-  }
-
-  @Mutation(() => WeekLog)
-  async updateWeekLogWorkoutSession(
-    @Args('updateWeekLogInput')
-    updateWeekLogInput: UpdateWeekLogWorkoutSessionInput,
-    @Context() context,
-  ) {
-    const userId = context.req.user?.id || context.req.user?.userId;
-
-    if (!userId) {
-      throw new UnauthorizedException('User not authenticated');
-    }
-
-    if (!updateWeekLogInput.id) {
-      throw new BadRequestException('Week log id is required');
-    }
-
-    return this.weekLogService.updateWithWorkoutSession(
-      updateWeekLogInput.id,
-      updateWeekLogInput,
-      userId,
-    );
-  }
-
-  @Mutation(() => WeekLog)
-  async updateWeekLogExtraSession(
-    @Args('updateWeekLogInput')
-    updateWeekLogInput: UpdateWeekLogExtraSessionInput,
-    @Context() context,
-  ) {
-    const userId = context.req.user?.id || context.req.user?.userId;
-
-    if (!userId) {
-      throw new UnauthorizedException('User not authenticated');
-    }
-
-    if (!updateWeekLogInput.id) {
-      throw new BadRequestException('Week log id is required');
-    }
-
-    return this.weekLogService.updateWithExtraSession(
-      updateWeekLogInput.id,
-      updateWeekLogInput,
-      userId,
-    );
   }
 
   /**

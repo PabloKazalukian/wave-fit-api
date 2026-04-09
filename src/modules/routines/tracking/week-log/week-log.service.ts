@@ -26,7 +26,6 @@ import {
 } from './application/use-cases';
 import { WeekLogDomain } from './domain/entities/week-log.domain';
 import { WorkoutSessionService } from '../workout-session/workout-session.service';
-import { ExtraSessionService } from '../extra-session/extra-session.service';
 
 @Injectable()
 export class WeekLogService {
@@ -42,7 +41,7 @@ export class WeekLogService {
     private readonly updateWeekLogUseCase: UpdateWeekLogUseCase,
     @Inject(forwardRef(() => WorkoutSessionService))
     private readonly workoutSessionService: WorkoutSessionService,
-    private readonly extraSessionService: ExtraSessionService,
+    // private readonly extraSessionService: ExtraSessionService,
   ) {}
 
   async create(
@@ -113,79 +112,80 @@ export class WeekLogService {
     return mapped;
   }
 
-  async updateWithWorkoutSession(
-    id: string,
-    updateWeekLogInput: UpdateWeekLogWorkoutSessionInput,
-    userId: string,
-  ) {
-    const weekLog = await this.weekLogModel.findById(id);
-    if (!weekLog) throw new NotFoundException(`WeekLog ${id} not found`);
+  // //borrar siguientes 2
+  // async updateWithWorkoutSession(
+  //   id: string,
+  //   updateWeekLogInput: UpdateWeekLogWorkoutSessionInput,
+  //   userId: string,
+  // ) {
+  //   const weekLog = await this.weekLogModel.findById(id);
+  //   if (!weekLog) throw new NotFoundException(`WeekLog ${id} not found`);
 
-    this.validator.validateOwnership(weekLog, userId);
-    this.validator.validateUpdate(updateWeekLogInput);
+  //   this.validator.validateOwnership(weekLog, userId);
+  //   this.validator.validateUpdate(updateWeekLogInput);
 
-    await this.applyUpdateInput(weekLog, updateWeekLogInput, userId);
+  //   await this.applyUpdateInput(weekLog, updateWeekLogInput, userId);
 
-    await weekLog.save();
-    return this.findOne(id, userId);
-  }
+  //   await weekLog.save();
+  //   return this.findOne(id, userId);
+  // }
 
-  async updateWithExtraSession(
-    id: string,
-    updateWeekLogInput: UpdateWeekLogExtraSessionInput,
-    userId: string,
-  ) {
-    const weekLog = await this.weekLogModel.findById(id);
-    console.log('[updateWithExtraSession] weekLog', weekLog);
-    if (!weekLog) throw new NotFoundException(`WeekLog ${id} not found`);
+  // async updateWithExtraSession(
+  //   id: string,
+  //   updateWeekLogInput: UpdateWeekLogExtraSessionInput,
+  //   userId: string,
+  // ) {
+  //   const weekLog = await this.weekLogModel.findById(id);
+  //   console.log('[updateWithExtraSession] weekLog', weekLog);
+  //   if (!weekLog) throw new NotFoundException(`WeekLog ${id} not found`);
 
-    this.validator.validateOwnership(weekLog, userId);
+  //   this.validator.validateOwnership(weekLog, userId);
 
-    if (updateWeekLogInput.days?.length) {
-      console.log(
-        '[updateWithExtraSession] updateWeekLogInput.days',
-        updateWeekLogInput.days,
-      );
-      for (const dayInput of updateWeekLogInput.days) {
-        const day = weekLog.days.find((d) => d.order === dayInput.order);
-        if (!day) continue;
+  //   if (updateWeekLogInput.days?.length) {
+  //     console.log(
+  //       '[updateWithExtraSession] updateWeekLogInput.days',
+  //       updateWeekLogInput.days,
+  //     );
+  //     for (const dayInput of updateWeekLogInput.days) {
+  //       const day = weekLog.days.find((d) => d.order === dayInput.order);
+  //       if (!day) continue;
 
-        let targetWsId = day.workoutSessionId;
-        if (!targetWsId) {
-          const newSession = await this.workoutSessionService.create(
-            {
-              weekLogId: (weekLog as any)._id.toString(),
-              date: day.date.toISOString(),
-              status: 'not_started',
-              exercises: [],
-            } as any,
-            userId,
-          );
-          targetWsId = new Types.ObjectId((newSession as any)._id);
-          day.workoutSessionId = targetWsId;
-          day.isRest = true;
-        }
+  //       let targetWsId = day.workoutSessionId;
+  //       if (!targetWsId) {
+  //         const newSession = await this.workoutSessionService.create(
+  //           {
+  //             weekLogId: (weekLog as any)._id.toString(),
+  //             date: day.date.toISOString(),
+  //             status: 'not_started',
+  //             exercises: [],
+  //           } as any,
+  //           userId,
+  //         );
+  //         targetWsId = new Types.ObjectId((newSession as any)._id);
+  //         day.workoutSessionId = targetWsId;
+  //         day.isRest = true;
+  //       }
 
-        if (dayInput.extraSession) {
-          const extraSession = await this.extraSessionService.create(
-            {
-              ...dayInput.extraSession,
-              workoutSessionId: targetWsId.toString(),
-            },
-            userId,
-          );
+  //       if (dayInput.extraSession) {
+  //         const extraSession = await this.extraSessionService.create(
+  //           {
+  //             ...dayInput.extraSession,
+  //             workoutSessionId: targetWsId.toString(),
+  //           },
+  //           userId,
+  //         );
 
-          if (!day.extraSessionIds) day.extraSessionIds = [];
-          day.extraSessionIds.push(
-            new Types.ObjectId((extraSession as any)._id),
-          );
-        }
-      }
-    }
+  //         if (!day.extraSessionIds) day.extraSessionIds = [];
+  //         day.extraSessionIds.push(
+  //           new Types.ObjectId((extraSession as any)._id),
+  //         );
+  //       }
+  //     }
+  //   }
 
-    await weekLog.save();
-    return this.findOne(id, userId);
-  }
+  //   await weekLog.save();
+  //   return this.findOne(id, userId);
+  // }
 
   /**
    * Mutation unificada: crea/actualiza WS y ES en un day del WL.
@@ -281,64 +281,6 @@ export class WeekLogService {
   remove(id: string) {
     return this.weekLogModel.deleteOne({ _id: id }).exec();
   }
-
-  // private createInitialDaysAndSessions(
-  //   userId: string,
-  //   weekLogId: string,
-  //   startDate: Date,
-  //   plan?: any,
-  // ) {
-  //   const sessionsToInsert: any[] = [];
-  //   let isRestMap: boolean[] = new Array(7).fill(false);
-
-  //   if (plan?.week?.length === 7) {
-  //     isRestMap = plan.week.map((d) => d.isRest);
-  //   }
-
-  //   const days = Array.from({ length: 7 }).map((_, index) => {
-  //     let workoutSessionId: Types.ObjectId | null = null;
-
-  //     if (plan && plan.week && plan.week.length === 7 && !isRestMap[index]) {
-  //       const planDay = plan.week[index];
-  //       if (planDay && planDay.day) {
-  //         const routineDay = planDay.day;
-  //         const exercises =
-  //           routineDay.exercises?.map((e: any) => ({
-  //             exerciseId: (
-  //               e.exercise._id ||
-  //               e.exercise.id ||
-  //               e.exercise
-  //             ).toString(),
-  //             series: 0,
-  //             sets: [],
-  //           })) || [];
-
-  //         const sessionObjectId = new Types.ObjectId();
-  //         workoutSessionId = sessionObjectId;
-  //         sessionsToInsert.push({
-  //           _id: sessionObjectId,
-  //           userId,
-  //           weekLogId,
-  //           date: addDays(startDate, index),
-  //           routineDayId: routineDay._id.toString(),
-  //           exercises,
-  //           status: 'not_started',
-  //         });
-  //       }
-  //     }
-
-  //     return {
-  //       order: index + 1,
-  //       date: addDays(startDate, index),
-  //       isRest: isRestMap[index] ?? false,
-  //       workoutSessionId,
-  //       extraSessionIds: [],
-  //       status: 'pending',
-  //     };
-  //   });
-
-  //   return { days, sessionsToInsert };
-  // }
 
   private async applyUpdateInput(
     weekLog: WeekLog,

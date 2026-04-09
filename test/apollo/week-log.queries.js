@@ -112,8 +112,8 @@ export const UPDATE_WEEK_LOG = `
 `;
 
 export const UPDATE_WEEK_LOG_DAY = `
-    mutation UpdateWeekLogDay($input: UpdateWeekLogDayInput!) {
-        updateWeekLogDay(input: $input) {
+    mutation UpdateWeekLogDay($input: UpdateWeekLogInput!) {
+        updateWeekLog(input: $input) {
             ${WEEK_LOG_FIELDS}
         }
     }
@@ -154,6 +154,54 @@ export const FIND_ALL_TRACKING_BY_USER = `
 export const FIND_BY_ID = `
     query findOne($id: String!) {
         findOne(id: $id) {
+            ${WEEK_LOG_FIELDS}
+        }
+    }
+`;
+
+export const CURRENT_WORKOUT_SESSION = `
+    query currentWorkoutSession {
+        currentWorkoutSession {
+            ${WEEK_LOG_FIELDS}
+        }
+    }
+`;
+
+export const UPDATE_DAY = `
+    mutation UpdateDay($input: UpdateWeekLogDayUnifiedInput!) {
+        updateDay(input: $input) {
+            ${WEEK_LOG_FIELDS}
+        }
+    }
+`;
+
+export const UPDATE_WEEK_LOG_WORKOUT_SESSION = `
+    mutation UpdateWeekLogWorkoutSession($input: UpdateWeekLogWorkoutSessionInput!) {
+        updateWeekLogWorkoutSession(updateWeekLogInput: $input) {
+            ${WEEK_LOG_FIELDS}
+        }
+    }
+`;
+
+export const UPDATE_WEEK_LOG_EXTRA_SESSION = `
+    mutation UpdateWeekLogExtraSession($input: UpdateWeekLogExtraSessionInput!) {
+        updateWeekLogExtraSession(updateWeekLogInput: $input) {
+            ${WEEK_LOG_FIELDS}
+        }
+    }
+`;
+
+export const REMOVE_WEEK_LOG = `
+    mutation RemoveWeekLog($id: String!) {
+        removeWeekLog(id: $id) {
+            ${WEEK_LOG_FIELDS}
+        }
+    }
+`;
+
+export const CREATE_EXTRA_SESSION = `
+    mutation CreateExtraSession($input: UpdateWeekLogDayUnifiedInput!) {
+        updateDay(input: $input) {
             ${WEEK_LOG_FIELDS}
         }
     }
