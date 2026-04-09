@@ -22,6 +22,7 @@ import {
   CreateWeekLogUseCase,
   FindAllWeekLogsByUserUseCase,
   UpdateDayUseCase,
+  UpdateWeekLogUseCase,
 } from './application/use-cases';
 import { WeekLogDomain } from './domain/entities/week-log.domain';
 import { WorkoutSessionService } from '../workout-session/workout-session.service';
@@ -38,6 +39,7 @@ export class WeekLogService {
     private readonly createWeekLogUseCase: CreateWeekLogUseCase,
     private readonly findAllWeekLogsByUserUseCase: FindAllWeekLogsByUserUseCase,
     private readonly updateDayUseCase: UpdateDayUseCase,
+    private readonly updateWeekLogUseCase: UpdateWeekLogUseCase,
     @Inject(forwardRef(() => WorkoutSessionService))
     private readonly workoutSessionService: WorkoutSessionService,
     private readonly extraSessionService: ExtraSessionService,
@@ -194,6 +196,20 @@ export class WeekLogService {
     userId: string,
   ) {
     return this.updateDayUseCase.execute(input, userId);
+  }
+
+  /**
+   * Mutation general del WeekLog.
+   * - Actualiza metadata (notes, startDate, endDate)
+   * - completed=true → active=false (forzado)
+   * - active=true → desactiva otros WL del usuario
+   * - days opcionales: usa la misma lógica de WS/ES
+   */
+  async updateWeekLog(
+    input: import('./presentation/dto/update-week-log.input').UpdateWeekLogInput,
+    userId: string,
+  ) {
+    return this.updateWeekLogUseCase.execute(input, userId);
   }
 
   async updateDay_legacy(input: UpdateWeekLogDayInput, userId: string) {

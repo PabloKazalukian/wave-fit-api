@@ -48,6 +48,9 @@ export class WeekLog {
   @Field()
   completed: boolean;
 
+  @Field()
+  active: boolean;
+
   @Field({ nullable: true })
   notes?: string;
 }

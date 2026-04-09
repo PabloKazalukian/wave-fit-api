@@ -53,7 +53,7 @@ export class CreateExtraSessionWithoutWsInput {
   notes?: string;
 }
 
-// ─── Day input unificado ───────────────────────────────────────────────────────
+// ─── Day input unificado (usado por updateDay y updateWeekLog) ─────────────────
 @InputType()
 export class UpdateDayInput {
   /** Identificador del día dentro del WeekLog (1-7) */
@@ -89,7 +89,7 @@ export class UpdateDayInput {
   status?: string;
 }
 
-// ─── Input unificado del mutation updateDay ────────────────────────────────────
+// ─── Input del mutation updateDay ─────────────────────────────────────────────
 @InputType()
 export class UpdateWeekLogDayUnifiedInput {
   @Field(() => String)
@@ -101,6 +101,52 @@ export class UpdateWeekLogDayUnifiedInput {
   @ValidateNested({ each: true })
   @Type(() => UpdateDayInput)
   days: UpdateDayInput[];
+}
+
+// ─── Input del mutation updateWeekLog (general) ───────────────────────────────
+@InputType()
+export class UpdateWeekLogInput {
+  @Field(() => String)
+  @IsMongoId()
+  id: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsDateString()
+  startDate?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsDateString()
+  endDate?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  notes?: string;
+
+  /** Si completed = true, el UC fuerza active = false automáticamente. */
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsBoolean()
+  completed?: boolean;
+
+  /**
+   * Si active = true, el UC desactiva todos los demás WL del usuario.
+   * Es ignorado si completed = true (que siempre impone active = false).
+   */
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsBoolean()
+  active?: boolean;
+
+  /** Days opcionales con la misma lógica de WS/ES que updateDay. */
+  @Field(() => [UpdateDayInput], { nullable: true })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => UpdateDayInput)
+  days?: UpdateDayInput[];
 }
 
 // ─── Legacy inputs (mantenidos para backwards compat hasta migración del front) ─

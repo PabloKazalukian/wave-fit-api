@@ -79,44 +79,38 @@ describe('UpdateWeekLog (e2e)', () => {
   });
 
   //Posiblemente sea la query, apunta a una que no se debe usar mas, aqui debe cambiar WL entero.
-  // it('should complete the week', async () => {
-  //   const activeWeekResponse = await getActiveWeekLog(app, authCookie);
+  it('should complete the week', async () => {
+    const activeWeekResponse = await getActiveWeekLog(app, authCookie);
 
-  //   expect(activeWeekResponse.status).toBe(200);
-  //   const week = activeWeekResponse.body.data.activeWeekLog.week;
-  //   expect(week).toBeDefined();
-  //   expect(week.completed).toBe(false);
+    expect(activeWeekResponse.status).toBe(200);
+    const week = activeWeekResponse.body.data.activeWeekLog.week;
+    expect(week).toBeDefined();
+    expect(week.completed).toBe(false);
 
-  //   const updateResponse = await request(app.getHttpServer())
-  //     .post('/graphql')
-  //     .set('Cookie', [authCookie])
-  //     .send({
-  //       query: UPDATE_WEEK_LOG,
-  //       variables: {
-  //         updateWeekLogInput: {
-  //           id: week.id,
-  //           userId: week.userId,
-  //           startDate: week.startDate
-  //             ? week.startDate.replace('Z', '')
-  //             : undefined,
-  //           endDate: week.endDate ? week.endDate.replace('Z', '') : undefined,
-  //           days: week.days.map(({ date, exercises, ...rest }: any) => rest),
-  //           completed: true,
-  //           active: false,
-  //         },
-  //       },
-  //     });
+    const updateResponse = await request(app.getHttpServer())
+      .post('/graphql')
+      .set('Cookie', [authCookie])
+      .send({
+        query: UPDATE_WEEK_LOG,
+        variables: {
+          updateWeekLogInput: {
+            id: week.id,
+            completed: true,
+          },
+        },
+      });
 
-  //   if (updateResponse.body.errors) {
-  //     console.log(
-  //       'GraphQL Errors:',
-  //       JSON.stringify(updateResponse.body.errors, null, 2),
-  //     );
-  //   }
-  //   expect(updateResponse.status).toBe(200);
-  //   expect(updateResponse.body.data.updateWeekLog.completed).toBe(true);
-  //   expect(updateResponse.body.data.updateWeekLog.days.length).toBe(7);
-  // });
+    if (updateResponse.body.errors) {
+      console.log(
+        'GraphQL Errors:',
+        JSON.stringify(updateResponse.body.errors, null, 2),
+      );
+    }
+    expect(updateResponse.status).toBe(200);
+    expect(updateResponse.body.data.updateWeekLog.completed).toBe(true);
+    expect(updateResponse.body.data.updateWeekLog.active).toBe(false);
+    expect(updateResponse.body.data.updateWeekLog.days.length).toBe(7);
+  });
 
   it('should assign a different routine to a day', async () => {
     const activeWeekResponse = await getActiveWeekLog(app, authCookie);
@@ -130,7 +124,6 @@ describe('UpdateWeekLog (e2e)', () => {
           variables: {
             updateWeekLogInput: {
               id: week.id,
-              userId: week.userId,
               completed: true,
               active: false,
             },
@@ -271,7 +264,6 @@ describe('UpdateWeekLog (e2e)', () => {
           variables: {
             updateWeekLogInput: {
               id: week.id,
-              userId: week.userId,
               completed: true,
               active: false,
             },
@@ -377,7 +369,6 @@ describe('UpdateWeekLog (e2e)', () => {
           variables: {
             updateWeekLogInput: {
               id: week.id,
-              userId: week.userId,
               completed: true,
               active: false,
             },
@@ -462,7 +453,6 @@ describe('UpdateWeekLog (e2e)', () => {
         variables: {
           updateWeekLogInput: {
             id: week.id,
-            userId: week.userId,
             startDate: week.startDate
               ? week.startDate.replace('Z', '')
               : undefined,

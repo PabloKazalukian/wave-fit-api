@@ -10,6 +10,7 @@ import {
   UpdateWeekLogWorkoutSessionInput,
   UpdateWeekLogExtraSessionInput,
   UpdateWeekLogDayUnifiedInput,
+  UpdateWeekLogInput,
 } from './presentation/dto/update-week-log.input';
 import { RemoveWorkoutSessionFromDayInput } from './presentation/dto/remove-workout-session-from-day.input';
 import {
@@ -189,6 +190,30 @@ export class WeekLogResolver {
     }
 
     return this.weekLogService.updateDay(input, userId);
+  }
+
+  /**
+   * Mutation general del WeekLog.
+   * Actualiza metadata (notes, dates) y aplica reglas de negocio:
+   * - completed=true → active=false (forzado)
+   * - active=true → desactiva todos los demás WL del usuario
+   * - days opcionales con la misma lógica de WS/ES que updateDay
+   */
+  @Mutation(() => WeekLog)
+  async updateWeekLog(
+    @Args('input') input: UpdateWeekLogInput,
+    @Context() context,
+  ) {
+    const userId =
+      context?.req?.user?._id?.toString() ||
+      context?.req?.user?.id ||
+      context?.req?.user?.userId;
+
+    if (!userId || !Types.ObjectId.isValid(userId)) {
+      throw new BadRequestException('Invalid user id');
+    }
+
+    return this.weekLogService.updateWeekLog(input, userId);
   }
 
   // @Mutation(() => WeekLog)

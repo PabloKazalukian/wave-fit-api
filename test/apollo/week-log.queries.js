@@ -6,6 +6,7 @@ export const WEEK_LOG_FIELDS = `
     planId
     notes
     completed
+    active
     days {
         order
         date
@@ -103,8 +104,8 @@ export const CREATE_WEEK_LOG = `
 `;
 
 export const UPDATE_WEEK_LOG = `
-    mutation UpdateWeekLogWorkoutSession($updateWeekLogInput: UpdateWeekLogWorkoutSessionInput!) {
-        updateWeekLogWorkoutSession(updateWeekLogInput: $updateWeekLogInput) {
+    mutation UpdateWeekLog($updateWeekLogInput: UpdateWeekLogInput!) {
+        updateWeekLog(input: $updateWeekLogInput) {
             ${WEEK_LOG_FIELDS}
         }
     }
