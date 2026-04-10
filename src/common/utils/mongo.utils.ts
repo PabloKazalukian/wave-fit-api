@@ -38,6 +38,9 @@ export function serializeMongo<T>(doc: any): T {
   // Recurse over keys to serialize nested objects/arrays
   for (const key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      if (obj[key] instanceof Date) {
+        continue;
+      }
       obj[key] = serializeMongo(obj[key]);
     }
   }

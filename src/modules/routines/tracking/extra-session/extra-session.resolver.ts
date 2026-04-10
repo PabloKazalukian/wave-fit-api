@@ -12,7 +12,10 @@ import {
 import { Types } from 'mongoose';
 import { AuditInterceptor } from 'src/modules/audit-logs/audit-logs.interceptor';
 import { Audit } from 'src/modules/audit-logs/audit-logs.decorator';
-import { ExtraSessionDisciplineConfig, EXTRA_SESSION_DISCIPLINES } from './extra-session.catalog';
+import {
+  ExtraSessionDisciplineConfig,
+  EXTRA_SESSION_DISCIPLINES,
+} from './extra-session.catalog';
 
 @Resolver(() => ExtraSession)
 @UseGuards(GqlAuthGuard)
@@ -52,6 +55,17 @@ export class ExtraSessionResolver {
       throw new BadRequestException('Invalid user id');
     }
     return this.extraSessionService.findOne(id, context?.req?.user?.id);
+  }
+
+  @Query(() => [ExtraSession], { name: 'extraSessionsByIds' })
+  findByIds(
+    @Args('ids', { type: () => [String] }) ids: string[],
+    @Context() context,
+  ) {
+    if (!Types.ObjectId.isValid(context?.req?.user?.id)) {
+      throw new BadRequestException('Invalid user id');
+    }
+    return this.extraSessionService.findByIds(ids, context?.req?.user?.id);
   }
 
   @Query(() => [ExtraSession], { name: 'extraSessionsByWorkoutSession' })

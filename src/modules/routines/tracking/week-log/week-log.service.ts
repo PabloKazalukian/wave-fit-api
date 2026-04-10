@@ -9,7 +9,7 @@ import { CreateWeekLogInput } from './presentation/dto/create-week-log.input';
 import { WeekLog } from './infrastructure/schemas/week-log.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types, UpdateQuery } from 'mongoose';
-import { addDays, parseISO, isSameDay } from 'date-fns';
+import { isSameDay } from 'date-fns';
 import { WorkoutSession } from '../workout-session/schema/workout-session.schema';
 import { RoutineDayService } from '../../templates/routine-day/routine-day.service';
 import { WeekLogValidator } from './application/validators/week-log.validator';
@@ -21,6 +21,10 @@ import {
 } from './application/use-cases';
 import { WeekLogDomain } from './domain/entities/week-log.domain';
 import { WorkoutSessionService } from '../workout-session/workout-session.service';
+import {
+  UpdateWeekLogDayUnifiedInput,
+  UpdateWeekLogInput,
+} from './presentation/dto/update-week-log.input';
 
 @Injectable()
 export class WeekLogService {
@@ -80,6 +84,7 @@ export class WeekLogService {
     const weekLog = await this.weekLogModel
       .findOne({ userId, active: true })
       .populate('days.workoutSessionId')
+      .populate('days.extraSessionIds')
       .exec();
 
     if (!weekLog) return null;
@@ -90,14 +95,21 @@ export class WeekLogService {
   private mapWeekLog(weekLog: any): any {
     const weekLogObj = weekLog.toObject ? weekLog.toObject() : weekLog;
 
+    console.log('[mapWeekLog] weekLogObj', weekLogObj);
+
     const mapped = {
       ...weekLogObj,
       id: weekLogObj._id.toString(),
       days: weekLogObj.days.map((day) => {
         const session = day.workoutSessionId;
+        const extraSessions = day.extraSessionIds;
         return {
           ...day,
           workoutSessionId: session?._id ? session._id.toString() : session,
+          extraSessionIds:
+            extraSessions?.map((es: any) =>
+              es?._id ? es._id.toString() : es,
+            ) || [],
           exercises: session?.exercises || [],
         };
       }),
@@ -110,10 +122,7 @@ export class WeekLogService {
    * Mutation unificada: crea/actualiza WS y ES en un day del WL.
    * Delega toda la lógica al UpdateDayUseCase.
    */
-  async updateDay(
-    input: import('./presentation/dto/update-week-log.input').UpdateWeekLogDayUnifiedInput,
-    userId: string,
-  ) {
+  async updateDay(input: UpdateWeekLogDayUnifiedInput, userId: string) {
     return this.updateDayUseCase.execute(input, userId);
   }
 
@@ -124,10 +133,7 @@ export class WeekLogService {
    * - active=true → desactiva otros WL del usuario
    * - days opcionales: usa la misma lógica de WS/ES
    */
-  async updateWeekLog(
-    input: import('./presentation/dto/update-week-log.input').UpdateWeekLogInput,
-    userId: string,
-  ) {
+  async updateWeekLog(input: UpdateWeekLogInput, userId: string) {
     return this.updateWeekLogUseCase.execute(input, userId);
   }
 

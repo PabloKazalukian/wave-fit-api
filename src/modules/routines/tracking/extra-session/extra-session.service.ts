@@ -11,6 +11,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { WorkoutSession } from '../workout-session/schema/workout-session.schema';
 import { EXTRA_SESSION_DISCIPLINES } from './extra-session.catalog';
 import type { ExtraSessionDisciplineKey } from './extra-session.catalog';
+import { serializeMongo } from 'src/common/utils/mongo.utils';
 
 @Injectable()
 export class ExtraSessionService {
@@ -90,6 +91,17 @@ export class ExtraSessionService {
     }
 
     return extraSession;
+  }
+
+  async findByIds(ids: string[], userId: string): Promise<ExtraSession[]> {
+    console.log(ids);
+    const objectIds = ids.map((id) => new Types.ObjectId(id));
+    const result = await this.extraSessionModel
+      .find({ _id: { $in: objectIds }, userId: new Types.ObjectId(userId) })
+      .lean()
+      .exec();
+    console.log('[extra-session.service] findByIds', result);
+    return serializeMongo(result);
   }
 
   async findByWorkoutSession(
