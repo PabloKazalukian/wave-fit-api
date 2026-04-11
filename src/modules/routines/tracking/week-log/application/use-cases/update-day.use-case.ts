@@ -34,7 +34,6 @@ export class UpdateDayUseCase {
 
   async execute(input: UpdateWeekLogDayUnifiedInput, userId: string) {
     // 1. Cargar el WeekLog
-    console.log('[update-day.use-case] input', input);
     const weekLog = await this.weekLogModel.findById(input.id);
     if (!weekLog) throw new NotFoundException(`WeekLog ${input.id} not found`);
 

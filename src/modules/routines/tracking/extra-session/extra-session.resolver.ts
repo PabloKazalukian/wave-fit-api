@@ -83,7 +83,7 @@ export class ExtraSessionResolver {
   }
 
   @Mutation(() => ExtraSession)
-  @Audit('UPDATE_EXTRA_SESSION', 'WorkoutSession')
+  @Audit('UPDATE_EXTRA_SESSION', 'ExtraSession')
   updateExtraSession(
     @Args('updateExtraSessionInput')
     updateExtraSessionInput: UpdateExtraSessionInput,

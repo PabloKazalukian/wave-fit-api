@@ -120,8 +120,8 @@ export class ExtraSessionService {
     userId: string,
   ): Promise<ExtraSession> {
     const extraSession = await this.extraSessionModel.findOne({
-      _id: id,
-      userId,
+      _id: new Types.ObjectId(id),
+      userId: new Types.ObjectId(userId),
     });
 
     if (!extraSession) {

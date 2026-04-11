@@ -72,4 +72,12 @@ export class RoutineDayResolver {
   removeRoutineDay(@Args('id', { type: () => String }) id: string) {
     return this.routineDayService.remove(id);
   }
+
+  @Mutation(() => RoutineDay)
+  createRoutineByWorkout(
+    @Args('title') title: string,
+    @Args('exerciseIds', { type: () => [String] }) exerciseIds: string[],
+  ) {
+    return this.routineDayService.createFromWorkout(title, exerciseIds);
+  }
 }

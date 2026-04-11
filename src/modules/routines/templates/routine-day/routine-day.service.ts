@@ -4,14 +4,16 @@ import { UpdateRoutineDayInput } from './dto/update-routine-day.input';
 import { InjectModel } from '@nestjs/mongoose';
 import { RoutineDay as RoutineDaySchema } from './schema/routine-day.schema';
 import { RoutineDay } from './entities/routine-day.entity';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { serializeMongo } from 'src/common/utils/mongo.utils';
+import { ExerciseService } from '../exercise/exercise.service';
 
 @Injectable()
 export class RoutineDayService {
   constructor(
     @InjectModel(RoutineDaySchema.name)
     private routineDayModel: Model<RoutineDaySchema>,
+    private readonly exerciseService: ExerciseService,
   ) {}
 
   async create(
@@ -94,5 +96,33 @@ export class RoutineDayService {
   async remove(id: string): Promise<boolean> {
     const result = await this.routineDayModel.findByIdAndDelete(id).exec();
     return !!result;
+  }
+
+  async createFromWorkout(
+    title: string,
+    exerciseIds: string[],
+  ): Promise<RoutineDay> {
+    const exercises = await this.exerciseService.findByIds(exerciseIds);
+
+    const routineExercises = exerciseIds
+      .map((id, index) => {
+        const exercise = exercises.find((e) => e.id.toString() === id);
+        if (!exercise) return null;
+        return {
+          exercise: new Types.ObjectId(id),
+          order: index + 1,
+        };
+      })
+      .filter((e) => e !== null);
+
+    const types = Array.from(new Set(exercises.map((e) => e.category)));
+
+    const created = await this.routineDayModel.create({
+      title,
+      exercises: routineExercises,
+      type: types,
+    });
+
+    return serializeMongo<RoutineDay>(created);
   }
 }
