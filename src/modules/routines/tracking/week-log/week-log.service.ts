@@ -98,8 +98,6 @@ export class WeekLogService {
   private mapWeekLog(weekLog: any): any {
     const weekLogObj = weekLog.toObject ? weekLog.toObject() : weekLog;
 
-    // console.log('[mapWeekLog] weekLogObj', weekLogObj);
-
     const mapped = {
       ...weekLogObj,
       id: weekLogObj._id.toString(),
@@ -363,8 +361,6 @@ export class WeekLogService {
       })
       .exec();
 
-    console.log('[updateWorkoutSessionStatus] weekLog:', weekLog);
-
     if (!weekLog) {
       throw new NotFoundException(
         `No se encontró un WeekLlog con el workoutSessionId "${workoutSessionId}"`,
@@ -402,8 +398,6 @@ export class WeekLogService {
         // 'days.extraSessionId': new Types.ObjectId(extraSessionId),
       })
       .exec();
-
-    console.log('[removeExtraSessionFromDay] weekLog:', weekLog);
 
     if (!weekLog) {
       throw new NotFoundException(

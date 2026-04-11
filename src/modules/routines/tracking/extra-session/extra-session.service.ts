@@ -94,13 +94,11 @@ export class ExtraSessionService {
   }
 
   async findByIds(ids: string[], userId: string): Promise<ExtraSession[]> {
-    console.log(ids);
     const objectIds = ids.map((id) => new Types.ObjectId(id));
     const result = await this.extraSessionModel
       .find({ _id: { $in: objectIds }, userId: new Types.ObjectId(userId) })
       .lean()
       .exec();
-    // console.log('[extra-session.service] findByIds', result);
     return serializeMongo(result);
   }
 
