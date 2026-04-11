@@ -5,8 +5,18 @@ import { WeekLog } from './infrastructure/schemas/week-log.schema';
 import { Model, Types } from 'mongoose';
 import { CreateWeekLogInput } from './presentation/dto/create-week-log.input';
 import { UpdateWeekLogInput } from './presentation/dto/update-week-log.input';
-import { NotFoundException, ForbiddenException } from '@nestjs/common';
+import { NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { AuditInterceptor } from 'src/modules/audit-logs/audit-logs.interceptor';
+import { WorkoutSession } from '../workout-session/schema/workout-session.schema';
+import { WeekLogValidator } from './application/validators/week-log.validator';
+import { RoutineDayService } from '../../templates/routine-day/routine-day.service';
+import {
+  CreateWeekLogUseCase,
+  FindAllWeekLogsByUserUseCase,
+  UpdateDayUseCase,
+  UpdateWeekLogUseCase,
+} from './application/use-cases';
+import { WorkoutSessionService } from '../workout-session/workout-session.service';
 
 describe('WeekLogService', () => {
   let service: WeekLogService;
@@ -20,10 +30,40 @@ describe('WeekLogService', () => {
     save: mockSave,
   }));
 
-  (mockWeekLogModel as any).findOne = jest.fn();
-  (mockWeekLogModel as any).find = jest.fn();
-  (mockWeekLogModel as any).findOneAndUpdate = jest.fn();
-  (mockWeekLogModel as any).deleteOne = jest.fn();
+  const mockQuery = {
+    populate: jest.fn().mockReturnThis(),
+    exec: jest.fn(),
+    lean: jest.fn().mockReturnThis(),
+    sort: jest.fn().mockReturnThis(),
+  };
+
+  (mockWeekLogModel as any).findOne = jest.fn().mockReturnValue(mockQuery);
+  (mockWeekLogModel as any).find = jest.fn().mockReturnValue(mockQuery);
+  (mockWeekLogModel as any).findOneAndUpdate = jest.fn().mockReturnValue(mockQuery);
+  (mockWeekLogModel as any).findByIdAndUpdate = jest.fn().mockReturnValue(mockQuery);
+  (mockWeekLogModel as any).deleteOne = jest.fn().mockReturnValue(mockQuery);
+  (mockWeekLogModel as any).updateOne = jest.fn().mockReturnValue(mockQuery);
+
+  const mockWorkoutSessionModel = {
+    find: jest.fn(),
+    findById: jest.fn(),
+    create: jest.fn(),
+    save: jest.fn(),
+  };
+
+  const mockValidator = {
+    validateOwnership: jest.fn(),
+  };
+
+  const mockRoutineDayService = {
+    findOne: jest.fn(),
+  };
+
+  const mockCreateWeekLogUseCase = { execute: jest.fn() };
+  const mockFindAllWeekLogsByUserUseCase = { execute: jest.fn() };
+  const mockUpdateDayUseCase = { execute: jest.fn() };
+  const mockUpdateWeekLogUseCase = { execute: jest.fn() };
+  const mockWorkoutSessionService = { remove: jest.fn() };
 
   const mockUserId = new Types.ObjectId();
   const mockWeekLogId = new Types.ObjectId();
@@ -48,6 +88,38 @@ describe('WeekLogService', () => {
           provide: getModelToken(WeekLog.name),
           useValue: mockWeekLogModel,
         },
+        {
+          provide: getModelToken(WorkoutSession.name),
+          useValue: mockWorkoutSessionModel,
+        },
+        {
+          provide: WeekLogValidator,
+          useValue: mockValidator,
+        },
+        {
+          provide: RoutineDayService,
+          useValue: mockRoutineDayService,
+        },
+        {
+          provide: CreateWeekLogUseCase,
+          useValue: mockCreateWeekLogUseCase,
+        },
+        {
+          provide: FindAllWeekLogsByUserUseCase,
+          useValue: mockFindAllWeekLogsByUserUseCase,
+        },
+        {
+          provide: UpdateDayUseCase,
+          useValue: mockUpdateDayUseCase,
+        },
+        {
+          provide: UpdateWeekLogUseCase,
+          useValue: mockUpdateWeekLogUseCase,
+        },
+        {
+          provide: WorkoutSessionService,
+          useValue: mockWorkoutSessionService,
+        },
       ],
     })
       .overrideInterceptor(AuditInterceptor)
@@ -59,6 +131,12 @@ describe('WeekLogService', () => {
       .compile();
 
     service = module.get<WeekLogService>(WeekLogService);
+
+    // Default mock resolutions to avoid "undefined" errors in tests
+    mockCreateWeekLogUseCase.execute.mockResolvedValue(mockWeekLog);
+    mockFindAllWeekLogsByUserUseCase.execute.mockResolvedValue([mockWeekLog]);
+    mockUpdateDayUseCase.execute.mockResolvedValue(mockWeekLog);
+    mockUpdateWeekLogUseCase.execute.mockResolvedValue(mockWeekLog);
   });
 
   afterEach(() => {

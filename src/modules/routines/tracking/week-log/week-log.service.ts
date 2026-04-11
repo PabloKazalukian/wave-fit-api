@@ -9,7 +9,10 @@ import { CreateWeekLogInput } from './presentation/dto/create-week-log.input';
 import { WeekLog } from './infrastructure/schemas/week-log.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types, UpdateQuery } from 'mongoose';
-import { isSameDay } from 'date-fns';
+import {
+  compareSameDay,
+  ensureDate,
+} from '../../../../common/utils/date.utils';
 import { WorkoutSession } from '../workout-session/schema/workout-session.schema';
 import { RoutineDayService } from '../../templates/routine-day/routine-day.service';
 import { WeekLogValidator } from './application/validators/week-log.validator';
@@ -170,7 +173,7 @@ export class WeekLogService {
     let updated = false;
 
     for (const day of weekLog.days) {
-      const session = sessions.find((s) => isSameDay(s.date, day.date));
+      const session = sessions.find((s) => compareSameDay(s.date, day.date));
 
       if (session) {
         day.workoutSessionId = new Types.ObjectId(session._id as any);
@@ -258,11 +261,9 @@ export class WeekLogService {
       const searchDate = new Date(date);
 
       // 4. Encontrar el día en el weekLog
-      const dayToUpdate = weekLog.days.find((d) => {
-        const dayDate = new Date(d.date);
-        dayDate.setUTCHours(0, 0, 0, 0);
-        return dayDate.getTime() === searchDate.getTime();
-      });
+      const dayToUpdate = weekLog.days.find((d) =>
+        compareSameDay(d.date, searchDate),
+      );
 
       if (!dayToUpdate) {
         throw new BadRequestException(
@@ -383,6 +384,49 @@ export class WeekLogService {
         `No se encontró un día con el workoutSessionId "${workoutSessionId}"`,
       );
     }
+
+    await weekLog.save();
+
+    return this.findOne(weekLog._id.toString(), userId);
+  }
+
+  async removeExtraSessionFromDay(
+    extraSessionId: string,
+    userId: string,
+    date: string,
+  ): Promise<any> {
+    const weekLog = await this.weekLogModel
+      .findOne({
+        userId: userId,
+        active: true,
+        // 'days.extraSessionId': new Types.ObjectId(extraSessionId),
+      })
+      .exec();
+
+    console.log('[removeExtraSessionFromDay] weekLog:', weekLog);
+
+    if (!weekLog) {
+      throw new NotFoundException(
+        `No se encontró un WeekLlog con el extraSessionId "${extraSessionId}"`,
+      );
+    }
+
+    this.validator.validateOwnership(weekLog, userId);
+
+    const searchDate = new Date(date);
+
+    const day = weekLog.days.find((d) => compareSameDay(d.date, searchDate));
+
+    if (!day) {
+      throw new NotFoundException(
+        `No se encontró un día con el extraSessionId "${extraSessionId}"`,
+      );
+    }
+
+    day.extraSessionIds = day.extraSessionIds.filter(
+      (id) => id.toString() !== extraSessionId,
+    );
+    // day.status = 'pending';
 
     await weekLog.save();
 

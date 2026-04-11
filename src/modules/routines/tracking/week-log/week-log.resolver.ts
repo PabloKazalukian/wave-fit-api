@@ -239,4 +239,18 @@ export class WeekLogResolver {
       userId,
     );
   }
+
+  @Mutation(() => WeekLog)
+  async removeExtraSessionFromDay(
+    @Args('date', { type: () => String }) date: string,
+    @Args('extraSessionId', { type: () => String }) extraSessionId: string,
+    @Context() context,
+  ) {
+    const userId = context.req.user?.id;
+    return this.weekLogService.removeExtraSessionFromDay(
+      extraSessionId,
+      userId,
+      date,
+    );
+  }
 }
