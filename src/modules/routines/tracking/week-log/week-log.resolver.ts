@@ -221,4 +221,22 @@ export class WeekLogResolver {
       userId,
     );
   }
+
+  @Mutation(() => WeekLog)
+  async updateWorkoutSessionStatus(
+    @Args('workoutSessionId', { type: () => String }) workoutSessionId: string,
+    @Context() context,
+  ) {
+    const userId =
+      context?.req?.user?._id?.toString() ||
+      context?.req?.user?.id ||
+      context?.req?.user?.userId;
+    if (!userId || !Types.ObjectId.isValid(userId)) {
+      throw new BadRequestException('Invalid user id');
+    }
+    return this.weekLogService.updateWorkoutSessionStatus(
+      workoutSessionId,
+      userId,
+    );
+  }
 }

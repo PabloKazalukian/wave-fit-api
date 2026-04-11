@@ -127,6 +127,16 @@ export class UpdateWeekLogUseCase {
     if (dayInput.status !== undefined) {
       day.status = dayInput.status;
     }
+
+    // Rest override
+    if (dayInput.isRest !== undefined) {
+      day.isRest = dayInput.isRest;
+    }
+
+    // Safety check: isRest can only be true if no workoutSessionId exists
+    if (day.workoutSessionId) {
+      day.isRest = false;
+    }
   }
 
   // ─── WorkoutSession handler ─────────────────────────────────────────────────
@@ -207,7 +217,6 @@ export class UpdateWeekLogUseCase {
       );
       resolvedWsId = new Types.ObjectId((emptySession as any)._id);
       day.workoutSessionId = resolvedWsId;
-      day.isRest = true;
     }
 
     // Crear la ExtraSession vinculada al WS resuelto

@@ -100,7 +100,7 @@ export class ExtraSessionService {
       .find({ _id: { $in: objectIds }, userId: new Types.ObjectId(userId) })
       .lean()
       .exec();
-    console.log('[extra-session.service] findByIds', result);
+    // console.log('[extra-session.service] findByIds', result);
     return serializeMongo(result);
   }
 

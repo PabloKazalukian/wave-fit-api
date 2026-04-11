@@ -87,6 +87,11 @@ export class UpdateDayInput {
   @IsOptional()
   @IsString()
   status?: string;
+
+  @Field(() => Boolean, { nullable: true })
+  @IsOptional()
+  @IsBoolean()
+  isRest?: boolean;
 }
 
 // ─── Input del mutation updateDay ─────────────────────────────────────────────

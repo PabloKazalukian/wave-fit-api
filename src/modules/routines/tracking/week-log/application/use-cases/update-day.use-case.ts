@@ -34,6 +34,7 @@ export class UpdateDayUseCase {
 
   async execute(input: UpdateWeekLogDayUnifiedInput, userId: string) {
     // 1. Cargar el WeekLog
+    console.log('[update-day.use-case] input', input);
     const weekLog = await this.weekLogModel.findById(input.id);
     if (!weekLog) throw new NotFoundException(`WeekLog ${input.id} not found`);
 
@@ -42,6 +43,7 @@ export class UpdateDayUseCase {
 
     // 3. Procesar cada día del input
     for (const dayInput of input.days) {
+      console.log('[update-day.use-case] dayInput', dayInput);
       await this.processDay(weekLog, dayInput, userId);
     }
 
@@ -79,6 +81,16 @@ export class UpdateDayUseCase {
     // --- Status override ---
     if (dayInput.status !== undefined) {
       day.status = dayInput.status;
+    }
+
+    // --- Rest override ---
+    if (dayInput.isRest !== undefined) {
+      day.isRest = dayInput.isRest;
+    }
+
+    // --- Safety check: isRest can only be true if no workoutSessionId exists ---
+    if (day.workoutSessionId) {
+      day.isRest = false;
     }
   }
 
@@ -160,7 +172,6 @@ export class UpdateDayUseCase {
       );
       resolvedWsId = new Types.ObjectId((emptySession as any)._id);
       day.workoutSessionId = resolvedWsId;
-      day.isRest = true;
     }
 
     // Crear la ExtraSession vinculada al WS resuelto

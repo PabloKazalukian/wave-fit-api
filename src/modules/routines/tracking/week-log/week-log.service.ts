@@ -95,7 +95,7 @@ export class WeekLogService {
   private mapWeekLog(weekLog: any): any {
     const weekLogObj = weekLog.toObject ? weekLog.toObject() : weekLog;
 
-    console.log('[mapWeekLog] weekLogObj', weekLogObj);
+    // console.log('[mapWeekLog] weekLogObj', weekLogObj);
 
     const mapped = {
       ...weekLogObj,
@@ -351,5 +351,41 @@ export class WeekLogService {
       console.error('[assignRoutineToDay] Error:', error);
       throw error;
     }
+  }
+
+  async updateWorkoutSessionStatus(workoutSessionId: string, userId: string) {
+    const weekLog = await this.weekLogModel
+      .findOne({
+        userId: userId,
+        active: true,
+        // 'days.workoutSessionId': new Types.ObjectId(workoutSessionId),
+      })
+      .exec();
+
+    console.log('[updateWorkoutSessionStatus] weekLog:', weekLog);
+
+    if (!weekLog) {
+      throw new NotFoundException(
+        `No se encontró un WeekLlog con el workoutSessionId "${workoutSessionId}"`,
+      );
+    }
+
+    this.validator.validateOwnership(weekLog, userId);
+
+    const day = weekLog.days.find(
+      (d) =>
+        d.workoutSessionId &&
+        d.workoutSessionId.toString() === workoutSessionId,
+    );
+
+    if (!day) {
+      throw new NotFoundException(
+        `No se encontró un día con el workoutSessionId "${workoutSessionId}"`,
+      );
+    }
+
+    await weekLog.save();
+
+    return this.findOne(weekLog._id.toString(), userId);
   }
 }
