@@ -42,7 +42,6 @@ export class UpdateDayUseCase {
 
     // 3. Procesar cada día del input
     for (const dayInput of input.days) {
-      console.log('[update-day.use-case] dayInput', dayInput);
       await this.processDay(weekLog, dayInput, userId);
     }
 

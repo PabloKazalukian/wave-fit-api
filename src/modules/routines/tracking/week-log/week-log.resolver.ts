@@ -166,16 +166,6 @@ export class WeekLogResolver {
     return this.weekLogService.updateWeekLog(input, userId);
   }
 
-  // @Mutation(() => WeekLog)
-  // async updateWeekLogDay(
-  //   @Args('input') input: UpdateWeekLogDayInput,
-  //   @Context() context,
-  // ) {
-  //   const userId = context.req.user?.id;
-
-  //   return this.weekLogService.updateDay(input, userId);
-  // }
-
   @Mutation(() => WeekLog)
   async syncWeekLogDays(
     @Args('weekLogId', { type: () => String }) weekLogId: string,
@@ -183,14 +173,6 @@ export class WeekLogResolver {
   ) {
     const userId = context.req.user?.id;
     return this.weekLogService.syncDaysWithSessions(weekLogId, userId);
-  }
-
-  @Mutation(() => WeekLog)
-  async removeWeekLog(
-    @Args('id', { type: () => String }) id: string,
-    @Context() context,
-  ) {
-    return this.weekLogService.remove(id);
   }
 
   @Mutation(() => WeekLog)
@@ -212,12 +194,12 @@ export class WeekLogResolver {
 
   @Mutation(() => WeekLog)
   async removeWorkoutSessionFromDay(
-    @Args('input') input: RemoveWorkoutSessionFromDayInput,
+    @Args('workoutSessionId', { type: () => String }) workoutSessionId: string,
     @Context() context,
   ) {
     const userId = context.req.user?.id;
     return this.weekLogService.removeWorkoutSessionFromDay(
-      input.workoutSessionId,
+      workoutSessionId,
       userId,
     );
   }
