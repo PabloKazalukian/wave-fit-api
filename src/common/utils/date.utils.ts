@@ -1,4 +1,4 @@
-import { isSameDay, startOfDay, parseISO } from 'date-fns';
+import { isSameDay, startOfDay, parseISO, format } from 'date-fns';
 
 /**
  * Compares two dates and returns true if they are on the same day, regardless of time.
@@ -23,6 +23,17 @@ export const clearTime = (date: Date | string | number): Date => {
   return startOfDay(d);
 };
 
+export const parseLocalDate = (dateStr: string): Date => {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return startOfDay(new Date(year, month - 1, day));
+};
+
+/**
+ * Convierte un Date a string "YYYY-MM-DD" (formato para APIs/backend).
+ */
+export const toApiDateString = (date: Date): string => {
+  return format(date, 'yyyy-MM-dd');
+};
 /**
  * Helper to ensure we have a Date object from a possible string or Date.
  */

@@ -12,6 +12,7 @@ import { Model, Types, UpdateQuery } from 'mongoose';
 import {
   compareSameDay,
   ensureDate,
+  parseLocalDate,
 } from '../../../../common/utils/date.utils';
 import { WorkoutSession } from '../workout-session/schema/workout-session.schema';
 import { RoutineDayService } from '../../templates/routine-day/routine-day.service';
@@ -256,7 +257,7 @@ export class WeekLogService {
       }
 
       // 3. Parsear fecha
-      const searchDate = new Date(date);
+      const searchDate = parseLocalDate(date);
 
       // 4. Encontrar el día en el weekLog
       const dayToUpdate = weekLog.days.find((d) =>
@@ -407,7 +408,7 @@ export class WeekLogService {
 
     this.validator.validateOwnership(weekLog, userId);
 
-    const searchDate = new Date(date);
+    const searchDate = parseLocalDate(date);
 
     const day = weekLog.days.find((d) => compareSameDay(d.date, searchDate));
 
