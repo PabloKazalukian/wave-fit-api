@@ -3,6 +3,7 @@ import { WeekLogService } from './week-log.service';
 import {
   ActiveWeekLogResponse,
   WeekLog,
+  WeekLogDay,
 } from './presentation/entities/week-log.entity';
 import { CreateWeekLogInput } from './presentation/dto/create-week-log.input';
 import {
@@ -125,7 +126,7 @@ export class WeekLogResolver {
    * Mutation unificada que crea/actualiza WorkoutSession y/o ExtraSession
    * en un día del WeekLog en una sola operación.
    */
-  @Mutation(() => WeekLog)
+  @Mutation(() => WeekLogDay)
   async updateDay(
     @Args('input') input: UpdateWeekLogDayUnifiedInput,
     @Context() context,
@@ -175,7 +176,7 @@ export class WeekLogResolver {
     return this.weekLogService.syncDaysWithSessions(weekLogId, userId);
   }
 
-  @Mutation(() => WeekLog)
+  @Mutation(() => WeekLogDay)
   @Audit('ASSIGN_ROUTINE_TO_DAY', 'WeekLog')
   async assignRoutineToDay(
     @Args('routineDayId', { type: () => String }) routineDayId: string,
@@ -192,7 +193,7 @@ export class WeekLogResolver {
     return this.weekLogService.assignRoutineToDay(routineDayId, date, userId);
   }
 
-  @Mutation(() => WeekLog)
+  @Mutation(() => WeekLogDay)
   async removeWorkoutSessionFromDay(
     @Args('workoutSessionId', { type: () => String }) workoutSessionId: string,
     @Context() context,
@@ -204,25 +205,7 @@ export class WeekLogResolver {
     );
   }
 
-  @Mutation(() => WeekLog)
-  async updateWorkoutSessionStatus(
-    @Args('workoutSessionId', { type: () => String }) workoutSessionId: string,
-    @Context() context,
-  ) {
-    const userId =
-      context?.req?.user?._id?.toString() ||
-      context?.req?.user?.id ||
-      context?.req?.user?.userId;
-    if (!userId || !Types.ObjectId.isValid(userId)) {
-      throw new BadRequestException('Invalid user id');
-    }
-    return this.weekLogService.updateWorkoutSessionStatus(
-      workoutSessionId,
-      userId,
-    );
-  }
-
-  @Mutation(() => WeekLog)
+  @Mutation(() => WeekLogDay)
   async removeExtraSessionFromDay(
     @Args('date', { type: () => String }) date: string,
     @Args('extraSessionId', { type: () => String }) extraSessionId: string,

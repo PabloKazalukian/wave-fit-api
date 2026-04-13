@@ -18,6 +18,7 @@ import {
 } from '../../presentation/dto/update-week-log.input';
 import type { IWeekLogRepository } from '../../domain/interfaces/repositories/week-log.repository.interface';
 import { WEEK_LOG_REPOSITORY } from '../../domain/interfaces/repositories/week-log.repository.interface';
+import { WeekLogService } from '../../week-log.service';
 
 @Injectable()
 export class UpdateDayUseCase {
@@ -30,6 +31,8 @@ export class UpdateDayUseCase {
     private readonly extraSessionService: ExtraSessionService,
     @Inject(WEEK_LOG_REPOSITORY)
     private readonly weekLogRepository: IWeekLogRepository,
+    @Inject(forwardRef(() => WeekLogService))
+    private readonly weekLogService: WeekLogService,
   ) {}
 
   async execute(input: UpdateWeekLogDayUnifiedInput, userId: string) {
@@ -48,8 +51,13 @@ export class UpdateDayUseCase {
     // 4. Persistir
     await weekLog.save();
 
-    // 5. Retornar el WeekLog populado
-    return this.weekLogRepository.findOne(input.id, userId);
+    // 5. Retornar los datos del día actualizado (el último procesado)
+    const lastDayInput = input.days[input.days.length - 1];
+    return this.weekLogService.findOneDay(
+      input.id,
+      lastDayInput.order,
+      userId,
+    );
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

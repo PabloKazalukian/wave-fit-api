@@ -102,22 +102,48 @@ export class WeekLogService {
     const mapped = {
       ...weekLogObj,
       id: weekLogObj._id.toString(),
-      days: weekLogObj.days.map((day) => {
-        const session = day.workoutSessionId;
-        const extraSessions = day.extraSessionIds;
-        return {
-          ...day,
-          workoutSessionId: session?._id ? session._id.toString() : session,
-          extraSessionIds:
-            extraSessions?.map((es: any) =>
-              es?._id ? es._id.toString() : es,
-            ) || [],
-          exercises: session?.exercises || [],
-        };
-      }),
+      days: weekLogObj.days.map((day) => this.mapDay(day)),
     };
 
     return mapped;
+  }
+
+  private mapDay(day: any): any {
+    const session = day.workoutSessionId;
+    const extraSessions = day.extraSessionIds;
+    return {
+      ...day,
+      workoutSessionId: session?._id ? session._id.toString() : session,
+      extraSessionIds:
+        extraSessions?.map((es: any) => (es?._id ? es._id.toString() : es)) ||
+        [],
+      exercises: session?.exercises || [],
+    };
+  }
+
+  async findOneDay(
+    weekLogId: string,
+    order: number,
+    userId: string,
+  ): Promise<any> {
+    const weekLog = await this.weekLogModel
+      .findOne({ _id: weekLogId, userId })
+      .populate('days.workoutSessionId')
+      .populate('days.extraSessionIds')
+      .exec();
+
+    if (!weekLog) {
+      throw new NotFoundException(
+        `Week log con ID "${weekLogId}" no encontrado`,
+      );
+    }
+
+    const day = weekLog.days.find((d) => d.order === order);
+    if (!day) {
+      throw new NotFoundException(`Día con orden ${order} no encontrado`);
+    }
+
+    return this.mapDay((day as any).toObject ? (day as any).toObject() : day);
   }
 
   /**
@@ -231,7 +257,7 @@ export class WeekLogService {
 
     await this.workoutSessionService.remove(workoutSessionId, userId);
 
-    return this.findOne(weekLog._id.toString(), userId);
+    return this.findOneDay(weekLog._id.toString(), day.order, userId);
   }
 
   async assignRoutineToDay(
@@ -344,47 +370,12 @@ export class WeekLogService {
         },
       );
 
-      // 8. Retornar el weekLog actualizado
-      const result = await this.findOne(weekLog._id.toString(), userId);
-      return result;
+      // 8. Retornar el día actualizado
+      return this.findOneDay(weekLog._id.toString(), dayToUpdate.order, userId);
     } catch (error) {
       console.error('[assignRoutineToDay] Error:', error);
       throw error;
     }
-  }
-
-  async updateWorkoutSessionStatus(workoutSessionId: string, userId: string) {
-    const weekLog = await this.weekLogModel
-      .findOne({
-        userId: userId,
-        active: true,
-        // 'days.workoutSessionId': new Types.ObjectId(workoutSessionId),
-      })
-      .exec();
-
-    if (!weekLog) {
-      throw new NotFoundException(
-        `No se encontró un WeekLlog con el workoutSessionId "${workoutSessionId}"`,
-      );
-    }
-
-    this.validator.validateOwnership(weekLog, userId);
-
-    const day = weekLog.days.find(
-      (d) =>
-        d.workoutSessionId &&
-        d.workoutSessionId.toString() === workoutSessionId,
-    );
-
-    if (!day) {
-      throw new NotFoundException(
-        `No se encontró un día con el workoutSessionId "${workoutSessionId}"`,
-      );
-    }
-
-    await weekLog.save();
-
-    return this.findOne(weekLog._id.toString(), userId);
   }
 
   async removeExtraSessionFromDay(
@@ -428,6 +419,6 @@ export class WeekLogService {
 
     await weekLog.save();
 
-    return this.findOne(weekLog._id.toString(), userId);
+    return this.findOneDay(weekLog._id.toString(), day.order, userId);
   }
 }
