@@ -11,6 +11,7 @@ import {
   UpdateWeekLogInput,
 } from './presentation/dto/update-week-log.input';
 import { RemoveWorkoutSessionFromDayInput } from './presentation/dto/remove-workout-session-from-day.input';
+import { UpdateDayWorkoutStatusInput } from './presentation/dto/update-day-workout-status.input';
 import {
   BadRequestException,
   UseGuards,
@@ -141,6 +142,21 @@ export class WeekLogResolver {
     }
 
     return this.weekLogService.updateDay(input, userId);
+  }
+
+  @Mutation(() => WeekLogDay)
+  async updateDayWorkoutStatus(
+    @Args('input') input: UpdateDayWorkoutStatusInput,
+    @Context() context,
+  ) {
+    const userId =
+      context?.req?.user?._id?.toString() ||
+      context?.req?.user?.id ||
+      context?.req?.user?.userId;
+    if (!userId || !Types.ObjectId.isValid(userId)) {
+      throw new BadRequestException('Invalid user id');
+    }
+    return this.weekLogService.updateDayWorkoutStatus(input, userId);
   }
 
   /**

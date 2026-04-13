@@ -24,7 +24,13 @@ export const clearTime = (date: Date | string | number): Date => {
 };
 
 export const parseLocalDate = (dateStr: string): Date => {
-  return startOfDay(new Date(dateStr));
+  // If it's already an ISO string with time/timezone, use ensureDate
+  if (dateStr.includes('T') || dateStr.includes(':')) {
+    return startOfDay(ensureDate(dateStr));
+  }
+  // Otherwise assume YYYY-MM-DD or similar and parse as local
+  const [year, month, day] = dateStr.split(/[-/]/).map(Number);
+  return new Date(year, month - 1, day);
 };
 
 /**

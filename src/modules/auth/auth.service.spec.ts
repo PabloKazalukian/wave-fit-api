@@ -5,6 +5,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { Types } from 'mongoose';
+import { parseLocalDate } from 'src/common/utils/date.utils';
 
 // Mock de bcrypt
 jest.mock('bcryptjs');
@@ -21,8 +22,8 @@ describe('AuthService', () => {
     email: 'test@example.com',
     password: '$2a$10$hashedpassword',
     role: 'user',
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createdAt: parseLocalDate(new Date().toISOString()),
+    updatedAt: parseLocalDate(new Date().toISOString()),
   };
 
   const mockUserService = {

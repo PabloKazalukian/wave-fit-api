@@ -14,6 +14,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { WeekLogService } from '../week-log/week-log.service';
 import { WorkoutSessionValidator } from './workout-session.validator';
 import { WorkoutSessionCreationData } from '../week-log/domain/entities/week-log.domain';
+import { parseLocalDate } from 'src/common/utils/date.utils';
 
 @Injectable()
 export class WorkoutSessionService {
@@ -49,7 +50,7 @@ export class WorkoutSessionService {
     const session = await this.sessionModel.create({
       userId: new Types.ObjectId(userId),
       weekLogId: input.weekLogId ? new Types.ObjectId(input.weekLogId) : null,
-      date: new Date(input.date),
+      date: parseLocalDate(input.date),
       routineDayId: input.routineDayId
         ? new Types.ObjectId(input.routineDayId)
         : null,
@@ -80,8 +81,8 @@ export class WorkoutSessionService {
   }
 
   async findByDate(date: string, userId: string) {
-    const searchDate = new Date(date);
-    const nextDay = new Date(searchDate);
+    const searchDate = parseLocalDate(date);
+    const nextDay = new Date(searchDate); // 👈 Clone date to avoid modifying searchDate
     nextDay.setDate(nextDay.getDate() + 1);
 
     return this.sessionModel
@@ -162,7 +163,7 @@ export class WorkoutSessionService {
         id,
         {
           deleted: true,
-          deletedAt: new Date(),
+          deletedAt: parseLocalDate(new Date().toISOString()),
         },
         { new: true },
       )

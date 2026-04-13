@@ -43,25 +43,6 @@ export class WorkoutSessionValidator {
     }
   }
 
-  private async validateNoDuplicate(
-    weekLogId: string,
-    userId: string,
-    date: Date | string,
-    sessionModel: Model<WorkoutSession>,
-  ) {
-    const existing = await sessionModel.findOne({
-      userId: new Types.ObjectId(userId),
-      weekLogId: new Types.ObjectId(weekLogId),
-      date: new Date(date),
-    });
-
-    if (existing) {
-      throw new BadRequestException(
-        'A workout session already exists for this date',
-      );
-    }
-  }
-
   private validateExercises(exercises: ExercisePerformance[]) {
     for (const exercise of exercises) {
       if (exercise.series !== exercise.sets.length) {

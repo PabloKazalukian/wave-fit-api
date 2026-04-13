@@ -12,6 +12,7 @@ import { WorkoutSession } from '../workout-session/schema/workout-session.schema
 import { EXTRA_SESSION_DISCIPLINES } from './extra-session.catalog';
 import type { ExtraSessionDisciplineKey } from './extra-session.catalog';
 import { serializeMongo } from 'src/common/utils/mongo.utils';
+import { parseLocalDate } from 'src/common/utils/date.utils';
 
 @Injectable()
 export class ExtraSessionService {
@@ -65,7 +66,7 @@ export class ExtraSessionService {
       userId: new Types.ObjectId(userId),
       workoutSessionId: new Types.ObjectId(input.workoutSessionId),
       category: config.category,
-      date: new Date(input.date),
+      date: parseLocalDate(input.date),
       discipline: input.discipline,
       duration: input.duration,
       intensityLevel: input.intensityLevel,

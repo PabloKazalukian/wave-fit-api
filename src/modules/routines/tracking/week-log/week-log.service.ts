@@ -23,6 +23,7 @@ import {
   UpdateDayUseCase,
   UpdateWeekLogUseCase,
 } from './application/use-cases';
+import { UpdateDayWorkoutStatusInput } from './presentation/dto/update-day-workout-status.input';
 import { WeekLogDomain } from './domain/entities/week-log.domain';
 import { WorkoutSessionService } from '../workout-session/workout-session.service';
 import {
@@ -420,5 +421,67 @@ export class WeekLogService {
     await weekLog.save();
 
     return this.findOneDay(weekLog._id.toString(), day.order, userId);
+  }
+
+  async updateDayWorkoutStatus(
+    input: UpdateDayWorkoutStatusInput,
+    userId: string,
+  ): Promise<any> {
+    const weekLog = await this.findActiveWeekLog(userId);
+    if (!weekLog) throw new NotFoundException('No active week log found');
+
+    const searchDate = parseLocalDate(input.date);
+    const day = weekLog.days.find((d: any) =>
+      compareSameDay(d.date, searchDate),
+    );
+
+    if (!day) throw new NotFoundException('Day not found in week log');
+
+    if (input.isRest) {
+      if (day.workoutSessionId) {
+        await this.workoutSessionModel.findByIdAndDelete(day.workoutSessionId).exec();
+      }
+
+      day.isRest = true;
+      day.status = 'skipped';
+      day.workoutSessionId = null;
+    } else {
+      // Setting to training day
+      day.isRest = false;
+      day.status = 'pending';
+
+      if (!day.workoutSessionId) {
+        // Create a new session if it doesn't exist (e.g. from rest to training)
+        const newSession = await this.workoutSessionModel.create({
+          userId,
+          date: day.date,
+          status: 'not_started',
+          exercises: [],
+        });
+        day.workoutSessionId = newSession._id;
+      } else {
+        const session = await this.workoutSessionModel
+          .findById(day.workoutSessionId)
+          .exec();
+        if (session) {
+          session.status = 'not_started';
+          await session.save();
+        }
+      }
+    }
+
+    // Persist week log change
+    await this.weekLogModel.updateOne(
+      { _id: weekLog.id, 'days.order': day.order },
+      {
+        $set: {
+          'days.$.isRest': day.isRest,
+          'days.$.status': day.status,
+          'days.$.workoutSessionId': day.workoutSessionId,
+        },
+      },
+    );
+
+    return this.findOneDay(weekLog.id, day.order, userId);
   }
 }
