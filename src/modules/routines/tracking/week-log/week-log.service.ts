@@ -408,13 +408,16 @@ export class WeekLogService {
 
     this.validator.validateOwnership(weekLog, userId);
 
+    console.log('[date]', date);
     const searchDate = parseLocalDate(date);
 
     const day = weekLog.days.find((d) => compareSameDay(d.date, searchDate));
+    console.log('[searchDate]', searchDate);
+    console.log('[day]', day);
 
     if (!day) {
       throw new NotFoundException(
-        `No se encontró un día con el extraSessionId "${extraSessionId}"`,
+        `No se encontró un día con el extraSessionId "${extraSessionId}, ${date}"`,
       );
     }
 

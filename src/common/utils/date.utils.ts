@@ -24,8 +24,7 @@ export const clearTime = (date: Date | string | number): Date => {
 };
 
 export const parseLocalDate = (dateStr: string): Date => {
-  const [year, month, day] = dateStr.split('-').map(Number);
-  return startOfDay(new Date(year, month - 1, day));
+  return startOfDay(new Date(dateStr));
 };
 
 /**
