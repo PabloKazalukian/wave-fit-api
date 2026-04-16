@@ -33,7 +33,8 @@ export class WeekLogRepository implements IWeekLogRepository {
     offset?: number,
   ): Promise<WeekLogDomain[]> {
     const query = this.weekLogModel
-      .find({ userId })
+      .find({ userId, active: false })
+      .sort({ endDate: -1 })
       .populate('days.workoutSessionId');
 
     if (offset !== undefined) {
