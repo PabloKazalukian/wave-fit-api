@@ -27,8 +27,9 @@ export function createWeekLog(app: INestApplication<App>, cookie: string) {
       query: `
           mutation {
             createWeekLog(createWeekLogInput: {
-              startDate: "${startOfWeek.toISOString()}",
-              endDate: "${endOfWeek.toISOString()}",
+              startDate: "${startOfWeek.toISOString().split('T')[0]}",
+              endDate: "${endOfWeek.toISOString().split('T')[0]}",
+              timezone: "America/Argentina/Buenos_Aires"
             }) {
               id
               startDate

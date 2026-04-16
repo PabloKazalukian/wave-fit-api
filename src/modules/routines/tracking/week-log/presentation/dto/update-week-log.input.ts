@@ -130,6 +130,11 @@ export class UpdateWeekLogInput {
   @IsString()
   notes?: string;
 
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  timezone?: string;
+
   /** Si completed = true, el UC fuerza active = false automáticamente. */
   @Field({ nullable: true })
   @IsOptional()

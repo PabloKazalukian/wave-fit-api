@@ -14,7 +14,14 @@ import { InjectModel } from '@nestjs/mongoose';
 import { WeekLogService } from '../week-log/week-log.service';
 import { WorkoutSessionValidator } from './workout-session.validator';
 import { WorkoutSessionCreationData } from '../week-log/domain/entities/week-log.domain';
-import { parseLocalDate } from 'src/common/utils/date.utils';
+import {
+  localDateToUtc,
+  utcToLocalDate,
+  isValidLocalDate,
+  nowUtc,
+} from 'src/common/utils/date.utils';
+
+const DEFAULT_TIMEZONE = 'America/Argentina/Buenos_Aires';
 
 @Injectable()
 export class WorkoutSessionService {
@@ -27,9 +34,11 @@ export class WorkoutSessionService {
   ) {}
 
   async create(
-    input: CreateWorkoutSessionInput,
+    input: CreateWorkoutSessionInput & { timezone?: string },
     userId: string,
   ): Promise<WorkoutSession> {
+    const timezone = (input as any).timezone ?? DEFAULT_TIMEZONE;
+
     let weekLog = null;
     if (input.weekLogId) {
       weekLog = await this.weekLogService.findOne(input.weekLogId, userId);
@@ -47,10 +56,16 @@ export class WorkoutSessionService {
       this.sessionModel,
     );
 
+    if (!isValidLocalDate(input.date)) {
+      throw new BadRequestException(
+        `date "${input.date}" must be in yyyy-MM-dd format`,
+      );
+    }
+
     const session = await this.sessionModel.create({
       userId: new Types.ObjectId(userId),
       weekLogId: input.weekLogId ? new Types.ObjectId(input.weekLogId) : null,
-      date: parseLocalDate(input.date),
+      date: localDateToUtc(input.date, timezone), // ✅ LocalDate → Date UTC para Mongo
       routineDayId: input.routineDayId
         ? new Types.ObjectId(input.routineDayId)
         : null,
@@ -80,18 +95,38 @@ export class WorkoutSessionService {
     return this.sessionModel.insertMany(sessions);
   }
 
-  async findByDate(date: string, userId: string) {
-    const searchDate = parseLocalDate(date);
-    const nextDay = new Date(searchDate); // 👈 Clone date to avoid modifying searchDate
-    nextDay.setDate(nextDay.getDate() + 1);
+  /**
+   * Busca un WorkoutSession por LocalDate "yyyy-MM-dd" + timezone.
+   * Convierte el LocalDate a rango UTC para la query de Mongo.
+   */
+  async findByDate(
+    date: string,
+    userId: string,
+    timezone: string = DEFAULT_TIMEZONE,
+  ) {
+    if (!isValidLocalDate(date)) {
+      throw new BadRequestException(
+        `date "${date}" must be in yyyy-MM-dd format`,
+      );
+    }
+
+    // Rango UTC para el día completo en la timezone del usuario
+    const startUtc = localDateToUtc(date, timezone);
+    const endUtc = localDateToUtc(
+      // Next day at 00:00 in same timezone = end of range
+      new Date(startUtc.getTime() + 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split('T')[0],
+      timezone,
+    );
 
     return this.sessionModel
       .findOne({
         userId,
         deleted: { $ne: true },
         date: {
-          $gte: searchDate,
-          $lt: nextDay,
+          $gte: startUtc,
+          $lt: endUtc,
         },
       })
       .populate('exercises')
@@ -112,7 +147,6 @@ export class WorkoutSessionService {
       throw new NotFoundException(`Workout Session with ID "${id}" not found`);
     }
 
-    // Normalize exercises: always derive series from the actual sets count
     if (updateWorkoutSessionInput.exercises) {
       updateWorkoutSessionInput.exercises =
         updateWorkoutSessionInput.exercises.map((ex) => ({
@@ -132,10 +166,7 @@ export class WorkoutSessionService {
     const updated = await this.sessionModel
       .findByIdAndUpdate(
         id,
-        {
-          ...updateData,
-          edited: true,
-        },
+        { ...updateData, edited: true },
         { new: true },
       )
       .populate('exercises')
@@ -163,7 +194,7 @@ export class WorkoutSessionService {
         id,
         {
           deleted: true,
-          deletedAt: parseLocalDate(new Date().toISOString()),
+          deletedAt: nowUtc(), // ✅ timestamp UTC puro
         },
         { new: true },
       )

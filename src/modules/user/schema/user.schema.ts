@@ -25,6 +25,9 @@ export class User extends Document {
 
   @Prop()
   picture?: string;
+
+  @Prop({ type: String, default: 'America/Argentina/Buenos_Aires' })
+  timezone?: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

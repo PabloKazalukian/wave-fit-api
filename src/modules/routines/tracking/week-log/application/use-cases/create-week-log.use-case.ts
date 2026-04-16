@@ -1,6 +1,6 @@
 import { Inject, Injectable, ForbiddenException } from '@nestjs/common';
 import { Model, Types } from 'mongoose';
-import { differenceInDays } from 'date-fns';
+import { differenceInLocalDays, isValidLocalDate } from 'src/common/utils/date.utils';
 import type { IWeekLogRepository } from '../../domain/interfaces/repositories/week-log.repository.interface';
 import { WEEK_LOG_REPOSITORY } from '../../domain/interfaces/repositories/week-log.repository.interface';
 import { CreateWeekLogInput } from '../../presentation/dto/create-week-log.input';
@@ -25,28 +25,35 @@ export class CreateWeekLogUseCase {
     input: CreateWeekLogInput,
     userId: string,
   ): Promise<WeekLogDomain | null> {
-    const { startDate, endDate, planId } = input;
+    const { startDate, endDate, planId, timezone } = input;
 
-    await this.validator.validateCreation(input, new Types.ObjectId(userId));
+    // 1. Validate LocalDate format
+    if (!isValidLocalDate(startDate) || !isValidLocalDate(endDate)) {
+      throw new ForbiddenException('startDate and endDate must be in yyyy-MM-dd format');
+    }
 
-    // 1. Validation (Business Rules)
-    if (differenceInDays(endDate, startDate) !== 6) {
+    // 2. Validate week is exactly 7 days (calendar-safe — no timezone needed here)
+    if (differenceInLocalDays(endDate, startDate) !== 6) {
       throw new ForbiddenException('Week must be exactly 7 days');
     }
 
-    // 2. Fetch Plan if necessary
+    // 3. Validate no active week exists
+    await this.validator.validateCreation(input, new Types.ObjectId(userId));
+
+    // 4. Fetch Plan if necessary
     let plan: any = null;
     if (planId) {
       plan = await this.routinePlanService.findOneWithDays(planId);
     }
 
-    // 3. Domain Logic: Create the initial structure
+    // 5. Domain Logic: Create the initial structure
     const weekLogId = new Types.ObjectId().toString();
     const { weekLog, sessions } = WeekLogDomain.createFromPlan(
       userId,
       weekLogId,
-      startDate,
-      endDate,
+      startDate,    // LocalDate "yyyy-MM-dd"
+      endDate,      // LocalDate "yyyy-MM-dd"
+      timezone,     // IANA timezone para convertir a UTC en el dominio
       planId || null,
       plan,
     );
@@ -55,10 +62,10 @@ export class CreateWeekLogUseCase {
       await this.workoutSessionModel.insertMany(sessions);
     }
 
-    // 4. Persistence
+    // 6. Persistence
     const newWeekLog = await this.weekLogRepository.create(weekLog);
 
-    // 5. Return the created week log (populated)
+    // 7. Return the created week log (populated)
     const result = await this.weekLogRepository.findOne(newWeekLog.id, userId);
     return result;
   }

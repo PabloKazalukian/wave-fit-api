@@ -10,9 +10,10 @@ import { WeekLog } from './infrastructure/schemas/week-log.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types, UpdateQuery } from 'mongoose';
 import {
-  compareSameDay,
-  ensureDate,
-  parseLocalDate,
+  isDateSameLocalDate,
+  utcToLocalDate,
+  localDateToUtc,
+  isValidLocalDate,
 } from '../../../../common/utils/date.utils';
 import { WorkoutSession } from '../workout-session/schema/workout-session.schema';
 import { RoutineDayService } from '../../templates/routine-day/routine-day.service';
@@ -30,6 +31,8 @@ import {
   UpdateWeekLogDayUnifiedInput,
   UpdateWeekLogInput,
 } from './presentation/dto/update-week-log.input';
+
+const DEFAULT_TIMEZONE = 'America/Argentina/Buenos_Aires';
 
 @Injectable()
 export class WeekLogService {
@@ -62,13 +65,7 @@ export class WeekLogService {
     limit: number = 5,
     offset: number = 0,
   ): Promise<any[]> {
-    const weekLogs = await this.findAllWeekLogsByUserUseCase.execute(
-      userId,
-      limit,
-      offset,
-    );
-
-    return weekLogs;
+    return this.findAllWeekLogsByUserUseCase.execute(userId, limit, offset);
   }
 
   async findOne(id: string, userId: string): Promise<any> {
@@ -81,8 +78,7 @@ export class WeekLogService {
       throw new NotFoundException(`Week log con ID "${id}" no encontrado`);
     }
 
-    const result = this.mapWeekLog(weekLog);
-    return result;
+    return this.mapWeekLog(weekLog);
   }
 
   async findActiveWeekLog(userId: string): Promise<any | null> {
@@ -100,13 +96,11 @@ export class WeekLogService {
   private mapWeekLog(weekLog: any): any {
     const weekLogObj = weekLog.toObject ? weekLog.toObject() : weekLog;
 
-    const mapped = {
+    return {
       ...weekLogObj,
       id: weekLogObj._id.toString(),
       days: weekLogObj.days.map((day) => this.mapDay(day)),
     };
-
-    return mapped;
   }
 
   private mapDay(day: any): any {
@@ -147,21 +141,10 @@ export class WeekLogService {
     return this.mapDay((day as any).toObject ? (day as any).toObject() : day);
   }
 
-  /**
-   * Mutation unificada: crea/actualiza WS y ES en un day del WL.
-   * Delega toda la lógica al UpdateDayUseCase.
-   */
   async updateDay(input: UpdateWeekLogDayUnifiedInput, userId: string) {
     return this.updateDayUseCase.execute(input, userId);
   }
 
-  /**
-   * Mutation general del WeekLog.
-   * - Actualiza metadata (notes, startDate, endDate)
-   * - completed=true → active=false (forzado)
-   * - active=true → desactiva otros WL del usuario
-   * - days opcionales: usa la misma lógica de WS/ES
-   */
   async updateWeekLog(input: UpdateWeekLogInput, userId: string) {
     return this.updateWeekLogUseCase.execute(input, userId);
   }
@@ -199,7 +182,10 @@ export class WeekLogService {
     let updated = false;
 
     for (const day of weekLog.days) {
-      const session = sessions.find((s) => compareSameDay(s.date, day.date));
+      // Comparar fechas UTC de Mongo con las sesiones usando la misma timezone
+      const session = sessions.find((s) =>
+        isDateSameLocalDate(s.date, utcToLocalDate(day.date, DEFAULT_TIMEZONE), DEFAULT_TIMEZONE),
+      );
 
       if (session) {
         day.workoutSessionId = new Types.ObjectId(session._id as any);
@@ -224,16 +210,12 @@ export class WeekLogService {
     userId: string,
   ): Promise<any> {
     const weekLog = await this.weekLogModel
-      .findOne({
-        userId: userId,
-        active: true,
-        // 'days.workoutSessionId': new Types.ObjectId(workoutSessionId),
-      })
+      .findOne({ userId, active: true })
       .exec();
 
     if (!weekLog) {
       throw new NotFoundException(
-        `No se encontró un WeekLlog con el workoutSessionId "${workoutSessionId}"`,
+        `No se encontró un WeekLog con el workoutSessionId "${workoutSessionId}"`,
       );
     }
 
@@ -263,11 +245,17 @@ export class WeekLogService {
 
   async assignRoutineToDay(
     routineDayId: string,
-    date: string,
+    date: string, // LocalDate "yyyy-MM-dd"
     userId: string,
+    timezone: string = DEFAULT_TIMEZONE,
   ): Promise<any> {
     try {
-      // 1. Validar que existe el routineDay
+      if (!isValidLocalDate(date)) {
+        throw new BadRequestException(
+          `date "${date}" must be in yyyy-MM-dd format`,
+        );
+      }
+
       const routineDay = await this.routineDayService.findOne(routineDayId);
       if (!routineDay) {
         throw new NotFoundException(
@@ -275,7 +263,6 @@ export class WeekLogService {
         );
       }
 
-      // 2. Obtener weekLog activo
       const weekLog = await this.findActiveWeekLog(userId);
       if (!weekLog) {
         throw new BadRequestException(
@@ -283,12 +270,9 @@ export class WeekLogService {
         );
       }
 
-      // 3. Parsear fecha
-      const searchDate = parseLocalDate(date);
-
-      // 4. Encontrar el día en el weekLog
+      // ✅ Comparar LocalDate string con la fecha de cada día (convertida desde UTC)
       const dayToUpdate = weekLog.days.find((d) =>
-        compareSameDay(d.date, searchDate),
+        isDateSameLocalDate(d.date, date, timezone),
       );
 
       if (!dayToUpdate) {
@@ -297,7 +281,6 @@ export class WeekLogService {
         );
       }
 
-      // 5. Preparar exercises para el workout-session
       const exercises =
         routineDay.exercises?.map((e: any) => ({
           exerciseId: (
@@ -313,10 +296,7 @@ export class WeekLogService {
 
       let sessionId: Types.ObjectId;
 
-      // 6. Verificar si ya existe un workout-session para este día
-
       if (dayToUpdate.workoutSessionId) {
-        // Ya existe, actualizarlo
         const existingSession = await this.workoutSessionModel
           .findById(dayToUpdate.workoutSessionId)
           .exec();
@@ -324,16 +304,15 @@ export class WeekLogService {
         if (existingSession) {
           existingSession.exercises = exercises;
           existingSession.routineDayId = routineDayId;
-          existingSession.status = 'not_started'; // Resetear a not_started
-          existingSession.edited = false; // Resetear flag de editado
+          existingSession.status = 'not_started';
+          existingSession.edited = false;
           await existingSession.save();
           sessionId = existingSession._id;
         } else {
-          // El ID existe pero el documento no, crear uno nuevo
           const newSession = await this.workoutSessionModel.create({
             userId: new Types.ObjectId(userId),
             weekLogId: weekLog._id.toString(),
-            date: searchDate,
+            date: localDateToUtc(date, timezone), // ✅ LocalDate → UTC
             routineDayId,
             exercises,
             status: 'not_started',
@@ -344,11 +323,10 @@ export class WeekLogService {
           sessionId = newSession._id;
         }
       } else {
-        // No existe, crear nuevo workout-session
         const newSession = await this.workoutSessionModel.create({
           userId: new Types.ObjectId(userId),
           weekLogId: weekLog._id.toString(),
-          date: searchDate,
+          date: localDateToUtc(date, timezone), // ✅ LocalDate → UTC
           routineDayId,
           exercises,
           status: 'not_started',
@@ -359,19 +337,17 @@ export class WeekLogService {
         sessionId = newSession._id;
       }
 
-      // 7. Actualizar el día en el weekLog
       await this.weekLogModel.updateOne(
         { _id: weekLog._id, 'days.order': dayToUpdate.order },
         {
           $set: {
             'days.$.workoutSessionId': sessionId,
-            'days.$.isRest': false, // Ya no es día de descanso
-            'days.$.status': 'pending', // Status del day = pending (workout asignado pero no completado)
+            'days.$.isRest': false,
+            'days.$.status': 'pending',
           },
         },
       );
 
-      // 8. Retornar el día actualizado
       return this.findOneDay(weekLog._id.toString(), dayToUpdate.order, userId);
     } catch (error) {
       console.error('[assignRoutineToDay] Error:', error);
@@ -382,41 +358,41 @@ export class WeekLogService {
   async removeExtraSessionFromDay(
     extraSessionId: string,
     userId: string,
-    date: string,
+    date: string, // LocalDate "yyyy-MM-dd"
+    timezone: string = DEFAULT_TIMEZONE,
   ): Promise<any> {
     const weekLog = await this.weekLogModel
-      .findOne({
-        userId: userId,
-        active: true,
-        // 'days.extraSessionId': new Types.ObjectId(extraSessionId),
-      })
+      .findOne({ userId, active: true })
       .exec();
 
     if (!weekLog) {
       throw new NotFoundException(
-        `No se encontró un WeekLlog con el extraSessionId "${extraSessionId}"`,
+        `No se encontró un WeekLog con el extraSessionId "${extraSessionId}"`,
       );
     }
 
     this.validator.validateOwnership(weekLog, userId);
 
-    console.log('[date]', date);
-    const searchDate = parseLocalDate(date);
+    if (!isValidLocalDate(date)) {
+      throw new BadRequestException(
+        `date "${date}" must be in yyyy-MM-dd format`,
+      );
+    }
 
-    const day = weekLog.days.find((d) => compareSameDay(d.date, searchDate));
-    console.log('[searchDate]', searchDate);
-    console.log('[day]', day);
+    // ✅ Comparar LocalDate con fecha del día en Mongo
+    const day = weekLog.days.find((d) =>
+      isDateSameLocalDate(d.date, date, timezone),
+    );
 
     if (!day) {
       throw new NotFoundException(
-        `No se encontró un día con el extraSessionId "${extraSessionId}, ${date}"`,
+        `No se encontró un día con fecha "${date}" en el WeekLog activo`,
       );
     }
 
     day.extraSessionIds = day.extraSessionIds.filter(
       (id) => id.toString() !== extraSessionId,
     );
-    // day.status = 'pending';
 
     await weekLog.save();
 
@@ -424,15 +400,23 @@ export class WeekLogService {
   }
 
   async updateDayWorkoutStatus(
-    input: UpdateDayWorkoutStatusInput,
+    input: UpdateDayWorkoutStatusInput & { timezone?: string },
     userId: string,
   ): Promise<any> {
+    const timezone = (input as any).timezone ?? DEFAULT_TIMEZONE;
+
+    if (!isValidLocalDate(input.date)) {
+      throw new BadRequestException(
+        `date "${input.date}" must be in yyyy-MM-dd format`,
+      );
+    }
+
     const weekLog = await this.findActiveWeekLog(userId);
     if (!weekLog) throw new NotFoundException('No active week log found');
 
-    const searchDate = parseLocalDate(input.date);
+    // ✅ Comparar LocalDate con la fecha del día en Mongo
     const day = weekLog.days.find((d: any) =>
-      compareSameDay(d.date, searchDate),
+      isDateSameLocalDate(d.date, input.date, timezone),
     );
 
     if (!day) throw new NotFoundException('Day not found in week log');
@@ -446,15 +430,13 @@ export class WeekLogService {
       day.status = 'skipped';
       day.workoutSessionId = null;
     } else {
-      // Setting to training day
       day.isRest = false;
       day.status = 'pending';
 
       if (!day.workoutSessionId) {
-        // Create a new session if it doesn't exist (e.g. from rest to training)
         const newSession = await this.workoutSessionModel.create({
           userId,
-          date: day.date,
+          date: localDateToUtc(input.date, timezone), // ✅ LocalDate → UTC
           status: 'not_started',
           exercises: [],
         });
@@ -470,7 +452,6 @@ export class WeekLogService {
       }
     }
 
-    // Persist week log change
     await this.weekLogModel.updateOne(
       { _id: weekLog.id, 'days.order': day.order },
       {

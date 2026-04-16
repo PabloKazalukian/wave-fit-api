@@ -1,47 +1,100 @@
-import { isSameDay, startOfDay, parseISO, format } from 'date-fns';
+import { addDays, differenceInDays, parseISO, format, isMatch } from 'date-fns';
+import { fromZonedTime, toZonedTime, formatInTimeZone } from 'date-fns-tz';
 
 /**
- * Compares two dates and returns true if they are on the same day, regardless of time.
- * @param date1 First date to compare (Date, string, or number)
- * @param date2 Second date to compare (Date, string, or number)
+ * LocalDate = string en formato "yyyy-MM-dd"
+ * Representa un día calendario sin ambigüedad de timezone.
+ *
+ * ✅ Usar para: fechas de negocio (startDate, endDate, date del workout, etc.)
+ * ❌ No usar para: timestamps (createdAt, updatedAt, audit logs) → usar Date UTC
  */
-export const compareSameDay = (
-  date1: Date | string | number,
-  date2: Date | string | number,
-): boolean => {
-  const d1 = typeof date1 === 'string' ? parseISO(date1) : new Date(date1);
-  const d2 = typeof date2 === 'string' ? parseISO(date2) : new Date(date2);
-  return isSameDay(d1, d2);
-};
+export type LocalDate = string; // "yyyy-MM-dd"
+
+const DEFAULT_TIMEZONE = 'America/Argentina/Buenos_Aires';
 
 /**
- * Returns a new date object set to the beginning of the day (00:00:00).
- * @param date Date to clear time from
+ * Convierte un LocalDate "yyyy-MM-dd" + timezone IANA a un Date UTC.
+ * El Date resultante representa el inicio del día (00:00:00) en esa timezone.
+ *
+ * Ejemplo: localDateToUtc("2024-04-16", "America/Argentina/Buenos_Aires")
+ *   → 2024-04-16T03:00:00.000Z  (porque Argentina = UTC-3)
+ *
+ * ✅ Usar antes de guardar en MongoDB
  */
-export const clearTime = (date: Date | string | number): Date => {
-  const d = typeof date === 'string' ? parseISO(date) : new Date(date);
-  return startOfDay(d);
-};
-
-export const parseLocalDate = (dateStr: string): Date => {
-  // If it's already an ISO string with time/timezone, use ensureDate
-  if (dateStr.includes('T') || dateStr.includes(':')) {
-    return startOfDay(ensureDate(dateStr));
-  }
-  // Otherwise assume YYYY-MM-DD or similar and parse as local
-  const [year, month, day] = dateStr.split(/[-/]/).map(Number);
-  return new Date(year, month - 1, day);
-};
+export function localDateToUtc(localDate: LocalDate, timezone: string): Date {
+  // "yyyy-MM-dd" + " 00:00:00" en la timezone → Date UTC
+  return fromZonedTime(`${localDate} 00:00:00`, timezone);
+}
 
 /**
- * Convierte un Date a string "YYYY-MM-DD" (formato para APIs/backend).
+ * Convierte un Date UTC de MongoDB a LocalDate "yyyy-MM-dd" en la timezone del usuario.
+ *
+ * Ejemplo: utcToLocalDate(new Date("2024-04-16T03:00:00Z"), "America/Argentina/Buenos_Aires")
+ *   → "2024-04-16"
+ *
+ * ✅ Usar para comparar fechas almacenadas en Mongo con fechas de negocio
  */
-export const toApiDateString = (date: Date): string => {
-  return format(date, 'yyyy-MM-dd');
-};
+export function utcToLocalDate(date: Date, timezone: string): LocalDate {
+  return formatInTimeZone(date, timezone, 'yyyy-MM-dd');
+}
+
 /**
- * Helper to ensure we have a Date object from a possible string or Date.
+ * Retorna la fecha de hoy como LocalDate "yyyy-MM-dd" en la timezone del usuario.
+ *
+ * ✅ Usar en lugar de `new Date()` para lógica de negocio
  */
-export const ensureDate = (date: Date | string | number): Date => {
-  return typeof date === 'string' ? parseISO(date) : new Date(date);
-};
+export function todayInTimezone(timezone: string = DEFAULT_TIMEZONE): LocalDate {
+  return formatInTimeZone(new Date(), timezone, 'yyyy-MM-dd');
+}
+
+/**
+ * Compara si dos LocalDate son el mismo día calendario.
+ * Comparación determinística: no depende de timezone ni de conversiones.
+ */
+export function isSameLocalDate(a: LocalDate, b: LocalDate): boolean {
+  return a === b;
+}
+
+/**
+ * Compara si una Date UTC de Mongo corresponde al mismo día que un LocalDate,
+ * usando la timezone del usuario.
+ */
+export function isDateSameLocalDate(
+  utcDate: Date,
+  localDate: LocalDate,
+  timezone: string,
+): boolean {
+  return utcToLocalDate(utcDate, timezone) === localDate;
+}
+
+/**
+ * Avanza N días a partir de un LocalDate.
+ * Ejemplo: addDaysToLocalDate("2024-04-16", 3) → "2024-04-19"
+ */
+export function addDaysToLocalDate(localDate: LocalDate, days: number): LocalDate {
+  return format(addDays(parseISO(localDate), days), 'yyyy-MM-dd');
+}
+
+/**
+ * Calcula la diferencia en días entre dos LocalDate strings.
+ * Ejemplo: differenceInLocalDays("2024-04-22", "2024-04-16") → 6
+ */
+export function differenceInLocalDays(laterDate: LocalDate, earlierDate: LocalDate): number {
+  return differenceInDays(parseISO(laterDate), parseISO(earlierDate));
+}
+
+/**
+ * Valida que un string tenga formato "yyyy-MM-dd".
+ */
+export function isValidLocalDate(s: string): boolean {
+  if (typeof s !== 'string') return false;
+  return isMatch(s, 'yyyy-MM-dd');
+}
+
+/**
+ * Timestamp UTC actual. Usar para createdAt, updatedAt, deletedAt, audit logs.
+ * Es el único lugar donde new Date() está permitido para lógica de fecha.
+ */
+export function nowUtc(): Date {
+  return new Date();
+}

@@ -12,7 +12,12 @@ import { WorkoutSession } from '../workout-session/schema/workout-session.schema
 import { EXTRA_SESSION_DISCIPLINES } from './extra-session.catalog';
 import type { ExtraSessionDisciplineKey } from './extra-session.catalog';
 import { serializeMongo } from 'src/common/utils/mongo.utils';
-import { parseLocalDate } from 'src/common/utils/date.utils';
+import {
+  localDateToUtc,
+  isValidLocalDate,
+} from 'src/common/utils/date.utils';
+
+const DEFAULT_TIMEZONE = 'America/Argentina/Buenos_Aires';
 
 @Injectable()
 export class ExtraSessionService {
@@ -24,9 +29,20 @@ export class ExtraSessionService {
   ) {}
 
   async create(
-    input: CreateExtraSessionInput,
+    input: CreateExtraSessionInput & { timezone?: string },
     userId: string,
   ): Promise<ExtraSession> {
+    const timezone = (input as any).timezone ?? DEFAULT_TIMEZONE;
+
+    if (!isValidLocalDate(input.date)) {
+      throw new BadRequestException(
+        `date "${input.date}" must be in yyyy-MM-dd format`,
+      );
+    }
+
+    // ✅ Convertir LocalDate → Date UTC para Mongo (sin ambigüedad de timezone)
+    const dateUtc = localDateToUtc(input.date, timezone);
+
     let workoutSession = await this.workoutSessionModel.findOne({
       _id: input.workoutSessionId,
       userId,
@@ -36,7 +52,7 @@ export class ExtraSessionService {
       workoutSession = await this.workoutSessionModel.create({
         userId: new Types.ObjectId(userId),
         weekLogId: null,
-        date: new Date(input.date),
+        date: dateUtc, // ✅ Date UTC determinístico
         exercises: [],
         status: 'not_started',
         edited: false,
@@ -66,7 +82,7 @@ export class ExtraSessionService {
       userId: new Types.ObjectId(userId),
       workoutSessionId: new Types.ObjectId(input.workoutSessionId),
       category: config.category,
-      date: parseLocalDate(input.date),
+      date: dateUtc, // ✅ Date UTC determinístico
       discipline: input.discipline,
       duration: input.duration,
       intensityLevel: input.intensityLevel,

@@ -27,4 +27,7 @@ export class User {
 
   @Field({ nullable: true })
   picture?: string;
+
+  @Field({ nullable: true })
+  timezone?: string;
 }

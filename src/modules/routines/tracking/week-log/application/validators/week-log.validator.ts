@@ -7,8 +7,11 @@ import {
 } from '@nestjs/common';
 import { CreateWeekLogInput } from '../../presentation/dto/create-week-log.input';
 import { WeekLog } from '../../infrastructure/schemas/week-log.schema';
-import { Model, Types } from 'mongoose';
-import { differenceInDays, parseISO, isValid } from 'date-fns';
+import { Types } from 'mongoose';
+import {
+  differenceInLocalDays,
+  isValidLocalDate,
+} from 'src/common/utils/date.utils';
 import type { IWeekLogRepository } from '../../domain/interfaces/repositories/week-log.repository.interface';
 import { WEEK_LOG_REPOSITORY } from '../../domain/interfaces/repositories/week-log.repository.interface';
 
@@ -25,7 +28,13 @@ export class WeekLogValidator {
   ) {
     const { startDate, endDate } = createWeekLogInput;
 
-    if (differenceInDays(endDate, startDate) !== 6) {
+    if (!isValidLocalDate(startDate) || !isValidLocalDate(endDate)) {
+      throw new BadRequestException(
+        'startDate and endDate must be in yyyy-MM-dd format',
+      );
+    }
+
+    if (differenceInLocalDays(endDate, startDate) !== 6) {
       throw new ForbiddenException('Week must be exactly 7 days');
     }
 
@@ -52,20 +61,9 @@ export class WeekLogValidator {
   }
 
   private validateLocalDateFormat(dateStr: string) {
-    if (typeof dateStr !== 'string') {
-      throw new BadRequestException('Date must be a string');
-    }
-    const parsedDate = parseISO(dateStr);
-    if (!isValid(parsedDate)) {
+    if (!isValidLocalDate(dateStr)) {
       throw new BadRequestException(
-        `Date ${dateStr} is not a valid date string`,
-      );
-    }
-    // Requisito: que sea formato de fecha tipo local.
-    // Usualmente esto significa sin el designador Z de UTC o sin offset horario.
-    if (dateStr.toUpperCase().endsWith('Z')) {
-      throw new BadRequestException(
-        `Date ${dateStr} should be in local format, not UTC (Z)`,
+        `Date "${dateStr}" must be in yyyy-MM-dd format (no timezone, no UTC)`,
       );
     }
   }
