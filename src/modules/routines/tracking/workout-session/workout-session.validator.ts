@@ -8,7 +8,6 @@ import { ExercisePerformance } from './schema/exercise-performance.schema';
 import { WorkoutSession } from './schema/workout-session.schema';
 import { CreateWorkoutSessionInput } from './dto/create-workout-session.input';
 import { UpdateWorkoutSessionInput } from './dto/update-workout-session.input';
-import { Model, Types } from 'mongoose';
 
 @Injectable()
 export class WorkoutSessionValidator {
@@ -16,7 +15,6 @@ export class WorkoutSessionValidator {
     input: CreateWorkoutSessionInput,
     userId: string,
     weekLog: WeekLog | null,
-    sessionModel: Model<WorkoutSession>,
   ) {
     if (weekLog) {
       this.validateOwnership(weekLog, userId);

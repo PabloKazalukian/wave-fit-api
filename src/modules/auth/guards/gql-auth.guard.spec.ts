@@ -1,8 +1,6 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { ExecutionContext } from '@nestjs/common';
 import { GqlAuthGuard } from './gql-auth.guard';
 import { GqlExecutionContext } from '@nestjs/graphql';
-import { AuthGuard } from '@nestjs/passport';
 
 // Mock de GqlExecutionContext
 jest.mock('@nestjs/graphql', () => ({
@@ -429,7 +427,7 @@ describe('GqlAuthGuard', () => {
       mockGqlContext.getContext.mockReturnValue({ req: originalRequest });
       (GqlExecutionContext.create as jest.Mock).mockReturnValue(mockGqlContext);
 
-      const result = guard.getRequest(mockExecutionContext);
+      guard.getRequest(mockExecutionContext);
 
       // El request no debe ser modificado
       expect(originalRequest).toEqual(requestCopy);

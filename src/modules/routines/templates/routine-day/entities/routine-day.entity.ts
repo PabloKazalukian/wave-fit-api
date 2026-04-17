@@ -1,4 +1,4 @@
-import { ObjectType, Field, ID, Int } from '@nestjs/graphql';
+import { ObjectType, Field, Int } from '@nestjs/graphql';
 import {
   Exercise,
   ExerciseCategory,

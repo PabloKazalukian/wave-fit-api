@@ -1,4 +1,4 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
 import { ExerciseService } from './exercise.service';
 import { Exercise } from './entities/exercise.entity';
 import { CreateExerciseInput } from './dto/create-exercise.input';

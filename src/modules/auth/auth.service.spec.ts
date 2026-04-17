@@ -2,10 +2,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
-import { UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { Types } from 'mongoose';
-import { parseLocalDate } from 'src/common/utils/date.utils';
+import {} from 'src/common/utils/date.utils';
 
 // Mock de bcrypt
 jest.mock('bcryptjs');
@@ -22,8 +21,8 @@ describe('AuthService', () => {
     email: 'test@example.com',
     password: '$2a$10$hashedpassword',
     role: 'user',
-    createdAt: parseLocalDate(new Date().toISOString()),
-    updatedAt: parseLocalDate(new Date().toISOString()),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   };
 
   const mockUserService = {
@@ -321,7 +320,7 @@ describe('AuthService', () => {
       const mockToken = 'mock.jwt.token';
       mockJwtService.sign.mockReturnValue(mockToken);
 
-      const result = await authService.login(userWithoutRole as any);
+      await authService.login(userWithoutRole as any);
 
       const callPayload = mockJwtService.sign.mock.calls[0][0];
       expect(callPayload.role).toBeUndefined();
@@ -336,7 +335,7 @@ describe('AuthService', () => {
       const mockToken = 'mock.jwt.token';
       mockJwtService.sign.mockReturnValue(mockToken);
 
-      const result = await authService.login(userWithStringId as any);
+      await authService.login(userWithStringId as any);
 
       const callPayload = mockJwtService.sign.mock.calls[0][0];
       expect(callPayload.sub).toBe(mockUserId.toString());

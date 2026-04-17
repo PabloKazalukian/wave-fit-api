@@ -16,7 +16,7 @@ export class GqlAuthGuard extends AuthGuard(['jwt', 'google-token']) {
     return ctx.getContext().req;
   }
 
-  handleRequest(err: any, user: any, info: any) {
+  handleRequest(err: any, user: any, _info: any) {
     if (err || !user) {
       throw err || new UnauthorizedException('Authentication failed');
     }

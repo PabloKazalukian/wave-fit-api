@@ -4,12 +4,7 @@ import { WeekLogService } from './week-log.service';
 import { CreateWeekLogInput } from './presentation/dto/create-week-log.input';
 import { UpdateWeekLogInput } from './presentation/dto/update-week-log.input';
 import { Types } from 'mongoose';
-import {
-  BadRequestException,
-  ExecutionContext,
-  UnauthorizedException,
-} from '@nestjs/common';
-import { GqlExecutionContext } from '@nestjs/graphql';
+import { BadRequestException } from '@nestjs/common';
 import { AuditInterceptor } from 'src/modules/audit-logs/audit-logs.interceptor';
 
 describe('WeekLogResolver', () => {

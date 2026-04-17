@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
   Inject,
@@ -16,7 +15,6 @@ import { WorkoutSessionValidator } from './workout-session.validator';
 import { WorkoutSessionCreationData } from '../week-log/domain/entities/week-log.domain';
 import {
   localDateToUtc,
-  utcToLocalDate,
   isValidLocalDate,
   nowUtc,
 } from 'src/common/utils/date.utils';
@@ -53,7 +51,7 @@ export class WorkoutSessionService {
       input,
       userId,
       weekLog,
-      this.sessionModel,
+      // this.sessionModel,
     );
 
     if (!isValidLocalDate(input.date)) {
@@ -164,11 +162,7 @@ export class WorkoutSessionService {
     const { id: _, ...updateData } = updateWorkoutSessionInput;
 
     const updated = await this.sessionModel
-      .findByIdAndUpdate(
-        id,
-        { ...updateData, edited: true },
-        { new: true },
-      )
+      .findByIdAndUpdate(id, { ...updateData, edited: true }, { new: true })
       .populate('exercises')
       .exec();
 

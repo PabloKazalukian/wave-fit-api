@@ -1,10 +1,8 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
-import { CreateDayLogInput } from '../../presentation/dto/create-day-log.input';
-import { UpdateDayLogInput } from '../../presentation/dto/update-day-log.input';
 
 @Injectable()
 export class DayLogValidator {
-  async validateCreation(input: CreateDayLogInput, userId: string) {
+  async validateCreation() {
     return;
   }
 
@@ -14,7 +12,7 @@ export class DayLogValidator {
     }
   }
 
-  validateUpdate(input: UpdateDayLogInput) {
+  validateUpdate() {
     return;
   }
 }

@@ -3,7 +3,6 @@ import {
   Query,
   Mutation,
   Args,
-  Int,
   Parent,
   ResolveField,
   ID,
@@ -15,15 +14,11 @@ import {
   findByCategoryInput,
   UpdateRoutineDayInput,
 } from './dto/update-routine-day.input';
-import { ExerciseService } from '../exercise/exercise.service';
 import { Audit } from 'src/modules/audit-logs/audit-logs.decorator';
 
 @Resolver(() => RoutineDay)
 export class RoutineDayResolver {
-  constructor(
-    private readonly routineDayService: RoutineDayService,
-    private readonly exerciseService: ExerciseService,
-  ) {}
+  constructor(private readonly routineDayService: RoutineDayService) {}
 
   @ResolveField(() => ID, { name: 'id' })
   id(@Parent() routineDay: RoutineDay) {

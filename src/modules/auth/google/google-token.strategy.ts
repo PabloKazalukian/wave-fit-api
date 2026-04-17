@@ -42,7 +42,7 @@ export class GoogleTokenStrategy extends PassportStrategy(
       }
 
       return user;
-    } catch (error) {
+    } catch {
       // Si falla la validación con Google, simplemente retornamos false
       // para que Passport pruebe la siguiente estrategia o falle el Guard.
       // Así no sobreescribimos errores útiles como "Token Expired".

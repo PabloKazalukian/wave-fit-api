@@ -1,10 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { CreateDayLogInput } from './presentation/dto/create-day-log.input';
-import { UpdateDayLogInput } from './presentation/dto/update-day-log.input';
 
 @Injectable()
 export class DayLogService {
-  create(createDayLogInput: CreateDayLogInput) {
+  create() {
     return 'This action adds a new dayLog';
   }
 
@@ -16,7 +14,7 @@ export class DayLogService {
     return `This action returns a #${id} dayLog`;
   }
 
-  update(id: number, updateDayLogInput: UpdateDayLogInput) {
+  update(id: number) {
     return `This action updates a #${id} dayLog`;
   }
 

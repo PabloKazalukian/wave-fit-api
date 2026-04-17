@@ -10,7 +10,6 @@ import {
   UpdateWeekLogDayUnifiedInput,
   UpdateWeekLogInput,
 } from './presentation/dto/update-week-log.input';
-import { RemoveWorkoutSessionFromDayInput } from './presentation/dto/remove-workout-session-from-day.input';
 import { UpdateDayWorkoutStatusInput } from './presentation/dto/update-day-workout-status.input';
 import {
   BadRequestException,

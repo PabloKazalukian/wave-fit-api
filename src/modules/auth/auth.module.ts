@@ -7,7 +7,6 @@ import { UserModule } from '../user/user.module';
 import { JwtStrategy } from './jwt.strategy';
 import { AuthResolver } from './auth.resolver';
 import { LocalStrategy } from './local.strategy';
-import { GoogleModule } from './google/google.module';
 
 @Module({
   imports: [

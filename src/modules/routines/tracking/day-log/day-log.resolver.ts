@@ -1,6 +1,5 @@
 import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
 import { DayLogService } from './day-log.service';
-import { CreateDayLogInput } from './presentation/dto/create-day-log.input';
 import { UpdateDayLogInput } from './presentation/dto/update-day-log.input';
 import { DayLog } from './presentation/entities/day-log.entity';
 
@@ -9,10 +8,8 @@ export class DayLogResolver {
   constructor(private readonly dayLogService: DayLogService) {}
 
   @Mutation(() => DayLog)
-  createDayLog(
-    @Args('createDayLogInput') createDayLogInput: CreateDayLogInput,
-  ) {
-    return this.dayLogService.create(createDayLogInput);
+  createDayLog() {
+    return this.dayLogService.create();
   }
 
   @Query(() => [DayLog], { name: 'dayLog' })
@@ -29,7 +26,7 @@ export class DayLogResolver {
   updateDayLog(
     @Args('updateDayLogInput') updateDayLogInput: UpdateDayLogInput,
   ) {
-    return this.dayLogService.update(updateDayLogInput.id, updateDayLogInput);
+    return this.dayLogService.update(updateDayLogInput.id);
   }
 
   @Mutation(() => DayLog)

@@ -5,7 +5,11 @@ import { WeekLog } from './infrastructure/schemas/week-log.schema';
 import { Model, Types } from 'mongoose';
 import { CreateWeekLogInput } from './presentation/dto/create-week-log.input';
 import { UpdateWeekLogInput } from './presentation/dto/update-week-log.input';
-import { NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { AuditInterceptor } from 'src/modules/audit-logs/audit-logs.interceptor';
 import { WorkoutSession } from '../workout-session/schema/workout-session.schema';
 import { WeekLogValidator } from './application/validators/week-log.validator';
@@ -39,8 +43,12 @@ describe('WeekLogService', () => {
 
   (mockWeekLogModel as any).findOne = jest.fn().mockReturnValue(mockQuery);
   (mockWeekLogModel as any).find = jest.fn().mockReturnValue(mockQuery);
-  (mockWeekLogModel as any).findOneAndUpdate = jest.fn().mockReturnValue(mockQuery);
-  (mockWeekLogModel as any).findByIdAndUpdate = jest.fn().mockReturnValue(mockQuery);
+  (mockWeekLogModel as any).findOneAndUpdate = jest
+    .fn()
+    .mockReturnValue(mockQuery);
+  (mockWeekLogModel as any).findByIdAndUpdate = jest
+    .fn()
+    .mockReturnValue(mockQuery);
   (mockWeekLogModel as any).deleteOne = jest.fn().mockReturnValue(mockQuery);
   (mockWeekLogModel as any).updateOne = jest.fn().mockReturnValue(mockQuery);
 

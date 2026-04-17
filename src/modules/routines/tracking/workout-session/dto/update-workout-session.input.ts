@@ -1,5 +1,5 @@
 import { CreateWorkoutSessionInput } from './create-workout-session.input';
-import { InputType, Field, Int, PartialType } from '@nestjs/graphql';
+import { InputType, Field, PartialType } from '@nestjs/graphql';
 import { IsMongoId, IsOptional } from 'class-validator';
 
 @InputType()

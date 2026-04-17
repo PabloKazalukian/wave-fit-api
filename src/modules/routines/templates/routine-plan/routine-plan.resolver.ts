@@ -8,7 +8,6 @@ import {
 } from '@nestjs/graphql';
 import { RoutinePlanService } from './routine-plan.service';
 import { RoutinePlan } from './entities/routine-plan.entity';
-import { RoutinePlan as RoutinePlanSchema } from './schema/routine-plan.schema';
 
 import {
   CreateRoutinePlanInput,

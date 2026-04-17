@@ -1,6 +1,5 @@
-import { InputType, Field, ID } from '@nestjs/graphql';
+import { InputType, Field } from '@nestjs/graphql';
 import { IsNotEmpty, IsOptional, MaxLength } from 'class-validator';
-import { RoutineDay } from '../../routine-day/entities/routine-day.entity';
 
 @InputType()
 export class CreateRoutinePlanInput {

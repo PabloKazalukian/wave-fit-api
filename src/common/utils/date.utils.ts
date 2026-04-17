@@ -1,5 +1,5 @@
 import { addDays, differenceInDays, parseISO, format, isMatch } from 'date-fns';
-import { fromZonedTime, toZonedTime, formatInTimeZone } from 'date-fns-tz';
+import { fromZonedTime, formatInTimeZone } from 'date-fns-tz';
 
 /**
  * LocalDate = string en formato "yyyy-MM-dd"
@@ -43,7 +43,9 @@ export function utcToLocalDate(date: Date, timezone: string): LocalDate {
  *
  * ✅ Usar en lugar de `new Date()` para lógica de negocio
  */
-export function todayInTimezone(timezone: string = DEFAULT_TIMEZONE): LocalDate {
+export function todayInTimezone(
+  timezone: string = DEFAULT_TIMEZONE,
+): LocalDate {
   return formatInTimeZone(new Date(), timezone, 'yyyy-MM-dd');
 }
 
@@ -71,7 +73,10 @@ export function isDateSameLocalDate(
  * Avanza N días a partir de un LocalDate.
  * Ejemplo: addDaysToLocalDate("2024-04-16", 3) → "2024-04-19"
  */
-export function addDaysToLocalDate(localDate: LocalDate, days: number): LocalDate {
+export function addDaysToLocalDate(
+  localDate: LocalDate,
+  days: number,
+): LocalDate {
   return format(addDays(parseISO(localDate), days), 'yyyy-MM-dd');
 }
 
@@ -79,7 +84,10 @@ export function addDaysToLocalDate(localDate: LocalDate, days: number): LocalDat
  * Calcula la diferencia en días entre dos LocalDate strings.
  * Ejemplo: differenceInLocalDays("2024-04-22", "2024-04-16") → 6
  */
-export function differenceInLocalDays(laterDate: LocalDate, earlierDate: LocalDate): number {
+export function differenceInLocalDays(
+  laterDate: LocalDate,
+  earlierDate: LocalDate,
+): number {
   return differenceInDays(parseISO(laterDate), parseISO(earlierDate));
 }
 

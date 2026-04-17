@@ -1,4 +1,4 @@
-import { Resolver, Query, Mutation, Args, Context, Int } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args, Context } from '@nestjs/graphql';
 import { ExtraSessionService } from './extra-session.service';
 import { ExtraSession } from './entities/extra-session.entity';
 import { CreateExtraSessionInput } from './dto/create-extra-session.input';

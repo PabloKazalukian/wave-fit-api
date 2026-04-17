@@ -10,9 +10,6 @@ import { StatusWorkoutSessionEnum } from './schema/workout-session.schema';
 
 describe('WorkoutSessionService', () => {
   let service: WorkoutSessionService;
-  let model: any;
-  let weekLogService: any;
-  let validator: any;
 
   const mockUserId = new Types.ObjectId().toString();
   const mockSessionId = new Types.ObjectId().toString();
@@ -73,9 +70,11 @@ describe('WorkoutSessionService', () => {
     }).compile();
 
     service = module.get<WorkoutSessionService>(WorkoutSessionService);
-    model = module.get(getModelToken(WorkoutSession.name));
-    weekLogService = module.get<WeekLogService>(WeekLogService);
-    validator = module.get<WorkoutSessionValidator>(WorkoutSessionValidator);
+    // const model = module.get(getModelToken(WorkoutSession.name));
+    // const weekLogService = module.get<WeekLogService>(WeekLogService);
+    // const validator = module.get<WorkoutSessionValidator>(
+    //   WorkoutSessionValidator,
+    // );
   });
 
   describe('create', () => {
@@ -531,7 +530,7 @@ describe('WorkoutSessionService', () => {
       let errorThrown = false;
       try {
         await service.remove('non-existent-id', mockUserId);
-      } catch (error) {
+      } catch {
         errorThrown = true;
       }
       expect(errorThrown).toBe(true);

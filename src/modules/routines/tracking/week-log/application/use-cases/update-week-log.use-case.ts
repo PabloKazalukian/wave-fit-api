@@ -7,7 +7,6 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { parseISO } from 'date-fns';
 
 import { WeekLog } from '../../infrastructure/schemas/week-log.schema';
 import { WeekLogValidator } from '../validators/week-log.validator';
@@ -20,7 +19,6 @@ import {
   isValidLocalDate,
   localDateToUtc,
   utcToLocalDate,
-  nowUtc,
 } from 'src/common/utils/date.utils';
 
 const DEFAULT_TIMEZONE = 'America/Argentina/Buenos_Aires';
