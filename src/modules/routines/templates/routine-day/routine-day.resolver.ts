@@ -15,7 +15,6 @@ import {
   findByCategoryInput,
   UpdateRoutineDayInput,
 } from './dto/update-routine-day.input';
-import { Exercise } from '../exercise/entities/exercise.entity';
 import { ExerciseService } from '../exercise/exercise.service';
 import { Audit } from 'src/modules/audit-logs/audit-logs.decorator';
 
