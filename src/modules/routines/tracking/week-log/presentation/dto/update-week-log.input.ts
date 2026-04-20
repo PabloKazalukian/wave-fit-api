@@ -101,6 +101,11 @@ export class UpdateWeekLogDayUnifiedInput {
   @IsMongoId()
   id: string;
 
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  timezone?: string;
+
   @Field(() => [UpdateDayInput])
   @IsArray()
   @ValidateNested({ each: true })

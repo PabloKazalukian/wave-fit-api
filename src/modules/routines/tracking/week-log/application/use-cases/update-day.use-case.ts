@@ -19,6 +19,9 @@ import {
 import type { IWeekLogRepository } from '../../domain/interfaces/repositories/week-log.repository.interface';
 import { WEEK_LOG_REPOSITORY } from '../../domain/interfaces/repositories/week-log.repository.interface';
 import { WeekLogService } from '../../week-log.service';
+import { utcToLocalDate } from 'src/common/utils/date.utils';
+
+const DEFAULT_TIMEZONE = 'America/Argentina/Buenos_Aires';
 
 @Injectable()
 export class UpdateDayUseCase {
@@ -43,9 +46,11 @@ export class UpdateDayUseCase {
     // 2. Validar ownership
     this.validator.validateOwnership(weekLog, userId);
 
+    const timezone = input.timezone ?? DEFAULT_TIMEZONE;
+
     // 3. Procesar cada día del input
     for (const dayInput of input.days) {
-      await this.processDay(weekLog, dayInput, userId);
+      await this.processDay(weekLog, dayInput, userId, timezone);
     }
 
     // 4. Persistir
@@ -66,6 +71,7 @@ export class UpdateDayUseCase {
     weekLog: WeekLog,
     dayInput: UpdateDayInput,
     userId: string,
+    timezone: string,
   ): Promise<void> {
     const day = (weekLog.days as any[]).find((d) => d.order === dayInput.order);
     if (!day) {
@@ -76,12 +82,12 @@ export class UpdateDayUseCase {
 
     // --- WorkoutSession ---
     if (dayInput.workoutSession) {
-      await this.handleWorkoutSession(weekLog, day, dayInput, userId);
+      await this.handleWorkoutSession(weekLog, day, dayInput, userId, timezone);
     }
 
     // --- ExtraSession ---
     if (dayInput.extraSession) {
-      await this.handleExtraSession(weekLog, day, dayInput, userId);
+      await this.handleExtraSession(weekLog, day, dayInput, userId, timezone);
     }
 
     // --- Status override ---
@@ -107,6 +113,7 @@ export class UpdateDayUseCase {
     day: any,
     dayInput: UpdateDayInput,
     userId: string,
+    timezone: string,
   ): Promise<void> {
     const wsInput = dayInput.workoutSession!;
 
@@ -119,11 +126,14 @@ export class UpdateDayUseCase {
       );
     } else {
       // El day no tiene WS → crear uno nuevo
+      // day.date es Date UTC en Mongo → convertir a LocalDate "yyyy-MM-dd"
+      const dayLocalDate = utcToLocalDate(day.date, timezone);
       const newSession = await this.workoutSessionService.create(
         {
           ...wsInput,
           weekLogId: (weekLog as any)._id.toString(),
-          date: day.date.toISOString(),
+          date: dayLocalDate, // ✅ LocalDate string
+          timezone,
           status: wsInput.status ?? 'not_started',
           exercises: wsInput.exercises ?? [],
         } as any,
@@ -140,6 +150,7 @@ export class UpdateDayUseCase {
     day: any,
     dayInput: UpdateDayInput,
     userId: string,
+    timezone: string,
   ): Promise<void> {
     const esInput = dayInput.extraSession!;
 
@@ -167,10 +178,13 @@ export class UpdateDayUseCase {
       day.workoutSessionId = resolvedWsId;
     } else {
       // Prioridad 3: crear WS vacío, marcar el día como descanso
+      // day.date es Date UTC en Mongo → convertir a LocalDate "yyyy-MM-dd"
+      const dayLocalDate = utcToLocalDate(day.date, timezone);
       const emptySession = await this.workoutSessionService.create(
         {
           weekLogId: (weekLog as any)._id.toString(),
-          date: day.date.toISOString(),
+          date: dayLocalDate, // ✅ LocalDate string
+          timezone,
           status: 'not_started',
           exercises: [],
         } as any,
@@ -185,6 +199,7 @@ export class UpdateDayUseCase {
       {
         ...esInput,
         workoutSessionId: resolvedWsId.toString(),
+        timezone,
       },
       userId,
     );
