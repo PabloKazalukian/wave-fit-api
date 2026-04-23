@@ -14,6 +14,7 @@ import {
   utcToLocalDate,
   localDateToUtc,
   isValidLocalDate,
+  nowUtc,
 } from '../../../../common/utils/date.utils';
 import { WorkoutSession } from '../workout-session/schema/workout-session.schema';
 import { RoutineDayService } from '../../templates/routine-day/routine-day.service';
@@ -201,8 +202,28 @@ export class WeekLogService {
     return this.findOne(weekLogId, userId);
   }
 
-  remove(id: string) {
-    return this.weekLogModel.deleteOne({ _id: id }).exec();
+  async remove(id: string, userId: string) {
+    const existing = await this.weekLogModel.findOne({
+      _id: id,
+      userId,
+      deleted: { $ne: true },
+    });
+    if (!existing) {
+      throw new NotFoundException(`Week Log with ID "${id}" not found`);
+    }
+
+    const updated = await this.weekLogModel
+      .findByIdAndUpdate(
+        id,
+        {
+          deleted: true,
+          deletedAt: nowUtc(),
+        },
+        { new: true },
+      )
+      .exec();
+
+    return updated;
   }
 
   async removeWorkoutSessionFromDay(

@@ -13,6 +13,7 @@ import {
 import { UpdateDayWorkoutStatusInput } from './presentation/dto/update-day-workout-status.input';
 import {
   BadRequestException,
+  NotFoundException,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -232,5 +233,18 @@ export class WeekLogResolver {
       userId,
       date,
     );
+  }
+
+  @Mutation(() => WeekLog)
+  @Audit('DELETE_WEEK_LOG', 'Tracking')
+  async removeWeekLog(
+    @Args('id', { type: () => String }) id: string,
+    @Context() context,
+  ) {
+    const userId = context.req.user?.id;
+    if (!userId || !Types.ObjectId.isValid(userId)) {
+      throw new BadRequestException('Invalid user id');
+    }
+    return this.weekLogService.remove(id, userId);
   }
 }

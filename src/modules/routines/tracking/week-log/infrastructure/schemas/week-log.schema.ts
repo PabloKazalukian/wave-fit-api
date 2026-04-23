@@ -59,6 +59,12 @@ export class WeekLog {
 
   @Prop({ type: String, default: '' })
   notes?: string;
+
+  @Prop({ type: Boolean, default: false })
+  deleted: boolean;
+
+  @Prop({ type: Date })
+  deletedAt?: Date;
 }
 
 export const WeekLogSchema = SchemaFactory.createForClass(WeekLog);
