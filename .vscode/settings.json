@@ -2,7 +2,6 @@
   "workbench.colorTheme": "One Dark Pro",
   "workbench.iconTheme": "material-icon-theme",
   "editor.formatOnSave": true,
-
   // NestJS: íconos personalizados
   "material-icon-theme.files.associations": {
     "**/*.resolver.ts": "nestjs-controller",
