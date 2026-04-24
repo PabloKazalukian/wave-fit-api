@@ -1,0 +1,37 @@
+{
+  "basicInfo": {
+    "age": 28,
+    "gender": "male",
+    "heightCm": 175,
+    "weightKg": 78
+  },
+  "goals": {
+    "primaryGoal": "hypertrophy", 
+    "secondaryGoal": "fat_loss",
+    "targetWeightKg": 82,
+    "targetBodyFat": 12
+  },
+  "experience": {
+    "level": "intermediate", 
+    "yearsTraining": 2
+  },
+  "availability": {
+    "daysPerWeek": 4,
+    "sessionDurationMin": 60
+  },
+  "health": {
+    "injuries": ["lower_back"],
+    "limitations": ["no_heavy_deadlift"],
+    "medicalConditions": []
+  },
+  "lifestyle": {
+    "activityLevel": "sedentary",
+    "sleepHours": 6,
+    "stressLevel": "medium"
+  },
+  "preferences": {
+    "trainingStyle": ["gym", "machines"],
+    "dislikedExercises": ["burpees"],
+    "likedMuscleGroups": ["chest", "arms"]
+  }
+}

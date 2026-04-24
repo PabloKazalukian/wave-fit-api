@@ -1,0 +1,23 @@
+{
+  "performance": {
+    "estimated1RM": {
+      "bench_press": 90,
+      "squat": 120,
+      "deadlift": 140
+    },
+    "lastSessions": [
+      {
+        "exercise": "bench_press",
+        "weight": 80,
+        "reps": 8,
+        "rir": 2
+      }
+    ]
+  },
+  "adherence": {
+    "weeklyCompletionRate": 0.85
+  },
+  "fatigue": {
+    "selfReported": "medium"
+  }
+}
