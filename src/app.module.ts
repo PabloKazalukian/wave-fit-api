@@ -20,6 +20,7 @@ import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
 import { SeedModule } from './database/seed.module';
 import { CommonResolver } from './common/common.resolver';
 import { DayLogModule } from './modules/routines/tracking/day-log/day-log.module';
+import { StatsModule } from './modules/stats/stats.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { DayLogModule } from './modules/routines/tracking/day-log/day-log.module
     AuditLogsModule,
     SeedModule,
     DayLogModule,
+    StatsModule,
   ],
   controllers: [AppController],
   providers: [
