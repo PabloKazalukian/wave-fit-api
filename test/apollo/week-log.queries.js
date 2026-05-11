@@ -123,13 +123,13 @@ export const UPDATE_WEEK_LOG_DAY = `
     }
 `;
 
-export const SYNC_WEEK_LOG_DAYS = `
-    mutation SyncWeekLogDays($weekLogId: String!) {
-        syncWeekLogDays(weekLogId: $weekLogId) {
-            ${WEEK_LOG_FIELDS}
-        }
-    }
-`;
+// export const SYNC_WEEK_LOG_DAYS = `
+//     mutation SyncWeekLogDays($weekLogId: String!) {
+//         syncWeekLogDays(weekLogId: $weekLogId) {
+//             ${WEEK_LOG_FIELDS}
+//         }
+//     }
+// `;
 
 export const ASSIGN_ROUTINE_TO_DAY = `
     mutation AssignRoutineToDay($routineDayId: String!, $date: String!) {

@@ -110,18 +110,18 @@ export class WeekLogResolver {
     return { hasActiveWeek: true, week };
   }
 
-  @Query(() => WeekLog, { name: 'currentWorkoutSession' })
-  async getCurrentWorkoutSession(@Context() context) {
-    const userId =
-      context?.req?.user?._id?.toString() ||
-      context?.req?.user?.id ||
-      context?.req?.user?.userId;
+  // |@Query(() => WeekLog, { name: 'currentWorkoutSession' })
+  // async getCurrentWorkoutSession(@Context() context) {
+  //   const userId =
+  //     context?.req?.user?._id?.toString() ||
+  //     context?.req?.user?.id ||
+  //     context?.req?.user?.userId;
 
-    if (!userId || !Types.ObjectId.isValid(userId)) {
-      throw new BadRequestException('Invalid user id');
-    }
-    return this.weekLogService.findActiveWeekLog(userId);
-  }
+  //   if (!userId || !Types.ObjectId.isValid(userId)) {
+  //     throw new BadRequestException('Invalid user id');
+  //   }
+  //   return this.weekLogService.findActiveWeekLog(userId);
+  // }
 
   /**
    * Mutation unificada que crea/actualiza WorkoutSession y/o ExtraSession
@@ -183,14 +183,14 @@ export class WeekLogResolver {
     return this.weekLogService.updateWeekLog(input, userId);
   }
 
-  @Mutation(() => WeekLog)
-  async syncWeekLogDays(
-    @Args('weekLogId', { type: () => String }) weekLogId: string,
-    @Context() context,
-  ) {
-    const userId = context.req.user?.id;
-    return this.weekLogService.syncDaysWithSessions(weekLogId, userId);
-  }
+  // @Mutation(() => WeekLog)
+  // async syncWeekLogDays(
+  //   @Args('weekLogId', { type: () => String }) weekLogId: string,
+  //   @Context() context,
+  // ) {
+  //   const userId = context.req.user?.id;
+  //   return this.weekLogService.syncDaysWithSessions(weekLogId, userId);
+  // }
 
   @Mutation(() => WeekLogDay)
   @Audit('ASSIGN_ROUTINE_TO_DAY', 'WeekLog')

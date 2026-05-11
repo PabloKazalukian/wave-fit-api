@@ -350,42 +350,42 @@ describe('WeekLogResolver', () => {
     });
   });
 
-  describe('getCurrentWorkoutSession', () => {
-    it('should return current workout session from active week log', async () => {
-      const mockWorkoutSession = {
-        id: 'workout-123',
-        date: new Date(),
-        routineDayId: 'routine-day-123',
-        exercises: [],
-        notes: 'Today workout',
-      };
+  // describe('getCurrentWorkoutSession', () => {
+  //   it('should return current workout session from active week log', async () => {
+  //     const mockWorkoutSession = {
+  //       id: 'workout-123',
+  //       date: new Date(),
+  //       routineDayId: 'routine-day-123',
+  //       exercises: [],
+  //       notes: 'Today workout',
+  //     };
 
-      mockWeekLogService.findActiveWeekLog.mockResolvedValue(
-        mockWorkoutSession,
-      );
+  //     mockWeekLogService.findActiveWeekLog.mockResolvedValue(
+  //       mockWorkoutSession,
+  //     );
 
-      const result = await resolver.getCurrentWorkoutSession(
-        mockContext(validUserId),
-      );
+  //     const result = await resolver.getCurrentWorkoutSession(
+  //       mockContext(validUserId),
+  //     );
 
-      expect(service.findActiveWeekLog).toHaveBeenCalledWith(validUserId);
-      expect(result).toEqual(mockWorkoutSession);
-    });
+  //     expect(service.findActiveWeekLog).toHaveBeenCalledWith(validUserId);
+  //     expect(result).toEqual(mockWorkoutSession);
+  //   });
 
-    it('should return null if no workout session exists for today', async () => {
-      mockWeekLogService.findActiveWeekLog.mockResolvedValue(null);
+  //   it('should return null if no workout session exists for today', async () => {
+  //     mockWeekLogService.findActiveWeekLog.mockResolvedValue(null);
 
-      const result = await resolver.findActiveWeekLog(mockContext(validUserId));
+  //     const result = await resolver.findActiveWeekLog(mockContext(validUserId));
 
-      expect(result).toBeNull();
-    });
+  //     expect(result).toBeNull();
+  //   });
 
-    it('should require authentication', async () => {
-      await expect(
-        resolver.findActiveWeekLog(undefined as any),
-      ).rejects.toThrow();
-    });
-  });
+  //   it('should require authentication', async () => {
+  //     await expect(
+  //       resolver.findActiveWeekLog(undefined as any),
+  //     ).rejects.toThrow();
+  //   });
+  // });
 
   describe('updateWeekLog', () => {
     it('should update a week log for authenticated user', async () => {
