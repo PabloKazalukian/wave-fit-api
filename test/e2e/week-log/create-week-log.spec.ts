@@ -108,8 +108,9 @@ describe('WeekLog Creation (e2e)', () => {
         query: `
           mutation {
             createWeekLog(createWeekLogInput: {
-              startDate: "${startOfWeek.toISOString().replace('Z', '')}",
-              endDate: "${endOfWeek.toISOString().replace('Z', '')}",
+              startDate: "${startOfWeek.toISOString().split('T')[0]}",
+              endDate: "${endOfWeek.toISOString().split('T')[0]}",
+              timezone: "America/Argentina/Buenos_Aires"
             }) {
               id
               startDate
@@ -144,7 +145,7 @@ describe('WeekLog Creation (e2e)', () => {
       .set('Cookie', [authCookie])
       .send({
         query: `
-          query findActiveWeekLog {
+          query {
             activeWeekLog {
               hasActiveWeek
               week {
@@ -349,8 +350,9 @@ describe('WeekLog Creation (e2e)', () => {
         query: `
           mutation {
             createWeekLog(createWeekLogInput: {
-              startDate: "${startOfWeek.toISOString()}",
-              endDate: "${endOfWeek.toISOString()}",
+              startDate: "${startOfWeek.toISOString().split('T')[0]}",
+              endDate: "${endOfWeek.toISOString().split('T')[0]}",
+              timezone: "America/Argentina/Buenos_Aires",
               planId: "${plan.id}"
             }) {
               id
@@ -413,7 +415,7 @@ describe('WeekLog Creation (e2e)', () => {
     );
 
     expect(activeWeek).toBeDefined();
-    // In the domain/schema level, exercises are under workoutSessionId populated, 
+    // In the domain/schema level, exercises are under workoutSessionId populated,
     // but here we check findActiveWeekLog which returns WeekLog entity.
     // The previous test logic might have been based on raw data or different mapping.
     // Let's ensure we are checking the right structure.

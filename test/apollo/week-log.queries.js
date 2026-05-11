@@ -1,3 +1,21 @@
+export const WEEK_LOG_DAY_FIELDS = `
+    order
+    date
+    isRest
+    workoutSessionId
+    exercises {
+        exerciseId
+        series
+        sets {
+            weights
+            reps
+        }
+        notes
+    }
+    extraSessionIds
+    status
+`;
+
 export const WEEK_LOG_FIELDS = `
     id
     userId
@@ -8,21 +26,7 @@ export const WEEK_LOG_FIELDS = `
     completed
     active
     days {
-        order
-        date
-        isRest
-        workoutSessionId
-        exercises {
-            exerciseId
-            series
-            sets {
-                weights
-                reps
-            }
-            notes
-        }
-        extraSessionIds
-        status
+        ${WEEK_LOG_DAY_FIELDS}
     }
 `;
 
@@ -130,15 +134,15 @@ export const SYNC_WEEK_LOG_DAYS = `
 export const ASSIGN_ROUTINE_TO_DAY = `
     mutation AssignRoutineToDay($routineDayId: String!, $date: String!) {
         assignRoutineToDay(routineDayId: $routineDayId, date: $date) {
-            ${WEEK_LOG_FIELDS}
+            ${WEEK_LOG_DAY_FIELDS}
         }
     }
 `;
 
 export const REMOVE_WORKOUT_SESSION_FROM_DAY = `
-    mutation RemoveWorkoutSessionFromDay($input: RemoveWorkoutSessionFromDayInput!) {
-        removeWorkoutSessionFromDay(input: $input) {
-            ${WEEK_LOG_FIELDS}
+    mutation RemoveWorkoutSessionFromDay($workoutSessionId: String!) {
+        removeWorkoutSessionFromDay(workoutSessionId: $workoutSessionId) {
+            ${WEEK_LOG_DAY_FIELDS}
         }
     }
 `;

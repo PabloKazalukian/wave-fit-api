@@ -189,8 +189,9 @@ describe('UpdateWeekLog (e2e)', () => {
         query: `
           mutation {
             createWeekLog(createWeekLogInput: {
-              startDate: "${startOfWeek.toISOString()}",
-              endDate: "${endOfWeek.toISOString()}",
+              startDate: "${startOfWeek.toISOString().split('T')[0]}",
+              endDate: "${endOfWeek.toISOString().split('T')[0]}",
+              timezone: "America/Argentina/Buenos_Aires",
               planId: "${plan.id}"
             }) {
               id
@@ -202,10 +203,6 @@ describe('UpdateWeekLog (e2e)', () => {
                 date
                 isRest
                 workoutSessionId
-                exercises {
-                  exerciseId
-                  series
-                }
               }
             }
           }
@@ -248,7 +245,7 @@ describe('UpdateWeekLog (e2e)', () => {
 
     expect(assignResponse.status).toBe(200);
     expect(
-      assignResponse.body.data.assignRoutineToDay.days[0].workoutSessionId,
+      assignResponse.body.data.assignRoutineToDay.workoutSessionId,
     ).toBeDefined();
   });
 
@@ -305,8 +302,9 @@ describe('UpdateWeekLog (e2e)', () => {
         query: `
           mutation {
             createWeekLog(createWeekLogInput: {
-              startDate: "${startOfWeek.toISOString()}",
-              endDate: "${endOfWeek.toISOString()}",
+              startDate: "${startOfWeek.toISOString().split('T')[0]}",
+              endDate: "${endOfWeek.toISOString().split('T')[0]}",
+              timezone: "America/Argentina/Buenos_Aires",
               planId: "${plan.id}"
             }) {
               id
@@ -334,9 +332,7 @@ describe('UpdateWeekLog (e2e)', () => {
       .send({
         query: REMOVE_WORKOUT_SESSION_FROM_DAY,
         variables: {
-          input: {
-            workoutSessionId: workoutSessionId,
-          },
+          workoutSessionId: workoutSessionId,
         },
       });
 
@@ -349,12 +345,11 @@ describe('UpdateWeekLog (e2e)', () => {
 
     expect(removeResponse.status).toBe(200);
     expect(
-      removeResponse.body.data.removeWorkoutSessionFromDay.days[0]
-        .workoutSessionId,
+      removeResponse.body.data.removeWorkoutSessionFromDay.workoutSessionId,
     ).toBeNull();
-    expect(
-      removeResponse.body.data.removeWorkoutSessionFromDay.days[0].status,
-    ).toBe('pending');
+    expect(removeResponse.body.data.removeWorkoutSessionFromDay.status).toBe(
+      'pending',
+    );
   });
 
   it('should fail when assigning routine to day that already has workout session', async () => {
@@ -422,8 +417,9 @@ describe('UpdateWeekLog (e2e)', () => {
         query: `
           mutation {
             createWeekLog(createWeekLogInput: {
-              startDate: "${startOfWeek.toISOString()}",
-              endDate: "${endOfWeek.toISOString()}",
+              startDate: "${startOfWeek.toISOString().split('T')[0]}",
+              endDate: "${endOfWeek.toISOString().split('T')[0]}",
+              timezone: "America/Argentina/Buenos_Aires",
               planId: "${plan.id}"
             }) {
               id
@@ -454,16 +450,16 @@ describe('UpdateWeekLog (e2e)', () => {
           updateWeekLogInput: {
             id: week.id,
             startDate: week.startDate
-              ? week.startDate.replace('Z', '')
+              ? new Date(week.startDate).toISOString().split('T')[0]
               : undefined,
-            endDate: week.endDate ? week.endDate.replace('Z', '') : undefined,
+            endDate: week.endDate
+              ? new Date(week.endDate).toISOString().split('T')[0]
+              : undefined,
             days: [
               { order: 1, workoutSessionId: null },
               {
                 order: 2,
-                workoutSession: {
-                  id: '69d4320e2542b4c262114433',
-                },
+                workoutSession: { id: '69d4320e2542b4c262114433' },
               },
             ],
           },

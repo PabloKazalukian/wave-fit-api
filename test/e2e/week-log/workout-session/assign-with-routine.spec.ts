@@ -24,6 +24,24 @@ import {
 } from '../../helpers/week-log.helper';
 import cookieParser from 'cookie-parser';
 
+const WEEK_LOG_DAY_FIELDS = `
+    order
+    date
+    isRest
+    workoutSessionId
+    exercises {
+        exerciseId
+        series
+        sets {
+            weights
+            reps
+        }
+        notes
+    }
+    extraSessionIds
+    status
+`;
+
 const WEEK_LOG_FIELDS = `
     id
     userId
@@ -34,21 +52,7 @@ const WEEK_LOG_FIELDS = `
     completed
     active
     days {
-        order
-        date
-        isRest
-        workoutSessionId
-        exercises {
-            exerciseId
-            series
-            sets {
-                weights
-                reps
-            }
-            notes
-        }
-        extraSessionIds
-        status
+        ${WEEK_LOG_DAY_FIELDS}
     }
 `;
 
@@ -140,7 +144,18 @@ describe('assignRoutineToDay (e2e)', () => {
         query: `
           mutation AssignRoutineToDay($routineDayId: String!, $date: String!) {
             assignRoutineToDay(routineDayId: $routineDayId, date: $date) {
-              ${WEEK_LOG_FIELDS}
+              order
+              workoutSessionId
+              isRest
+              status
+              exercises {
+                exerciseId
+                series
+                sets {
+                  weights
+                  reps
+                }
+              }
             }
           }
         `,
@@ -161,8 +176,7 @@ describe('assignRoutineToDay (e2e)', () => {
     expect(assignResponse.body.data).toBeDefined();
     expect(assignResponse.body.data.assignRoutineToDay).toBeDefined();
 
-    const updatedWeek = assignResponse.body.data.assignRoutineToDay;
-    const updatedDay = updatedWeek.days[0];
+    const updatedDay = assignResponse.body.data.assignRoutineToDay;
 
     expect(updatedDay.workoutSessionId).toBeDefined();
     expect(updatedDay.isRest).toBe(false);
@@ -205,13 +219,11 @@ describe('assignRoutineToDay (e2e)', () => {
         query: `
           mutation AssignRoutineToDay($routineDayId: String!, $date: String!) {
             assignRoutineToDay(routineDayId: $routineDayId, date: $date) {
-              days {
-                order
-                workoutSessionId
-                exercises {
-                  exerciseId
-                  series
-                }
+              order
+              workoutSessionId
+              exercises {
+                exerciseId
+                series
               }
             }
           }
@@ -223,8 +235,10 @@ describe('assignRoutineToDay (e2e)', () => {
       });
 
     expect(assignResponse1.status).toBe(200);
+    expect(assignResponse1.body.data).toBeDefined();
+
     const firstWorkoutSessionId =
-      assignResponse1.body.data.assignRoutineToDay.days[0].workoutSessionId;
+      assignResponse1.body.data.assignRoutineToDay.workoutSessionId;
     expect(firstWorkoutSessionId).toBeDefined();
 
     const ex2 = (await exerciseService.create({
@@ -255,16 +269,14 @@ describe('assignRoutineToDay (e2e)', () => {
         query: `
           mutation AssignRoutineToDay($routineDayId: String!, $date: String!) {
             assignRoutineToDay(routineDayId: $routineDayId, date: $date) {
-              days {
-                order
-                workoutSessionId
-                exercises {
-                  exerciseId
-                  series
-                  sets {
-                    weights
-                    reps
-                  }
+              order
+              workoutSessionId
+              exercises {
+                exerciseId
+                series
+                sets {
+                  weights
+                  reps
                 }
               }
             }
@@ -286,7 +298,7 @@ describe('assignRoutineToDay (e2e)', () => {
     expect(assignResponse2.status).toBe(200);
     expect(assignResponse2.body.data).toBeDefined();
 
-    const updatedDay = assignResponse2.body.data.assignRoutineToDay.days[0];
+    const updatedDay = assignResponse2.body.data.assignRoutineToDay;
     expect(updatedDay.workoutSessionId).toBe(firstWorkoutSessionId);
     expect(updatedDay.exercises.length).toBe(2);
     expect(updatedDay.exercises[0].exerciseId).toBe(ex2.id.toString());
@@ -307,7 +319,7 @@ describe('assignRoutineToDay (e2e)', () => {
         query: `
           mutation AssignRoutineToDay($routineDayId: String!, $date: String!) {
             assignRoutineToDay(routineDayId: $routineDayId, date: $date) {
-              id
+              order
             }
           }
         `,
@@ -374,7 +386,7 @@ describe('assignRoutineToDay (e2e)', () => {
         query: `
           mutation AssignRoutineToDay($routineDayId: String!, $date: String!) {
             assignRoutineToDay(routineDayId: $routineDayId, date: $date) {
-              id
+              order
             }
           }
         `,
@@ -416,7 +428,7 @@ describe('assignRoutineToDay (e2e)', () => {
         query: `
           mutation AssignRoutineToDay($routineDayId: String!, $date: String!) {
             assignRoutineToDay(routineDayId: $routineDayId, date: $date) {
-              id
+              order
             }
           }
         `,
@@ -452,13 +464,11 @@ describe('assignRoutineToDay (e2e)', () => {
         query: `
           mutation AssignRoutineToDay($routineDayId: String!, $date: String!) {
             assignRoutineToDay(routineDayId: $routineDayId, date: $date) {
-              days {
-                order
-                workoutSessionId
-                exercises {
-                  exerciseId
-                  series
-                }
+              order
+              workoutSessionId
+              exercises {
+                exerciseId
+                series
               }
             }
           }
@@ -479,16 +489,16 @@ describe('assignRoutineToDay (e2e)', () => {
     expect(assignResponse.status).toBe(200);
     expect(assignResponse.body.data).toBeDefined();
 
-    const updatedDay = assignResponse.body.data.assignRoutineToDay.days[0];
+    const updatedDay = assignResponse.body.data.assignRoutineToDay;
     expect(updatedDay.workoutSessionId).toBeDefined();
     expect(updatedDay.exercises).toEqual([]);
   });
 
-  it.skip('should create new workout-session when workoutSessionId exists but document does not', async () => {
-    // Este edge case es difícil de testear porque requiere manipular la BD directamente
-    // para dejar un workoutSessionId en el día pero sin el documento WorkoutSession.
-    // El servicio ya maneja este caso en week-log.service.ts líneas 303-317
-  });
+  // it.skip('should create new workout-session when workoutSessionId exists but document does not', async () => {
+  // Este edge case es difícil de testear porque requiere manipular la BD directamente
+  // para dejar un workoutSessionId en el día pero sin el documento WorkoutSession.
+  // El servicio ya maneja este caso en week-log.service.ts líneas 303-317
+  // });
 
   it('should reset status to pending when reassigning routine to day', async () => {
     const activeWeekResponse = await getActiveWeekLog(app, authCookie);
@@ -515,11 +525,9 @@ describe('assignRoutineToDay (e2e)', () => {
         query: `
           mutation AssignRoutineToDay($routineDayId: String!, $date: String!) {
             assignRoutineToDay(routineDayId: $routineDayId, date: $date) {
-              days {
-                order
-                workoutSessionId
-                status
-              }
+              order
+              workoutSessionId
+              status
             }
           }
         `,
@@ -530,9 +538,7 @@ describe('assignRoutineToDay (e2e)', () => {
       });
 
     expect(assignResponse1.status).toBe(200);
-    expect(assignResponse1.body.data.assignRoutineToDay.days[0].status).toBe(
-      'pending',
-    );
+    expect(assignResponse1.body.data.assignRoutineToDay.status).toBe('pending');
 
     const assignResponse2 = await request(app.getHttpServer())
       .post('/graphql')
@@ -541,11 +547,9 @@ describe('assignRoutineToDay (e2e)', () => {
         query: `
           mutation AssignRoutineToDay($routineDayId: String!, $date: String!) {
             assignRoutineToDay(routineDayId: $routineDayId, date: $date) {
-              days {
-                order
-                workoutSessionId
-                status
-              }
+              order
+              workoutSessionId
+              status
             }
           }
         `,
@@ -556,8 +560,6 @@ describe('assignRoutineToDay (e2e)', () => {
       });
 
     expect(assignResponse2.status).toBe(200);
-    expect(assignResponse2.body.data.assignRoutineToDay.days[0].status).toBe(
-      'pending',
-    );
+    expect(assignResponse2.body.data.assignRoutineToDay.status).toBe('pending');
   });
 });

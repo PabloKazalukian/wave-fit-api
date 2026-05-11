@@ -103,8 +103,9 @@ describe('activeWeekLog (e2e)', () => {
         query: `
           mutation {
             createWeekLog(createWeekLogInput: {
-              startDate: "${startOfWeek.toISOString()}",
-              endDate: "${endOfWeek.toISOString()}",
+              startDate: "${startOfWeek.toISOString().split('T')[0]}",
+              endDate: "${endOfWeek.toISOString().split('T')[0]}",
+              timezone: "America/Argentina/Buenos_Aires"
             }) {
               id
               startDate
@@ -183,8 +184,9 @@ describe('activeWeekLog (e2e)', () => {
         query: `
           mutation {
             createWeekLog(createWeekLogInput: {
-              startDate: "${startOfWeeks.toISOString()}",
-              endDate: "${endOfWeeks.toISOString()}",
+              startDate: "${startOfWeeks.toISOString().split('T')[0]}",
+              endDate: "${endOfWeeks.toISOString().split('T')[0]}",
+              timezone: "America/Argentina/Buenos_Aires"
             }) {
               id
               startDate
