@@ -132,7 +132,7 @@ export class UpdateDayUseCase {
         {
           ...wsInput,
           weekLogId: (weekLog as any)._id.toString(),
-          date: dayLocalDate, // ✅ LocalDate string
+          date: day.date, // ✅ Pass UTC Date directly
           timezone,
           status: wsInput.status ?? 'not_started',
           exercises: wsInput.exercises ?? [],
@@ -183,7 +183,7 @@ export class UpdateDayUseCase {
       const emptySession = await this.workoutSessionService.create(
         {
           weekLogId: (weekLog as any)._id.toString(),
-          date: dayLocalDate, // ✅ LocalDate string
+          date: day.date, // ✅ Pass UTC Date directly
           timezone,
           status: 'not_started',
           exercises: [],

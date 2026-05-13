@@ -29,19 +29,24 @@ export class ExtraSessionService {
   ) {}
 
   async create(
-    input: CreateExtraSessionInput & { timezone?: string },
+    input: (Omit<CreateExtraSessionInput, 'date'> & { date: string | Date }) & {
+      timezone?: string;
+    },
     userId: string,
   ): Promise<ExtraSession> {
     const timezone = (input as any).timezone ?? DEFAULT_TIMEZONE;
 
-    if (!isValidLocalDate(input.date)) {
+    if (typeof input.date === 'string' && !isValidLocalDate(input.date)) {
       throw new BadRequestException(
         `date "${input.date}" must be in yyyy-MM-dd format`,
       );
     }
 
-    // ✅ Convertir LocalDate → Date UTC para Mongo (sin ambigüedad de timezone)
-    const dateUtc = localDateToUtc(input.date, timezone);
+    // ✅ Normalizar date a UTC Date
+    const dateUtc =
+      typeof input.date === 'string'
+        ? localDateToUtc(input.date, timezone)
+        : input.date;
 
     let workoutSession = await this.workoutSessionModel.findOne({
       _id: input.workoutSessionId,

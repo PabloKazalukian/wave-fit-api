@@ -9,6 +9,7 @@ export const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
     useFactory: async () => {
       mongoServer = await MongoMemoryServer.create();
       const uri = mongoServer.getUri();
+      await mongoose.connect(uri);
       return { uri, ...options };
     },
   });
@@ -18,9 +19,11 @@ export const closeInMongodConnection = async () => {
   if (mongoServer) await mongoServer.stop();
 };
 
-export const clearDatabase = async () => {
-  const collections = mongoose.connection.collections;
-  for (const key in collections) {
-    await collections[key].deleteMany({});
-  }
+export const clearDatabase = async (connection?: mongoose.Connection) => {
+  const targetConnection = connection || mongoose.connection;
+  const collections = targetConnection.collections;
+  const promises = Object.values(collections).map((collection) =>
+    collection.deleteMany({}),
+  );
+  await Promise.all(promises);
 };

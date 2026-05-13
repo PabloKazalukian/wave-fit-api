@@ -94,5 +94,4 @@ export const ExtraSessionSchema = SchemaFactory.createForClass(ExtraSession);
 
 // 🔥 índices útiles reales
 ExtraSessionSchema.index({ userId: 1, date: 1 });
-ExtraSessionSchema.index({ workoutSessionId: 1 });
 ExtraSessionSchema.index({ discipline: 1 });

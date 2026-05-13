@@ -32,7 +32,9 @@ export class WorkoutSessionService {
   ) {}
 
   async create(
-    input: CreateWorkoutSessionInput & { timezone?: string },
+    input: (Omit<CreateWorkoutSessionInput, 'date'> & { date: string | Date }) & {
+      timezone?: string;
+    },
     userId: string,
   ): Promise<WorkoutSession> {
     const timezone = (input as any).timezone ?? DEFAULT_TIMEZONE;
@@ -47,14 +49,19 @@ export class WorkoutSessionService {
       }
     }
 
+    // ✅ Normalizar date a UTC Date ANTES de la validación
+    const dateUtc =
+      typeof input.date === 'string'
+        ? localDateToUtc(input.date, timezone)
+        : input.date;
+
     await this.validator.validateCreation(
-      input,
+      { ...input, date: dateUtc } as any,
       userId,
       weekLog,
-      // this.sessionModel,
     );
 
-    if (!isValidLocalDate(input.date)) {
+    if (typeof input.date === 'string' && !isValidLocalDate(input.date)) {
       throw new BadRequestException(
         `date "${input.date}" must be in yyyy-MM-dd format`,
       );
@@ -63,7 +70,7 @@ export class WorkoutSessionService {
     const session = await this.sessionModel.create({
       userId: new Types.ObjectId(userId),
       weekLogId: input.weekLogId ? new Types.ObjectId(input.weekLogId) : null,
-      date: localDateToUtc(input.date, timezone), // ✅ LocalDate → Date UTC para Mongo
+      date: dateUtc, // ✅ Date UTC normalizada
       routineDayId: input.routineDayId
         ? new Types.ObjectId(input.routineDayId)
         : null,

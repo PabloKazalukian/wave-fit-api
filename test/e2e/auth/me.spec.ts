@@ -49,15 +49,13 @@ describe('Me (e2e)', () => {
         `,
       });
 
-    const cookies = loginResponse.headers['set-cookie'] as
-      | string
-      | string[]
-      | undefined;
-
-    const cookieArray = Array.isArray(cookies) ? cookies : [cookies];
-
+    const cookies = loginResponse.headers['set-cookie'];
+    const cookieArray: string[] = Array.isArray(cookies)
+      ? cookies
+      : cookies
+        ? [cookies]
+        : [];
     const rawCookie = cookieArray.find((c: string) => c.startsWith('token='));
-
     const tokenCookie = rawCookie?.split(';')[0];
 
     const meResponse = await request(app.getHttpServer())

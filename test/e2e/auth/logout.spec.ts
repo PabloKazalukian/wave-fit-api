@@ -46,15 +46,13 @@ describe('Logout (e2e)', () => {
         `,
       });
 
-    const cookies = loginResponse.headers['set-cookie'] as
-      | string
-      | string[]
-      | undefined;
-
-    const cookieArray = Array.isArray(cookies) ? cookies : [cookies];
-
+    const cookies = loginResponse.headers['set-cookie'];
+    const cookieArray: string[] = Array.isArray(cookies)
+      ? cookies
+      : cookies
+        ? [cookies]
+        : [];
     const rawCookie = cookieArray.find((c: string) => c.startsWith('token='));
-
     const tokenCookie = rawCookie?.split(';')[0];
 
     const logoutResponse = await request(app.getHttpServer())
@@ -71,13 +69,12 @@ describe('Logout (e2e)', () => {
 
     expect(logoutResponse.body.data.logout).toBe(true);
 
-    const logoutCookies = logoutResponse.headers['set-cookie'] as
-      | string
-      | string[]
-      | undefined;
-    const logoutCookieArray = Array.isArray(logoutCookies)
+    const logoutCookies = logoutResponse.headers['set-cookie'];
+    const logoutCookieArray: string[] = Array.isArray(logoutCookies)
       ? logoutCookies
-      : [logoutCookies];
+      : logoutCookies
+        ? [logoutCookies]
+        : [];
 
     expect(
       logoutCookieArray.some(

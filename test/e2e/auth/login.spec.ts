@@ -8,7 +8,6 @@ import { UserService } from '../../../src/modules/user/user.service';
 import {
   createTestUser,
   getTestUserCredentials,
-  testUser,
 } from '../../fixtures/user.fixture';
 
 describe('Login (e2e)', () => {
@@ -52,12 +51,12 @@ describe('Login (e2e)', () => {
 
     expect(response.body.data?.login).toBe(true);
 
-    const cookies = response.headers['set-cookie'] as
-      | string
-      | string[]
-      | undefined;
-    expect(cookies).toBeDefined();
-    const cookieArray = Array.isArray(cookies) ? cookies : [cookies];
+    const cookies = response.headers['set-cookie'];
+    const cookieArray: string[] = Array.isArray(cookies)
+      ? cookies
+      : cookies
+        ? [cookies]
+        : [];
     expect(cookieArray.some((c: string) => c.includes('token='))).toBe(true);
   });
 

@@ -71,12 +71,12 @@ export class WeekLogService {
 
   async findOne(id: string, userId: string): Promise<any> {
     const weekLog = await this.weekLogModel
-      .findOne({ _id: id, userId })
+      .findOne({ _id: id, userId, deleted: { $ne: true } })
       .populate('days.workoutSessionId')
       .exec();
 
     if (!weekLog) {
-      throw new NotFoundException(`Week log con ID "${id}" no encontrado`);
+      throw new NotFoundException(`not found`);
     }
 
     return this.mapWeekLog(weekLog);
@@ -123,7 +123,7 @@ export class WeekLogService {
     userId: string,
   ): Promise<any> {
     const weekLog = await this.weekLogModel
-      .findOne({ _id: weekLogId, userId })
+      .findOne({ _id: weekLogId, userId, deleted: { $ne: true } })
       .populate('days.workoutSessionId')
       .populate('days.extraSessionIds')
       .exec();
@@ -169,38 +169,42 @@ export class WeekLogService {
     return this.mapWeekLog(weekLog);
   }
 
-  // async syncDaysWithSessions(weekLogId: string, userId: string) {
-  //   const weekLog = await this.weekLogModel
-  //     .findOne({ _id: weekLogId, userId })
-  //     .exec();
-  //   if (!weekLog) throw new NotFoundException('WeekLog not found');
+  async syncDaysWithSessions(weekLogId: string, userId: string) {
+    const weekLog = await this.weekLogModel
+      .findOne({ _id: weekLogId, userId })
+      .exec();
+    if (!weekLog) throw new NotFoundException('WeekLog not found');
 
-  //   const sessions = await this.workoutSessionModel.find({
-  //     weekLogId,
-  //     userId,
-  //   });
+    const sessions = await this.workoutSessionModel.find({
+      weekLogId,
+      userId,
+    });
 
-  //   let updated = false;
+    let updated = false;
 
-  //   for (const day of weekLog.days) {
-  //     // Comparar fechas UTC de Mongo con las sesiones usando la misma timezone
-  //     const session = sessions.find((s) =>
-  //       isDateSameLocalDate(s.date, utcToLocalDate(day.date, DEFAULT_TIMEZONE), DEFAULT_TIMEZONE),
-  //     );
+    for (const day of weekLog.days) {
+      // Comparar fechas UTC de Mongo con las sesiones usando la misma timezone
+      const session = sessions.find((s) =>
+        isDateSameLocalDate(
+          s.date,
+          utcToLocalDate(day.date, DEFAULT_TIMEZONE),
+          DEFAULT_TIMEZONE,
+        ),
+      );
 
-  //     if (session) {
-  //       day.workoutSessionId = new Types.ObjectId(session._id as any);
-  //       day.status = 'complete';
-  //       updated = true;
-  //     }
-  //   }
+      if (session) {
+        day.workoutSessionId = new Types.ObjectId(session._id as any);
+        day.status = 'complete';
+        updated = true;
+      }
+    }
 
-  //   if (updated) {
-  //     await weekLog.save();
-  //   }
+    if (updated) {
+      await weekLog.save();
+    }
 
-  //   return this.findOne(weekLogId, userId);
-  // }
+    return this.findOne(weekLogId, userId);
+  }
 
   async remove(id: string, userId: string) {
     const existing = await this.weekLogModel.findOne({
