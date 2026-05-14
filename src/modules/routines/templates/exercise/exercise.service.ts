@@ -9,6 +9,7 @@ import {
   serializeMongo,
   serializeMongoArray,
 } from 'src/common/utils/mongo.utils';
+import { normalizeString, isSimilar } from 'src/common/utils/string.utils';
 
 @Injectable()
 export class ExerciseService {
@@ -18,15 +19,44 @@ export class ExerciseService {
   ) {}
   async create(createExerciseInput: CreateExerciseInput): Promise<Exercise> {
     const { name } = createExerciseInput;
-    const existing = await this.ExerciseModel.findOne({ name }).lean().exec();
-    if (existing) {
+
+    // 1. Normalización
+    const normalizedName = normalizeString(name);
+
+    // 2. Búsqueda de duplicados exactos (por nombre normalizado)
+    const existingExact = await this.ExerciseModel.findOne({
+      normalizedName,
+    })
+      .lean()
+      .exec();
+
+    if (existingExact) {
       throw new BadRequestException({
-        message: `Ya existe un ejercicio con el nombre "${name}"`,
+        message: `Ya existe un ejercicio con el nombre o similar a "${name}"`,
         code: 'DUPLICATE_NAME',
       });
     }
-    const createdExercise =
-      await this.ExerciseModel.create(createExerciseInput);
+
+    // 3. Verificación de similitud con otros ejercicios
+    // Traemos todos para comparar (o podríamos filtrar por categoría si quisiéramos ser más específicos)
+    const allExercises = await this.ExerciseModel.find().lean().exec();
+
+    for (const exercise of allExercises) {
+      if (isSimilar(normalizedName, exercise.normalizedName, 2)) {
+        throw new BadRequestException({
+          message: `El ejercicio "${name}" es muy similar a uno existente: "${exercise.name}"`,
+          code: 'SIMILAR_NAME',
+          similarTo: exercise.name,
+        });
+      }
+    }
+
+    // 4. Creación
+    const createdExercise = await this.ExerciseModel.create({
+      ...createExerciseInput,
+      normalizedName,
+    });
+
     return serializeMongo<Exercise>(createdExercise);
   }
 
@@ -51,11 +81,32 @@ export class ExerciseService {
     id: string,
     updateExerciseInput: UpdateExerciseInput,
   ): Promise<Exercise> {
-    const updated = await this.ExerciseModel.findByIdAndUpdate(
-      id,
-      updateExerciseInput,
-      { new: true },
-    )
+    const updateData: any = { ...updateExerciseInput };
+
+    if (updateData.name) {
+      updateData.normalizedName = normalizeString(updateData.name);
+
+      // Opcional: Verificar similitud también en el update si cambia el nombre
+      const allExercises = await this.ExerciseModel.find({
+        _id: { $ne: id },
+      })
+        .lean()
+        .exec();
+
+      for (const exercise of allExercises) {
+        if (isSimilar(updateData.normalizedName, exercise.normalizedName, 2)) {
+          throw new BadRequestException({
+            message: `El nuevo nombre "${updateData.name}" es muy similar a uno existente: "${exercise.name}"`,
+            code: 'SIMILAR_NAME',
+            similarTo: exercise.name,
+          });
+        }
+      }
+    }
+
+    const updated = await this.ExerciseModel.findByIdAndUpdate(id, updateData, {
+      new: true,
+    })
       .lean()
       .exec();
 

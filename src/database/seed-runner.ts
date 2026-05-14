@@ -9,6 +9,7 @@ import {
 import { Exercise } from 'src/modules/routines/templates/exercise/schema/exercise.schema';
 import { RoutineDay } from 'src/modules/routines/templates/routine-day/schema/routine-day.schema';
 import { RoutinePlan } from 'src/modules/routines/templates/routine-plan/schema/routine-plan.schema';
+import { normalizeString } from 'src/common/utils/string.utils';
 
 @Injectable()
 export class SeedService implements OnApplicationBootstrap {
@@ -66,13 +67,33 @@ export class SeedService implements OnApplicationBootstrap {
       // 1️⃣ Exercises
       const exerciseCount = await this.exerciseModel.countDocuments();
       if (exerciseCount === 0) {
+        const exercisesToSave = SEEDED_EXERCISES.map((ex) => ({
+          ...ex,
+          normalizedName: normalizeString(ex.name),
+        }));
         const savedExercises =
-          await this.exerciseModel.insertMany(SEEDED_EXERCISES);
+          await this.exerciseModel.insertMany(exercisesToSave);
         this.logger.log(`✅ ${savedExercises.length} ejercicios insertados`);
       } else {
         this.logger.log(
-          `⏭️  Ejercicios ya existentes (${exerciseCount}), omitiendo...`,
+          `⏭️  Ejercicios ya existentes (${exerciseCount}), verificando normalización...`,
         );
+        // Opcional: Asegurar que los existentes tengan normalizedName (migración rápida)
+        const exercisesWithoutNormalized = await this.exerciseModel.find({
+          normalizedName: { $exists: false },
+        });
+
+        if (exercisesWithoutNormalized.length > 0) {
+          for (const ex of exercisesWithoutNormalized) {
+            await this.exerciseModel.updateOne(
+              { _id: ex._id },
+              { $set: { normalizedName: normalizeString(ex.name) } },
+            );
+          }
+          this.logger.log(
+            `✅ ${exercisesWithoutNormalized.length} ejercicios normalizados`,
+          );
+        }
       }
 
       // 2️⃣ Routine Days

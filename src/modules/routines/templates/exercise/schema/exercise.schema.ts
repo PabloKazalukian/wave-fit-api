@@ -17,11 +17,14 @@ export class Exercise extends Document {
   })
   category: ExerciseCategory;
 
-  // true = barra/mancuerna, false = peso corporal
   @Prop({ default: false })
   usesWeight: boolean;
+
+  @Prop({ trim: true, required: true })
+  normalizedName: string;
 }
 
 export const ExerciseSchema = SchemaFactory.createForClass(Exercise);
 
 ExerciseSchema.index({ category: 1 });
+ExerciseSchema.index({ normalizedName: 1 });

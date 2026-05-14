@@ -33,7 +33,9 @@ export class Exercise {
   @Field(() => ExerciseCategory)
   category: ExerciseCategory;
 
-  // Si requiere peso (true = barra/mancuerna, false = peso corporal)
   @Field({ defaultValue: false })
   usesWeight: boolean;
+
+  @Field()
+  normalizedName: string;
 }
