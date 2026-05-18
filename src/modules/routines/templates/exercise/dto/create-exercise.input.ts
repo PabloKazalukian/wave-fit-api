@@ -15,6 +15,11 @@ registerEnumType(ExerciseCategory, {
 
 @InputType()
 export class CreateExerciseInput {
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  id?: string;
+
   @Field()
   @IsString()
   @MaxLength(64, { message: 'El nombre no debe superar los 64 caracteres' })

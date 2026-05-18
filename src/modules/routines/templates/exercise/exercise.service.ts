@@ -52,10 +52,16 @@ export class ExerciseService {
     }
 
     // 4. Creación
-    const createdExercise = await this.ExerciseModel.create({
-      ...createExerciseInput,
+    const { id, ...restInput } = createExerciseInput;
+    const createData: any = {
+      ...restInput,
       normalizedName,
-    });
+    };
+    if (id) {
+      createData._id = id;
+    }
+    
+    const createdExercise = await this.ExerciseModel.create(createData);
 
     return serializeMongo<Exercise>(createdExercise);
   }
