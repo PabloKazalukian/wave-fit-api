@@ -12,10 +12,11 @@ async function bootstrap() {
   app.use(cookieParser());
 
   app.enableCors({
-    origin:
-      process.env.NODE_ENV === 'production'
-        ? ['https://wave-fit-front.onrender.com', 'https://wave-fit.vercel.app']
-        : 'http://localhost:4200',
+    origin: [
+      'https://wave-fit-front.onrender.com',
+      'https://wave-fit.vercel.app',
+      'http://localhost:4200',
+    ],
     credentials: true,
   });
 
