@@ -112,7 +112,7 @@ describe('Add ExtraSession (e2e)', () => {
 
   it('should add extra session to day with existing workout', async () => {
     const ex1 = (await exerciseService.create({
-      name: 'Exercise Add ES Test 1',
+      name: 'Exercise Add ES asdas2 Test 1',
       category: ExerciseCategory.CHEST,
       usesWeight: false,
     })) as any;
@@ -126,7 +126,7 @@ describe('Add ExtraSession (e2e)', () => {
     const routineDaysIds = [day1.id, null, null, null, null, null, null];
 
     const plan = (await routinePlanService.create({
-      name: 'Plan Add ES Test 1',
+      name: 'Plan Add ES Test 1bb',
       description: 'Test plan',
       weekly_distribution: '1 day',
       routineDays: routineDaysIds as any,
@@ -216,13 +216,13 @@ describe('Add ExtraSession (e2e)', () => {
 
   it('should add extra session without losing existing exercises', async () => {
     const ex1 = (await exerciseService.create({
-      name: 'Exercise Add ES Test 2',
+      name: 'Exercise Add ES Test 2aaaa',
       category: ExerciseCategory.CHEST,
       usesWeight: false,
     })) as any;
 
     const day1 = (await routineDayService.create({
-      title: 'Day Add ES Test 2',
+      title: 'Day Add ES Test 2bb',
       type: [ExerciseCategory.CHEST],
       exercises: [{ exercise: ex1.id, order: 1 }],
     })) as any;
@@ -230,7 +230,7 @@ describe('Add ExtraSession (e2e)', () => {
     const routineDaysIds = [day1.id, null, null, null, null, null, null];
 
     const plan = (await routinePlanService.create({
-      name: 'Plan Add ES Test 2',
+      name: 'Plan Add ES Test 2ccc',
       description: 'Test plan',
       weekly_distribution: '1 day',
       routineDays: routineDaysIds as any,
@@ -341,13 +341,13 @@ describe('Add ExtraSession (e2e)', () => {
 
   it('should add multiple extra sessions to same day', async () => {
     const ex1 = (await exerciseService.create({
-      name: 'Exercise Add ES Test 3',
+      name: 'Exercise Add ES Test 3aabba',
       category: ExerciseCategory.CHEST,
       usesWeight: false,
     })) as any;
 
     const day1 = (await routineDayService.create({
-      title: 'Day Add ES Test 3',
+      title: 'Day Add ES Test 3 bbb',
       type: [ExerciseCategory.CHEST],
       exercises: [{ exercise: ex1.id, order: 1 }],
     })) as any;
@@ -355,7 +355,7 @@ describe('Add ExtraSession (e2e)', () => {
     const routineDaysIds = [day1.id, null, null, null, null, null, null];
 
     const plan = (await routinePlanService.create({
-      name: 'Plan Add ES Test 3',
+      name: 'Plan Add ES Test 3ccb',
       description: 'Test plan',
       weekly_distribution: '1 day',
       routineDays: routineDaysIds as any,

@@ -60,7 +60,7 @@ export class ExerciseService {
     if (id) {
       createData._id = id;
     }
-    
+
     const createdExercise = await this.ExerciseModel.create(createData);
 
     return serializeMongo<Exercise>(createdExercise);

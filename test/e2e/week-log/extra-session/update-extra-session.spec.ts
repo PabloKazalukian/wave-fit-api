@@ -109,7 +109,7 @@ describe('Update ExtraSession (e2e)', () => {
 
   it('should update extra session directly', async () => {
     const ex1 = (await exerciseService.create({
-      name: 'Exercise Update ES Test 1',
+      name: 'Exercise Update ES  das Test 1',
       category: ExerciseCategory.CHEST,
       usesWeight: false,
     })) as any;
@@ -230,13 +230,13 @@ describe('Update ExtraSession (e2e)', () => {
 
   it('should update extra session without affecting workout session', async () => {
     const ex1 = (await exerciseService.create({
-      name: 'Exercise Update ES Test 2',
+      name: 'Exercise Update ES asdass Test 2',
       category: ExerciseCategory.CHEST,
       usesWeight: false,
     })) as any;
 
     const ex2 = (await exerciseService.create({
-      name: 'Exercise Update ES Test 2b',
+      name: 'Exercise Update ES 12311 Test 2b',
       category: ExerciseCategory.CHEST,
       usesWeight: false,
     })) as any;
@@ -389,7 +389,7 @@ describe('Update ExtraSession (e2e)', () => {
     })) as any;
 
     const day1 = (await routineDayService.create({
-      title: 'Day Update ES Test 3',
+      title: 'Day Update ES asda Test 3',
       type: [ExerciseCategory.CHEST],
       exercises: [{ exercise: ex1.id, order: 1 }],
     })) as any;
@@ -491,13 +491,13 @@ describe('Update ExtraSession (e2e)', () => {
 
   it('should update extra session calories', async () => {
     const ex1 = (await exerciseService.create({
-      name: 'Exercise Update ES Test 4',
+      name: 'Exercise Update ES ENERGÍA Test 4',
       category: ExerciseCategory.CHEST,
       usesWeight: false,
     })) as any;
 
     const day1 = (await routineDayService.create({
-      title: 'Day Update ES Test 4',
+      title: 'Day Update ES asd1 Test 4',
       type: [ExerciseCategory.CHEST],
       exercises: [{ exercise: ex1.id, order: 1 }],
     })) as any;
@@ -505,7 +505,7 @@ describe('Update ExtraSession (e2e)', () => {
     const routineDaysIds = [day1.id, null, null, null, null, null, null];
 
     const plan = (await routinePlanService.create({
-      name: 'Plan Update ES Test 4',
+      name: 'Plan Update ES today Test 4',
       description: 'Test plan',
       weekly_distribution: '1 day',
       routineDays: routineDaysIds as any,

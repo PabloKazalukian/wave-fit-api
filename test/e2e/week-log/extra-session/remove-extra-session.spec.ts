@@ -109,13 +109,13 @@ describe('Remove ExtraSession (e2e)', () => {
 
   it('should remove extra session from day', async () => {
     const ex1 = (await exerciseService.create({
-      name: 'Exercise Remove ES Test 1',
+      name: 'Exercise Remove ES Test 1abababa',
       category: ExerciseCategory.CHEST,
       usesWeight: false,
     })) as any;
 
     const day1 = (await routineDayService.create({
-      title: 'Day Remove ES Test 1',
+      title: 'Day Remove ES Test 1bbbbccc',
       type: [ExerciseCategory.CHEST],
       exercises: [{ exercise: ex1.id, order: 1 }],
     })) as any;
@@ -123,7 +123,7 @@ describe('Remove ExtraSession (e2e)', () => {
     const routineDaysIds = [day1.id, null, null, null, null, null, null];
 
     const plan = (await routinePlanService.create({
-      name: 'Plan Remove ES Test 1',
+      name: 'Plan Remove ES Test 1zzzz',
       description: 'Test plan',
       weekly_distribution: '1 day',
       routineDays: routineDaysIds as any,
@@ -218,7 +218,7 @@ describe('Remove ExtraSession (e2e)', () => {
 
   it('should remove extra session without losing workout exercises', async () => {
     const ex1 = (await exerciseService.create({
-      name: 'Exercise Remove ES Test 2',
+      name: 'Exercise Remove ES Test 2zzz',
       category: ExerciseCategory.LEGS,
       usesWeight: false,
     })) as any;
@@ -230,7 +230,7 @@ describe('Remove ExtraSession (e2e)', () => {
     })) as any;
 
     const day1 = (await routineDayService.create({
-      title: 'Day Remove ES Test 2',
+      title: 'Day Remove ES Test 2qqqq',
       type: [ExerciseCategory.LEGS],
       exercises: [
         { exercise: ex1.id, order: 1 },
@@ -241,7 +241,7 @@ describe('Remove ExtraSession (e2e)', () => {
     const routineDaysIds = [day1.id, null, null, null, null, null, null];
 
     const plan = (await routinePlanService.create({
-      name: 'Plan Remove ES Test 2',
+      name: 'Plan Remove ES Test 2qwa',
       description: 'Test plan',
       weekly_distribution: '1 day',
       routineDays: routineDaysIds as any,
@@ -361,13 +361,13 @@ describe('Remove ExtraSession (e2e)', () => {
 
   it('should remove one extra session and keep others', async () => {
     const ex1 = (await exerciseService.create({
-      name: 'Exercise Remove ES Test 3',
+      name: 'Exercise Remove ES Test 3rere',
       category: ExerciseCategory.CHEST,
       usesWeight: false,
     })) as any;
 
     const day1 = (await routineDayService.create({
-      title: 'Day Remove ES Test 3',
+      title: 'Day Remove ES Test 3ggg',
       type: [ExerciseCategory.CHEST],
       exercises: [{ exercise: ex1.id, order: 1 }],
     })) as any;
@@ -375,7 +375,7 @@ describe('Remove ExtraSession (e2e)', () => {
     const routineDaysIds = [day1.id, null, null, null, null, null, null];
 
     const plan = (await routinePlanService.create({
-      name: 'Plan Remove ES Test 3',
+      name: 'Plan Remove ES Test 3tger',
       description: 'Test plan',
       weekly_distribution: '1 day',
       routineDays: routineDaysIds as any,
