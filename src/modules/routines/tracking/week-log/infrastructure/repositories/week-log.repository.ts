@@ -254,6 +254,21 @@ export class WeekLogRepository implements IWeekLogRepository {
     );
   }
 
+  async updateWeekLog(id: string, update: UpdateQuery<WeekLog>) {
+    const updatedDoc = await this.weekLogModel
+      .findByIdAndUpdate(id, update, {
+        new: true,
+        runValidators: true,
+      })
+      .exec();
+
+    if (!updatedDoc) {
+      throw new Error(`WeekLog con ID "${id}" no encontrado`);
+    }
+
+    return this.mapToDomain(updatedDoc);
+  }
+
   // ─── Mapper ─────────────────────────────────────────────────────────────────
 
   private mapToDomain(doc: WeekLogDocument): WeekLogDomain {
@@ -268,7 +283,12 @@ export class WeekLogRepository implements IWeekLogRepository {
         day.date,
         day.isRest,
         isPopulated ? session._id : (session ?? null),
-        (day.extraSessionIds ?? []).map((id: any) => id.toString()),
+        (day.extraSessionIds ?? []).map((id: any) => {
+          if (id && typeof id === 'object' && id._id) {
+            return id._id.toString();
+          }
+          return id.toString();
+        }),
         day.status,
         isPopulated ? (session.exercises ?? []) : [],
       );

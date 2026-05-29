@@ -7,6 +7,7 @@ import { UpdateWeekLogUseCase } from './update-week-log.use-case';
 import { UpdateDayWorkoutStatusUseCase } from './update-day-workout-status.use-case';
 import { RemoveWorkoutSessionUseCase } from './remove-workout-session.use-case';
 import { RemoveWeekLogUseCase } from './remove-week-log.use-case';
+import { RemoveExtraSessionUseCase } from './remove-extra-session.use-case';
 
 export const WEEK_LOG_USE_CASES = [
   CreateWeekLogUseCase,
@@ -18,6 +19,7 @@ export const WEEK_LOG_USE_CASES = [
   UpdateDayWorkoutStatusUseCase,
   RemoveWeekLogUseCase,
   RemoveWorkoutSessionUseCase,
+  RemoveExtraSessionUseCase,
 ];
 
 export * from './create-week-log.use-case';
@@ -29,3 +31,4 @@ export * from './update-week-log.use-case';
 export * from './update-day-workout-status.use-case';
 export * from './remove-week-log.use-case';
 export * from './remove-workout-session.use-case';
+export * from './remove-extra-session.use-case';

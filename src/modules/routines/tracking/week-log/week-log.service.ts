@@ -2,14 +2,9 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
-  Inject,
-  forwardRef,
 } from '@nestjs/common';
 import { CreateWeekLogInput } from './presentation/dto/create-week-log.input';
-import {
-  WeekLog,
-  WeekLogDocument,
-} from './infrastructure/schemas/week-log.schema';
+import { WeekLog } from './infrastructure/schemas/week-log.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import {
@@ -20,7 +15,6 @@ import {
 } from '../../../../common/utils/date.utils';
 import { WorkoutSession } from '../workout-session/schema/workout-session.schema';
 import { RoutineDayService } from '../../templates/routine-day/routine-day.service';
-import { WeekLogValidator } from './application/validators/week-log.validator';
 import {
   CreateWeekLogUseCase,
   FindAllWeekLogsByUserUseCase,
@@ -31,13 +25,13 @@ import {
   UpdateDayWorkoutStatusUseCase,
   RemoveWorkoutSessionUseCase,
   RemoveWeekLogUseCase,
+  RemoveExtraSessionUseCase,
 } from './application/use-cases';
 import { UpdateDayWorkoutStatusInput } from './presentation/dto/update-day-workout-status.input';
 import {
   WeekLogDayDomain,
   WeekLogDomain,
 } from './domain/entities/week-log.domain';
-import { WorkoutSessionService } from '../workout-session/workout-session.service';
 import {
   UpdateWeekLogDayUnifiedInput,
   UpdateWeekLogInput,
@@ -51,7 +45,6 @@ export class WeekLogService {
     @InjectModel(WeekLog.name) private weekLogModel: Model<WeekLog>,
     @InjectModel(WorkoutSession.name)
     private workoutSessionModel: Model<WorkoutSession>,
-    private readonly validator: WeekLogValidator,
     private routineDayService: RoutineDayService,
     private readonly createWeekLogUseCase: CreateWeekLogUseCase,
     private readonly findAllWeekLogsByUserUseCase: FindAllWeekLogsByUserUseCase,
@@ -62,8 +55,7 @@ export class WeekLogService {
     private readonly updateDayWorkoutStatusUseCase: UpdateDayWorkoutStatusUseCase,
     private readonly removeWeekLogUseCase: RemoveWeekLogUseCase,
     private readonly removeWorkoutSessionUseCase: RemoveWorkoutSessionUseCase,
-    @Inject(forwardRef(() => WorkoutSessionService))
-    private readonly workoutSessionService: WorkoutSessionService,
+    private readonly removeExtraSessionUseCase: RemoveExtraSessionUseCase,
   ) {}
 
   async create(
@@ -96,38 +88,37 @@ export class WeekLogService {
     return this.findActiveWeekLogUseCase.execute(userId);
   }
 
-  private mapWeekLog(weekLog: WeekLogDocument): WeekLogDomain {
-    const obj = weekLog.toObject();
+  // private mapWeekLog(weekLog: WeekLogDocument): WeekLogDomain {
+  //   const obj = weekLog.toObject();
 
-    const days = obj.days.map((day: any) => {
-      const session = day.workoutSessionId;
-      const isPopulated = session && typeof session === 'object' && session._id;
+  //   const days = obj.days.map((day: any) => {
+  //     const session = day.workoutSessionId;
+  //     const isPopulated = session && typeof session === 'object' && session._id;
 
-      return new WeekLogDayDomain(
-        day.order,
-        day.date,
-        day.isRest,
-        isPopulated ? session._id : (session ?? null),
-        (day.extraSessionIds ?? []).map((id: any) => id.toString()),
-        day.status,
-        isPopulated ? (session.exercises ?? []) : [],
-      );
-    });
+  //     return new WeekLogDayDomain(
+  //       day.order,
+  //       day.date,
+  //       day.isRest,
+  //       isPopulated ? session._id : (session ?? null),
+  //       (day.extraSessionIds ?? []).map((id: any) => id.toString()),
+  //       day.status,
+  //       isPopulated ? (session.exercises ?? []) : [],
+  //     );
+  //   });
 
-    return new WeekLogDomain(
-      obj._id.toString(),
-      obj.userId.toString(),
-      obj.startDate,
-      obj.endDate,
-      obj.planId ? obj.planId.toString() : null,
-      days,
-      obj.completed,
-      obj.active,
-      obj.notes,
-    );
-  }
+  //   return new WeekLogDomain(
+  //     obj._id.toString(),
+  //     obj.userId.toString(),
+  //     obj.startDate,
+  //     obj.endDate,
+  //     obj.planId ? obj.planId.toString() : null,
+  //     days,
+  //     obj.completed,
+  //     obj.active,
+  //     obj.notes,
+  //   );
+  // }
 
-  // TODO: use-case
   async findOneDay(
     weekLogId: string,
     order: number,
@@ -212,7 +203,6 @@ export class WeekLogService {
     return this.removeWeekLogUseCase.execute(id, userId);
   }
 
-  // TODO: use-case
   async removeWorkoutSessionFromDay(
     workoutSessionId: string,
     userId: string,
@@ -336,49 +326,18 @@ export class WeekLogService {
     }
   }
 
-  // TODO: use-case
   async removeExtraSessionFromDay(
     extraSessionId: string,
     userId: string,
     date: string, // LocalDate "yyyy-MM-dd"
     timezone: string = DEFAULT_TIMEZONE,
   ): Promise<WeekLogDayDomain> {
-    const weekLog = await this.weekLogModel
-      .findOne({ userId: new Types.ObjectId(userId), active: true })
-      .exec();
-
-    if (!weekLog) {
-      throw new NotFoundException(
-        `No se encontró un WeekLog con el extraSessionId "${extraSessionId}"`,
-      );
-    }
-
-    // this.validator.validateOwnership(weekLog, userId);
-
-    if (!isValidLocalDate(date)) {
-      throw new BadRequestException(
-        `date "${date}" must be in yyyy-MM-dd format`,
-      );
-    }
-
-    // ✅ Comparar LocalDate con fecha del día en Mongo
-    const day = weekLog.days.find((d) =>
-      isDateSameLocalDate(d.date, date, timezone),
+    return this.removeExtraSessionUseCase.execute(
+      extraSessionId,
+      userId,
+      date,
+      timezone,
     );
-
-    if (!day) {
-      throw new NotFoundException(
-        `No se encontró un día con fecha "${date}" en el WeekLog activo`,
-      );
-    }
-
-    day.extraSessionIds = day.extraSessionIds.filter(
-      (id) => id.toString() !== extraSessionId,
-    );
-
-    await weekLog.save();
-
-    return this.findOneDay(weekLog._id.toString(), day.order, userId);
   }
 
   async updateDayWorkoutStatus(
