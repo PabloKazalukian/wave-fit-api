@@ -63,10 +63,24 @@ export class CreateWeekLogUseCase {
     }
 
     // 6. Persistence
-    const newWeekLog = await this.weekLogRepository.create(weekLog);
+    let newWeekLog;
+    try {
+      newWeekLog = await this.weekLogRepository.create(weekLog);
+    } catch (err) {
+      console.error('DEBUG usecase create error:', err.message, err.stack?.split('\n').slice(0,5).join('\n'));
+      throw err;
+    }
+
+    if (!newWeekLog) {
+      console.error('DEBUG usecase create returned null');
+      return null;
+    }
 
     // 7. Return the created week log (populated)
     const result = await this.weekLogRepository.findOne(newWeekLog.id, userId);
+    if (!result) {
+      console.error('DEBUG usecase findOne returned null for id=%s userId=%s', newWeekLog.id, userId);
+    }
     return result;
   }
 }

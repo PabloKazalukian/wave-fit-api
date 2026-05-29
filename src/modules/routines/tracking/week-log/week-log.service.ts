@@ -165,7 +165,7 @@ export class WeekLogService {
     userId: string,
   ): Promise<WeekLogDomain> {
     const weekLog = await this.weekLogModel
-      .findOne({ _id: weekLogId, userId })
+      .findOne({ _id: weekLogId, userId: new Types.ObjectId(userId) })
       .exec();
     if (!weekLog) throw new NotFoundException('WeekLog not found');
 
@@ -228,7 +228,7 @@ export class WeekLogService {
     userId: string,
   ): Promise<WeekLogDayDomain> {
     const weekLog = await this.weekLogModel
-      .findOne({ userId, active: true })
+      .findOne({ userId: new Types.ObjectId(userId), active: true })
       .exec();
 
     if (!weekLog) {
@@ -282,7 +282,6 @@ export class WeekLogService {
       }
 
       const weekLog = await this.findActiveWeekLog(userId);
-      console.log('[WeekLogService] Active week log:', weekLog);
       if (!weekLog) {
         throw new BadRequestException(
           'No hay un WeekLog activo para el usuario',
@@ -384,7 +383,7 @@ export class WeekLogService {
     timezone: string = DEFAULT_TIMEZONE,
   ): Promise<WeekLogDayDomain> {
     const weekLog = await this.weekLogModel
-      .findOne({ userId, active: true })
+      .findOne({ userId: new Types.ObjectId(userId), active: true })
       .exec();
 
     if (!weekLog) {

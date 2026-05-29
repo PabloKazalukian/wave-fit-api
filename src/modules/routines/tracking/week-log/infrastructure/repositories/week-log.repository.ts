@@ -19,7 +19,7 @@ export class WeekLogRepository implements IWeekLogRepository {
 
   async findOne(id: string, userId: string): Promise<WeekLogDomain | null> {
     const doc = await this.weekLogModel
-      .findOne({ _id: id, userId, deleted: { $ne: true } })
+      .findOne({ _id: id, userId: new Types.ObjectId(userId), deleted: { $ne: true } })
       .populate('days.workoutSessionId')
       .exec();
 
@@ -33,7 +33,7 @@ export class WeekLogRepository implements IWeekLogRepository {
     offset?: number,
   ): Promise<WeekLogDomain[]> {
     const query = this.weekLogModel
-      .find({ userId, active: false, deleted: { $ne: true } })
+      .find({ userId: new Types.ObjectId(userId), active: false, deleted: { $ne: true } })
       .sort({ endDate: -1 })
       .populate('days.workoutSessionId');
 
@@ -51,7 +51,7 @@ export class WeekLogRepository implements IWeekLogRepository {
 
   async findActive(userId: string): Promise<WeekLogDomain | null> {
     const doc = await this.weekLogModel
-      .findOne({ userId, active: true, deleted: { $ne: true } })
+      .findOne({ userId: new Types.ObjectId(userId), active: true, deleted: { $ne: true } })
       .populate('days.workoutSessionId')
       .populate('days.extraSessionIds')
       .exec();
@@ -67,15 +67,30 @@ export class WeekLogRepository implements IWeekLogRepository {
   // ─── Commands ────────────────────────────────────────────────────────────────
 
   async create(data: WeekLogDomain): Promise<WeekLogDomain> {
-    const weekLog = new this.weekLogModel(data);
-    await weekLog.save();
+    const plainDays = data.days.map((d) => ({
+      order: d.order,
+      date: d.date,
+      isRest: d.isRest,
+      workoutSessionId: d.workoutSessionId,
+      extraSessionIds: (d.extraSessionIds ?? []).map((id: any) =>
+        typeof id === 'string' ? new Types.ObjectId(id) : id,
+      ),
+      status: d.status,
+    }));
 
-    if (data.planId) {
-      await this.weekLogModel.updateOne(
-        { _id: weekLog._id },
-        { $set: { planId: new Types.ObjectId(data.planId) } },
-      );
-    }
+    const plainData = {
+      userId: new Types.ObjectId(data.userId),
+      startDate: data.startDate,
+      endDate: data.endDate,
+      planId: data.planId ? new Types.ObjectId(data.planId) : null,
+      days: plainDays,
+      completed: data.completed,
+      active: data.active,
+      notes: data.notes,
+    };
+
+    const weekLog = new this.weekLogModel(plainData);
+    await weekLog.save();
 
     const populated = await this.weekLogModel
       .findById(weekLog._id)
@@ -86,13 +101,23 @@ export class WeekLogRepository implements IWeekLogRepository {
   }
 
   async createWithPlanId(data: WeekLogDomain): Promise<any> {
+    const plainDays = data.days.map((d) => ({
+      order: d.order,
+      date: d.date,
+      isRest: d.isRest,
+      workoutSessionId: d.workoutSessionId,
+      extraSessionIds: (d.extraSessionIds ?? []).map((id: any) =>
+        typeof id === 'string' ? new Types.ObjectId(id) : id,
+      ),
+      status: d.status,
+    }));
+
     const weekLog = new this.weekLogModel({
-      _id: data.id,
-      userId: data.userId,
+      userId: new Types.ObjectId(data.userId),
       startDate: data.startDate,
       endDate: data.endDate,
       planId: data.planId ? new Types.ObjectId(data.planId) : null,
-      days: data.days,
+      days: plainDays,
       completed: false,
       active: true,
     });
@@ -162,13 +187,13 @@ export class WeekLogRepository implements IWeekLogRepository {
 
   async findRawByUserId(id: string, userId: string): Promise<any> {
     return this.weekLogModel
-      .findOne({ _id: id, userId, deleted: { $ne: true } })
+      .findOne({ _id: id, userId: new Types.ObjectId(userId), deleted: { $ne: true } })
       .exec();
   }
 
   async findActiveRaw(userId: string): Promise<any> {
     return this.weekLogModel
-      .findOne({ userId, active: true, deleted: { $ne: true } })
+      .findOne({ userId: new Types.ObjectId(userId), active: true, deleted: { $ne: true } })
       .exec();
   }
 

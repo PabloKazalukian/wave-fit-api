@@ -2,7 +2,7 @@ import { Types } from 'mongoose';
 import { LocalDate, localDateToUtc, addDaysToLocalDate } from 'src/common/utils/date.utils';
 
 export interface WorkoutSessionCreationData {
-  _id: string;
+  _id: Types.ObjectId;
   userId: string;
   weekLogId: string;
   /** Date UTC para guardar en MongoDB — derivado de LocalDate + timezone */
@@ -187,7 +187,7 @@ export class WeekLogDomain {
           const sessionObjectId = new Types.ObjectId();
           workoutSessionId = sessionObjectId;
           sessionsToInsert.push({
-            _id: sessionObjectId.toString(),
+            _id: sessionObjectId,
             userId,
             weekLogId,
             date: dayUtcDate, // ✅ Date UTC derivada del LocalDate del usuario
