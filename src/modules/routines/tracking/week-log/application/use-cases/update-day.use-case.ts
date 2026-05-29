@@ -44,7 +44,7 @@ export class UpdateDayUseCase {
     if (!weekLog) throw new NotFoundException(`WeekLog ${input.id} not found`);
 
     // 2. Validar ownership
-    this.validator.validateOwnership(weekLog, userId);
+    this.validator.validateOwnershipModel(weekLog, userId);
 
     const timezone = input.timezone ?? DEFAULT_TIMEZONE;
 
@@ -58,11 +58,7 @@ export class UpdateDayUseCase {
 
     // 5. Retornar los datos del día actualizado (el último procesado)
     const lastDayInput = input.days[input.days.length - 1];
-    return this.weekLogService.findOneDay(
-      input.id,
-      lastDayInput.order,
-      userId,
-    );
+    return this.weekLogService.findOneDay(input.id, lastDayInput.order, userId);
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

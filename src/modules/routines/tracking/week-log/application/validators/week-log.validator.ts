@@ -14,6 +14,7 @@ import {
 } from 'src/common/utils/date.utils';
 import type { IWeekLogRepository } from '../../domain/interfaces/repositories/week-log.repository.interface';
 import { WEEK_LOG_REPOSITORY } from '../../domain/interfaces/repositories/week-log.repository.interface';
+import { WeekLogDomain } from '../../domain/entities/week-log.domain';
 
 @Injectable()
 export class WeekLogValidator {
@@ -45,7 +46,13 @@ export class WeekLogValidator {
     }
   }
 
-  validateOwnership(weekLog: WeekLog, userId: string) {
+  validateOwnership(weekLog: WeekLogDomain, userId: string) {
+    if (weekLog.userId !== userId) {
+      throw new ForbiddenException();
+    }
+  }
+
+  validateOwnershipModel(weekLog: WeekLog, userId: string) {
     if (weekLog.userId.toString() !== userId) {
       throw new ForbiddenException();
     }

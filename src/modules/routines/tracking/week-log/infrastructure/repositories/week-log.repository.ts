@@ -7,6 +7,7 @@ import {
   WeekLogDayDomain,
   WeekLogDomain,
 } from '../../domain/entities/week-log.domain';
+import { nowUtc } from 'src/common/utils/date.utils';
 
 @Injectable()
 export class WeekLogRepository implements IWeekLogRepository {
@@ -153,6 +154,25 @@ export class WeekLogRepository implements IWeekLogRepository {
     if (!doc) {
       throw new NotFoundException(`WeekLog con ID "${id}" no encontrado`);
     }
+
+    return this.mapToDomain(doc);
+  }
+
+  async findByIdAndSoftDelete(id: string): Promise<WeekLogDomain> {
+    const doc = await this.weekLogModel
+      .findByIdAndUpdate(
+        id,
+        {
+          deleted: true,
+          deletedAt: nowUtc(),
+        },
+        { new: true },
+      )
+      .populate('days.workoutSessionId')
+      .exec();
+
+    if (!doc)
+      throw new NotFoundException(`WeekLog con ID "${id}" no encontrado`);
 
     return this.mapToDomain(doc);
   }

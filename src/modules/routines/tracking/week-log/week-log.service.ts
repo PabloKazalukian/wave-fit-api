@@ -17,7 +17,6 @@ import {
   utcToLocalDate,
   localDateToUtc,
   isValidLocalDate,
-  nowUtc,
 } from '../../../../common/utils/date.utils';
 import { WorkoutSession } from '../workout-session/schema/workout-session.schema';
 import { RoutineDayService } from '../../templates/routine-day/routine-day.service';
@@ -30,6 +29,8 @@ import {
   UpdateDayUseCase,
   UpdateWeekLogUseCase,
   UpdateDayWorkoutStatusUseCase,
+  RemoveWorkoutSessionUseCase,
+  RemoveWeekLogUseCase,
 } from './application/use-cases';
 import { UpdateDayWorkoutStatusInput } from './presentation/dto/update-day-workout-status.input';
 import {
@@ -41,9 +42,8 @@ import {
   UpdateWeekLogDayUnifiedInput,
   UpdateWeekLogInput,
 } from './presentation/dto/update-week-log.input';
-import * as weekLogRepositoryInterface from './domain/interfaces/repositories/week-log.repository.interface';
 
-const DEFAULT_TIMEZONE = 'America/Argentina/Buenos_Aires';
+export const DEFAULT_TIMEZONE = 'America/Argentina/Buenos_Aires';
 
 @Injectable()
 export class WeekLogService {
@@ -60,10 +60,10 @@ export class WeekLogService {
     private readonly updateDayUseCase: UpdateDayUseCase,
     private readonly updateWeekLogUseCase: UpdateWeekLogUseCase,
     private readonly updateDayWorkoutStatusUseCase: UpdateDayWorkoutStatusUseCase,
+    private readonly removeWeekLogUseCase: RemoveWeekLogUseCase,
+    private readonly removeWorkoutSessionUseCase: RemoveWorkoutSessionUseCase,
     @Inject(forwardRef(() => WorkoutSessionService))
     private readonly workoutSessionService: WorkoutSessionService,
-    @Inject(weekLogRepositoryInterface.WEEK_LOG_REPOSITORY)
-    private readonly weekLogRepository: weekLogRepositoryInterface.IWeekLogRepository,
   ) {}
 
   async create(
@@ -208,24 +208,8 @@ export class WeekLogService {
     return result;
   }
 
-  // TODO: use-case
   async remove(id: string, userId: string): Promise<WeekLogDomain | null> {
-    await this.findOne(id, userId); // Throws NotFoundException if not found
-
-    const updated = await this.weekLogModel
-      .findByIdAndUpdate(
-        id,
-        {
-          deleted: true,
-          deletedAt: nowUtc(),
-        },
-        { new: true },
-      )
-      .populate('days.workoutSessionId')
-      .exec();
-
-    if (!updated) return null;
-    return this.mapWeekLog(updated);
+    return this.removeWeekLogUseCase.execute(id, userId);
   }
 
   // TODO: use-case
@@ -233,38 +217,7 @@ export class WeekLogService {
     workoutSessionId: string,
     userId: string,
   ): Promise<WeekLogDayDomain> {
-    const weekLog = await this.weekLogModel
-      .findOne({ userId: new Types.ObjectId(userId), active: true })
-      .exec();
-
-    if (!weekLog) {
-      throw new NotFoundException(
-        `No se encontró un WeekLog con el workoutSessionId "${workoutSessionId}"`,
-      );
-    }
-
-    this.validator.validateOwnership(weekLog, userId);
-
-    const day = weekLog.days.find(
-      (d) =>
-        d.workoutSessionId &&
-        d.workoutSessionId.toString() === workoutSessionId,
-    );
-
-    if (!day) {
-      throw new NotFoundException(
-        `No se encontró un día con el workoutSessionId "${workoutSessionId}"`,
-      );
-    }
-
-    day.workoutSessionId = null;
-    day.status = 'pending';
-
-    await weekLog.save();
-
-    await this.workoutSessionService.remove(workoutSessionId, userId);
-
-    return this.findOneDay(weekLog._id.toString(), day.order, userId);
+    return this.removeWorkoutSessionUseCase.execute(workoutSessionId, userId);
   }
 
   // TODO: use-case
@@ -400,7 +353,7 @@ export class WeekLogService {
       );
     }
 
-    this.validator.validateOwnership(weekLog, userId);
+    // this.validator.validateOwnership(weekLog, userId);
 
     if (!isValidLocalDate(date)) {
       throw new BadRequestException(

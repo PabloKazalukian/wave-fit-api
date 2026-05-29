@@ -41,5 +41,7 @@ export interface IWeekLogRepository {
     order: number,
     data: Partial<WeekLogDayDomain>,
   ): Promise<void>;
+  findByIdAndSoftDelete(id: string): Promise<WeekLogDomain | null>;
+
   // update(id: string, updateQuery: UpdateQuery<WeekLog>): Promise<WeekLog>;
 }

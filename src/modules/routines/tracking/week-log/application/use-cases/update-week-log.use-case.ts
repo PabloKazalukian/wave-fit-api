@@ -57,7 +57,7 @@ export class UpdateWeekLogUseCase {
     if (!weekLog) throw new NotFoundException(`WeekLog ${input.id} not found`);
 
     // 2. Validar ownership
-    this.validator.validateOwnership(weekLog, userId);
+    this.validator.validateOwnershipModel(weekLog, userId);
 
     // 3. Actualizar campos de metadata
     if (input.notes !== undefined) weekLog.notes = input.notes;
