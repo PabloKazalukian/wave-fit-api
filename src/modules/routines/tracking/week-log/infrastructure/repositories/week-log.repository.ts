@@ -19,7 +19,11 @@ export class WeekLogRepository implements IWeekLogRepository {
 
   async findOne(id: string, userId: string): Promise<WeekLogDomain | null> {
     const doc = await this.weekLogModel
-      .findOne({ _id: id, userId: new Types.ObjectId(userId), deleted: { $ne: true } })
+      .findOne({
+        _id: id,
+        userId: new Types.ObjectId(userId),
+        deleted: { $ne: true },
+      })
       .populate('days.workoutSessionId')
       .exec();
 
@@ -33,7 +37,11 @@ export class WeekLogRepository implements IWeekLogRepository {
     offset?: number,
   ): Promise<WeekLogDomain[]> {
     const query = this.weekLogModel
-      .find({ userId: new Types.ObjectId(userId), active: false, deleted: { $ne: true } })
+      .find({
+        userId: new Types.ObjectId(userId),
+        active: false,
+        deleted: { $ne: true },
+      })
       .sort({ endDate: -1 })
       .populate('days.workoutSessionId');
 
@@ -51,7 +59,11 @@ export class WeekLogRepository implements IWeekLogRepository {
 
   async findActive(userId: string): Promise<WeekLogDomain | null> {
     const doc = await this.weekLogModel
-      .findOne({ userId: new Types.ObjectId(userId), active: true, deleted: { $ne: true } })
+      .findOne({
+        userId: new Types.ObjectId(userId),
+        active: true,
+        deleted: { $ne: true },
+      })
       .populate('days.workoutSessionId')
       .populate('days.extraSessionIds')
       .exec();
@@ -187,14 +199,39 @@ export class WeekLogRepository implements IWeekLogRepository {
 
   async findRawByUserId(id: string, userId: string): Promise<any> {
     return this.weekLogModel
-      .findOne({ _id: id, userId: new Types.ObjectId(userId), deleted: { $ne: true } })
+      .findOne({
+        _id: id,
+        userId: new Types.ObjectId(userId),
+        deleted: { $ne: true },
+      })
       .exec();
   }
 
   async findActiveRaw(userId: string): Promise<any> {
     return this.weekLogModel
-      .findOne({ userId: new Types.ObjectId(userId), active: true, deleted: { $ne: true } })
+      .findOne({
+        userId: new Types.ObjectId(userId),
+        active: true,
+        deleted: { $ne: true },
+      })
       .exec();
+  }
+
+  async updateDayStatus(
+    weekLogId: string,
+    order: number,
+    data: Partial<WeekLogDayDomain>,
+  ) {
+    await this.weekLogModel.updateOne(
+      { _id: new Types.ObjectId(weekLogId), 'days.order': order },
+      {
+        $set: {
+          'days.$.isRest': data.isRest,
+          'days.$.status': data.status,
+          'days.$.workoutSessionId': data.workoutSessionId,
+        },
+      },
+    );
   }
 
   // ─── Mapper ─────────────────────────────────────────────────────────────────

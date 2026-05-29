@@ -7,7 +7,10 @@ import {
 } from '@nestjs/common';
 import { CreateWorkoutSessionInput } from './dto/create-workout-session.input';
 import { UpdateWorkoutSessionInput } from './dto/update-workout-session.input';
-import { WorkoutSession } from './schema/workout-session.schema';
+import {
+  WorkoutSession,
+  WorkoutSessionDocument,
+} from './schema/workout-session.schema';
 import { Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { WeekLogService } from '../week-log/week-log.service';
@@ -41,7 +44,7 @@ export class WorkoutSessionService {
       timezone?: string;
     },
     userId: string,
-  ): Promise<WorkoutSession> {
+  ): Promise<WorkoutSessionDocument> {
     const timezone = (input as any).timezone ?? DEFAULT_TIMEZONE;
 
     let weekLog: WeekLogDomain | null = null;
@@ -148,7 +151,7 @@ export class WorkoutSessionService {
     id: string,
     updateWorkoutSessionInput: UpdateWorkoutSessionInput,
     userId: string,
-  ): Promise<WorkoutSession> {
+  ): Promise<WorkoutSessionDocument> {
     const existing = await this.sessionModel.findOne({
       _id: id,
       userId,

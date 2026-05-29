@@ -11,7 +11,7 @@ import {
   WeekLogDocument,
 } from './infrastructure/schemas/week-log.schema';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types, UpdateQuery } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import {
   isDateSameLocalDate,
   utcToLocalDate,
@@ -29,6 +29,7 @@ import {
   FindActiveWeekLogUseCase,
   UpdateDayUseCase,
   UpdateWeekLogUseCase,
+  UpdateDayWorkoutStatusUseCase,
 } from './application/use-cases';
 import { UpdateDayWorkoutStatusInput } from './presentation/dto/update-day-workout-status.input';
 import {
@@ -58,6 +59,7 @@ export class WeekLogService {
     private readonly findActiveWeekLogUseCase: FindActiveWeekLogUseCase,
     private readonly updateDayUseCase: UpdateDayUseCase,
     private readonly updateWeekLogUseCase: UpdateWeekLogUseCase,
+    private readonly updateDayWorkoutStatusUseCase: UpdateDayWorkoutStatusUseCase,
     @Inject(forwardRef(() => WorkoutSessionService))
     private readonly workoutSessionService: WorkoutSessionService,
     @Inject(weekLogRepositoryInterface.WEEK_LOG_REPOSITORY)
@@ -125,6 +127,7 @@ export class WeekLogService {
     );
   }
 
+  // TODO: use-case
   async findOneDay(
     weekLogId: string,
     order: number,
@@ -152,14 +155,15 @@ export class WeekLogService {
     return this.updateWeekLogUseCase.execute(input, userId);
   }
 
-  async findByIdAndUpdate(
-    id: string,
-    updateQuery: UpdateQuery<WeekLog>,
-    options?: { new?: boolean; runValidators?: boolean },
-  ): Promise<WeekLogDomain> {
-    return this.weekLogRepository.findByIdAndUpdate(id, updateQuery, options);
-  }
+  // async findByIdAndUpdate(
+  //   id: string,
+  //   updateQuery: UpdateQuery<WeekLog>,
+  //   options?: { new?: boolean; runValidators?: boolean },
+  // ): Promise<WeekLogDomain> {
+  //   return this.weekLogRepository.findByIdAndUpdate(id, updateQuery, options);
+  // }
 
+  // TODO: use-case
   async syncDaysWithSessions(
     weekLogId: string,
     userId: string,
@@ -204,6 +208,7 @@ export class WeekLogService {
     return result;
   }
 
+  // TODO: use-case
   async remove(id: string, userId: string): Promise<WeekLogDomain | null> {
     await this.findOne(id, userId); // Throws NotFoundException if not found
 
@@ -223,6 +228,7 @@ export class WeekLogService {
     return this.mapWeekLog(updated);
   }
 
+  // TODO: use-case
   async removeWorkoutSessionFromDay(
     workoutSessionId: string,
     userId: string,
@@ -261,6 +267,7 @@ export class WeekLogService {
     return this.findOneDay(weekLog._id.toString(), day.order, userId);
   }
 
+  // TODO: use-case
   async assignRoutineToDay(
     routineDayId: string,
     date: string, // LocalDate "yyyy-MM-dd"
@@ -376,6 +383,7 @@ export class WeekLogService {
     }
   }
 
+  // TODO: use-case
   async removeExtraSessionFromDay(
     extraSessionId: string,
     userId: string,
@@ -426,66 +434,6 @@ export class WeekLogService {
   ): Promise<WeekLogDayDomain> {
     const timezone = (input as any).timezone ?? DEFAULT_TIMEZONE;
 
-    if (!isValidLocalDate(input.date)) {
-      throw new BadRequestException(
-        `date "${input.date}" must be in yyyy-MM-dd format`,
-      );
-    }
-
-    const weekLog = await this.findActiveWeekLog(userId);
-    if (!weekLog) throw new NotFoundException('No active week log found');
-
-    // ✅ Comparar LocalDate con la fecha del día en Mongo
-    const day = weekLog.days.find((d: any) =>
-      isDateSameLocalDate(d.date, input.date, timezone),
-    );
-
-    if (!day) throw new NotFoundException('Day not found in week log');
-
-    if (input.isRest) {
-      if (day.workoutSessionId) {
-        await this.workoutSessionModel
-          .findByIdAndDelete(day.workoutSessionId)
-          .exec();
-      }
-
-      day.isRest = true;
-      day.status = 'skipped';
-      day.workoutSessionId = null;
-    } else {
-      day.isRest = false;
-      day.status = 'pending';
-
-      if (!day.workoutSessionId) {
-        const newSession = await this.workoutSessionModel.create({
-          userId,
-          date: localDateToUtc(input.date, timezone), // ✅ LocalDate → UTC
-          status: 'not_started',
-          exercises: [],
-        });
-        day.workoutSessionId = new Types.ObjectId(newSession._id as any);
-      } else {
-        const session = await this.workoutSessionModel
-          .findById(day.workoutSessionId)
-          .exec();
-        if (session) {
-          session.status = 'not_started';
-          await session.save();
-        }
-      }
-    }
-
-    await this.weekLogModel.updateOne(
-      { _id: new Types.ObjectId(weekLog.id), 'days.order': day.order },
-      {
-        $set: {
-          'days.$.isRest': day.isRest,
-          'days.$.status': day.status,
-          'days.$.workoutSessionId': day.workoutSessionId,
-        },
-      },
-    );
-
-    return this.findOneDay(weekLog.id, day.order, userId);
+    return this.updateDayWorkoutStatusUseCase.execute(input, timezone, userId);
   }
 }

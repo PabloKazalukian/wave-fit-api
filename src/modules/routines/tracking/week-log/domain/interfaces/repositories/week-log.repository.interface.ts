@@ -36,5 +36,10 @@ export interface IWeekLogRepository {
   findRawByUserId(id: string, userId: string): Promise<any>;
   findActiveRaw(userId: string): Promise<any>;
   findPlanById(planId: string): Promise<any>;
+  updateDayStatus(
+    weekLogId: string,
+    order: number,
+    data: Partial<WeekLogDayDomain>,
+  ): Promise<void>;
   // update(id: string, updateQuery: UpdateQuery<WeekLog>): Promise<WeekLog>;
 }

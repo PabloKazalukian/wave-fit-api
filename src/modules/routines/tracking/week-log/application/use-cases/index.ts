@@ -4,6 +4,7 @@ import { FindOneWeekLogUseCase } from './find-one-week-log.use-case';
 import { FindActiveWeekLogUseCase } from './find-active-week-log.use-case';
 import { UpdateDayUseCase } from './update-day.use-case';
 import { UpdateWeekLogUseCase } from './update-week-log.use-case';
+import { UpdateDayWorkoutStatusUseCase } from './update-day-workout-status.use-case';
 
 export const WEEK_LOG_USE_CASES = [
   CreateWeekLogUseCase,
@@ -12,6 +13,7 @@ export const WEEK_LOG_USE_CASES = [
   FindActiveWeekLogUseCase,
   UpdateDayUseCase,
   UpdateWeekLogUseCase,
+  UpdateDayWorkoutStatusUseCase,
 ];
 
 export * from './create-week-log.use-case';
@@ -20,3 +22,4 @@ export * from './find-one-week-log.use-case';
 export * from './find-active-week-log.use-case';
 export * from './update-day.use-case';
 export * from './update-week-log.use-case';
+export * from './update-day-workout-status.use-case';
