@@ -4,13 +4,13 @@ import { WEEK_LOG_REPOSITORY } from '../../domain/interfaces/repositories/week-l
 import { WeekLogDomain } from '../../domain/entities/week-log.domain';
 
 @Injectable()
-export class FindOneWeekLogUseCase {
+export class FindActiveWeekLogUseCase {
   constructor(
     @Inject(WEEK_LOG_REPOSITORY)
     private readonly weekLogRepository: IWeekLogRepository,
   ) {}
 
-  async execute(id: string, userId: string): Promise<WeekLogDomain | null> {
-    return this.weekLogRepository.findOne(id, userId);
+  async execute(userId: string): Promise<WeekLogDomain | null> {
+    return this.weekLogRepository.findActive(userId);
   }
 }

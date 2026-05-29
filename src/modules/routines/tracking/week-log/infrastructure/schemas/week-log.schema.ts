@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Types } from 'mongoose';
+import { HydratedDocument, Types } from 'mongoose';
 
 @Schema({ _id: false })
 class WeekLogDay {
@@ -66,6 +66,8 @@ export class WeekLog {
   @Prop({ type: Date })
   deletedAt?: Date;
 }
+
+export type WeekLogDocument = HydratedDocument<WeekLog>;
 
 export const WeekLogSchema = SchemaFactory.createForClass(WeekLog);
 

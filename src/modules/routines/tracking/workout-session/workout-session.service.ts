@@ -12,7 +12,10 @@ import { Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { WeekLogService } from '../week-log/week-log.service';
 import { WorkoutSessionValidator } from './workout-session.validator';
-import { WorkoutSessionCreationData } from '../week-log/domain/entities/week-log.domain';
+import {
+  WorkoutSessionCreationData,
+  WeekLogDomain,
+} from '../week-log/domain/entities/week-log.domain';
 import {
   localDateToUtc,
   isValidLocalDate,
@@ -32,19 +35,22 @@ export class WorkoutSessionService {
   ) {}
 
   async create(
-    input: (Omit<CreateWorkoutSessionInput, 'date'> & { date: string | Date }) & {
+    input: (Omit<CreateWorkoutSessionInput, 'date'> & {
+      date: string | Date;
+    }) & {
       timezone?: string;
     },
     userId: string,
   ): Promise<WorkoutSession> {
     const timezone = (input as any).timezone ?? DEFAULT_TIMEZONE;
 
-    let weekLog = null;
+    let weekLog: WeekLogDomain | null = null;
     if (input.weekLogId) {
       weekLog = await this.weekLogService.findOne(input.weekLogId, userId);
       if (!weekLog) {
         throw new NotFoundException(
-          `Week log con ID "${input.weekLogId}" no encontrado`,
+          // `Week log con ID "${input.weekLogId}" no encontrado`,
+          'not found',
         );
       }
     }

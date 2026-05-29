@@ -1,9 +1,5 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  Injectable,
-} from '@nestjs/common';
-import { WeekLog } from '../week-log/infrastructure/schemas/week-log.schema';
+import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { WeekLogDomain } from '../week-log/domain/entities/week-log.domain';
 import { ExercisePerformance } from './schema/exercise-performance.schema';
 import { WorkoutSession } from './schema/workout-session.schema';
 import { CreateWorkoutSessionInput } from './dto/create-workout-session.input';
@@ -14,7 +10,7 @@ export class WorkoutSessionValidator {
   async validateCreation(
     input: CreateWorkoutSessionInput,
     userId: string,
-    weekLog: WeekLog | null,
+    weekLog: WeekLogDomain | null,
   ) {
     if (weekLog) {
       this.validateOwnership(weekLog, userId);
@@ -23,7 +19,7 @@ export class WorkoutSessionValidator {
     this.validateExercises(input.exercises);
   }
 
-  private validateOwnership(weekLog: WeekLog, userId: string) {
+  private validateOwnership(weekLog: WeekLogDomain, userId: string) {
     if (weekLog.userId.toString() !== userId) {
       throw new ForbiddenException(
         'You do not have permission to add sessions to this WeekLog',
@@ -31,7 +27,7 @@ export class WorkoutSessionValidator {
     }
   }
 
-  private validateDateInsideWeek(date: Date | string, weekLog: WeekLog) {
+  private validateDateInsideWeek(date: Date | string, weekLog: WeekLogDomain) {
     const sessionDate = new Date(date);
 
     if (sessionDate < weekLog.startDate || sessionDate > weekLog.endDate) {

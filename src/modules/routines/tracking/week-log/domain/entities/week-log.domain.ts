@@ -13,15 +13,63 @@ export interface WorkoutSessionCreationData {
 }
 
 export class WeekLogDayDomain {
+  public readonly order: number;
+  public readonly date: Date;
+  private _isRest: boolean;
+  private _workoutSessionId: Types.ObjectId | null;
+  private _extraSessionIds: string[];
+  private _status: string;
+  public readonly exercises: any[];
+
   constructor(
-    public readonly order: number,
-    /** Date UTC almacenado en MongoDB */
-    public readonly date: Date,
-    public readonly isRest: boolean,
-    public workoutSessionId: Types.ObjectId | null,
-    public readonly extraSessionIds: string[],
-    public status: string,
-  ) {}
+    order: number,
+    date: Date,
+    isRest: boolean,
+    workoutSessionId: Types.ObjectId | null,
+    extraSessionIds: string[],
+    status: string,
+    exercises: any[] = [],
+  ) {
+    this.order = order;
+    this.date = date;
+    this._isRest = isRest;
+    this._workoutSessionId = workoutSessionId;
+    this._extraSessionIds = extraSessionIds;
+    this._status = status;
+    this.exercises = exercises;
+  }
+
+  get isRest(): boolean {
+    return this._isRest;
+  }
+
+  set isRest(value: boolean) {
+    this._isRest = value;
+  }
+
+  get workoutSessionId(): Types.ObjectId | null {
+    return this._workoutSessionId;
+  }
+
+  set workoutSessionId(value: Types.ObjectId | null) {
+    this._workoutSessionId = value;
+  }
+
+  get extraSessionIds(): string[] {
+    return this._extraSessionIds;
+  }
+
+  set extraSessionIds(value: string[]) {
+    this._extraSessionIds = value;
+  }
+
+  get status(): string {
+    return this._status;
+  }
+
+  set status(value: string) {
+    this._status = value;
+  }
 
   static create(
     order: number,
@@ -34,19 +82,61 @@ export class WeekLogDayDomain {
 }
 
 export class WeekLogDomain {
+  public readonly id: string;
+  public readonly userId: string;
+  public readonly startDate: Date;
+  public readonly endDate: Date;
+  public readonly planId: string | null;
+  public readonly days: WeekLogDayDomain[];
+  private _completed: boolean;
+  private _active: boolean;
+  private _notes?: string;
+
   constructor(
-    public readonly id: string,
-    public readonly userId: string,
-    /** Date UTC almacenado en MongoDB — derivado de startDate LocalDate + timezone */
-    public readonly startDate: Date,
-    /** Date UTC almacenado en MongoDB */
-    public readonly endDate: Date,
-    public readonly planId: string | null,
-    public readonly days: WeekLogDayDomain[],
-    public readonly completed: boolean,
-    public readonly active: boolean,
-    public readonly notes?: string,
-  ) {}
+    id: string,
+    userId: string,
+    startDate: Date,
+    endDate: Date,
+    planId: string | null,
+    days: WeekLogDayDomain[],
+    completed: boolean,
+    active: boolean,
+    notes?: string,
+  ) {
+    this.id = id;
+    this.userId = userId;
+    this.startDate = startDate;
+    this.endDate = endDate;
+    this.planId = planId;
+    this.days = days;
+    this._completed = completed;
+    this._active = active;
+    this._notes = notes;
+  }
+
+  get completed(): boolean {
+    return this._completed;
+  }
+
+  set completed(value: boolean) {
+    this._completed = value;
+  }
+
+  get active(): boolean {
+    return this._active;
+  }
+
+  set active(value: boolean) {
+    this._active = value;
+  }
+
+  get notes(): string | undefined {
+    return this._notes;
+  }
+
+  set notes(value: string | undefined) {
+    this._notes = value;
+  }
 
   /**
    * Factory method — crea el WeekLog + WorkoutSessions iniciales.
@@ -108,14 +198,14 @@ export class WeekLogDomain {
         }
       }
 
-      return {
-        order: index + 1,
-        date: dayUtcDate, // ✅ Date UTC para Mongo
-        isRest: isRestMap[index] ?? false,
+      return new WeekLogDayDomain(
+        index + 1,
+        dayUtcDate,
+        isRestMap[index] ?? false,
         workoutSessionId,
-        extraSessionIds: [],
-        status: 'pending',
-      };
+        [],
+        'pending',
+      );
     });
 
     const weekLog = new WeekLogDomain(

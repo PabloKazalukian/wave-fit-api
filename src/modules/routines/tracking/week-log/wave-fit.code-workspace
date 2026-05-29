@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"name": "wave-fit",
+			"path": "../../../../../../wave-fit"
+		},
+		{
+			"name": "wave-fit-api",
+			"path": "../../../../.."
+		},
+		{
+			"name": "wave-fit-stats",
+			"path": "../../../../../../wave-fit-stats"
+		}
+	]
+}

@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types, UpdateQuery } from 'mongoose';
-import { WeekLog } from '../schemas/week-log.schema';
+import { WeekLog, WeekLogDocument } from '../schemas/week-log.schema';
 import { IWeekLogRepository } from '../../domain/interfaces/repositories/week-log.repository.interface';
 import {
   WeekLogDayDomain,
@@ -53,6 +53,7 @@ export class WeekLogRepository implements IWeekLogRepository {
     const doc = await this.weekLogModel
       .findOne({ userId, active: true, deleted: { $ne: true } })
       .populate('days.workoutSessionId')
+      .populate('days.extraSessionIds')
       .exec();
 
     if (!doc) return null;
@@ -81,7 +82,7 @@ export class WeekLogRepository implements IWeekLogRepository {
       .populate('days.workoutSessionId')
       .exec();
 
-    return this.mapToDomain(populated);
+    return this.mapToDomain(populated!);
   }
 
   async createWithPlanId(data: WeekLogDomain): Promise<any> {
@@ -110,7 +111,7 @@ export class WeekLogRepository implements IWeekLogRepository {
         runValidators: options?.runValidators ?? true,
       })
       .populate('days.workoutSessionId')
-      .lean();
+      .exec();
 
     if (!doc) {
       throw new NotFoundException(`WeekLog con ID "${id}" no encontrado`);
@@ -160,46 +161,47 @@ export class WeekLogRepository implements IWeekLogRepository {
   }
 
   async findRawByUserId(id: string, userId: string): Promise<any> {
-    return this.weekLogModel.findOne({ _id: id, userId, deleted: { $ne: true } }).exec();
+    return this.weekLogModel
+      .findOne({ _id: id, userId, deleted: { $ne: true } })
+      .exec();
   }
 
   async findActiveRaw(userId: string): Promise<any> {
-    return this.weekLogModel.findOne({ userId, active: true, deleted: { $ne: true } }).exec();
+    return this.weekLogModel
+      .findOne({ userId, active: true, deleted: { $ne: true } })
+      .exec();
   }
 
   // ─── Mapper ─────────────────────────────────────────────────────────────────
 
-  private mapToDomain(doc: any): WeekLogDomain {
-    const obj = doc.toObject ? doc.toObject() : doc;
+  private mapToDomain(doc: WeekLogDocument): WeekLogDomain {
+    const obj = doc.toObject();
 
-    return {
-      id: obj._id.toString(),
-      userId: obj.userId.toString(),
-      startDate: obj.startDate,
-      endDate: obj.endDate,
-      planId: obj.planId ? obj.planId.toString() : null,
-      completed: obj.completed,
-      active: obj.active,
-      notes: obj.notes,
-      days: obj.days.map((day: any) => {
-        const session = day.workoutSessionId;
-        const isPopulated =
-          session && typeof session === 'object' && session._id;
+    const days = obj.days.map((day: any) => {
+      const session = day.workoutSessionId;
+      const isPopulated = session && typeof session === 'object' && session._id;
 
-        return {
-          order: day.order,
-          date: day.date,
-          isRest: day.isRest,
-          status: day.status,
-          workoutSessionId: isPopulated
-            ? session._id.toString()
-            : (session?.toString() ?? null),
-          extraSessionIds: (day.extraSessionIds ?? []).map((id: any) =>
-            id.toString(),
-          ),
-          exercises: isPopulated ? (session.exercises ?? []) : [],
-        };
-      }),
-    };
+      return new WeekLogDayDomain(
+        day.order,
+        day.date,
+        day.isRest,
+        isPopulated ? session._id : (session ?? null),
+        (day.extraSessionIds ?? []).map((id: any) => id.toString()),
+        day.status,
+        isPopulated ? (session.exercises ?? []) : [],
+      );
+    });
+
+    return new WeekLogDomain(
+      obj._id.toString(),
+      obj.userId.toString(),
+      obj.startDate,
+      obj.endDate,
+      obj.planId ? obj.planId.toString() : null,
+      days,
+      obj.completed,
+      obj.active,
+      obj.notes,
+    );
   }
 }

@@ -6,7 +6,10 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { CreateWeekLogInput } from './presentation/dto/create-week-log.input';
-import { WeekLog } from './infrastructure/schemas/week-log.schema';
+import {
+  WeekLog,
+  WeekLogDocument,
+} from './infrastructure/schemas/week-log.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types, UpdateQuery } from 'mongoose';
 import {
@@ -22,16 +25,22 @@ import { WeekLogValidator } from './application/validators/week-log.validator';
 import {
   CreateWeekLogUseCase,
   FindAllWeekLogsByUserUseCase,
+  FindOneWeekLogUseCase,
+  FindActiveWeekLogUseCase,
   UpdateDayUseCase,
   UpdateWeekLogUseCase,
 } from './application/use-cases';
 import { UpdateDayWorkoutStatusInput } from './presentation/dto/update-day-workout-status.input';
-import { WeekLogDomain } from './domain/entities/week-log.domain';
+import {
+  WeekLogDayDomain,
+  WeekLogDomain,
+} from './domain/entities/week-log.domain';
 import { WorkoutSessionService } from '../workout-session/workout-session.service';
 import {
   UpdateWeekLogDayUnifiedInput,
   UpdateWeekLogInput,
 } from './presentation/dto/update-week-log.input';
+import * as weekLogRepositoryInterface from './domain/interfaces/repositories/week-log.repository.interface';
 
 const DEFAULT_TIMEZONE = 'America/Argentina/Buenos_Aires';
 
@@ -45,10 +54,14 @@ export class WeekLogService {
     private routineDayService: RoutineDayService,
     private readonly createWeekLogUseCase: CreateWeekLogUseCase,
     private readonly findAllWeekLogsByUserUseCase: FindAllWeekLogsByUserUseCase,
+    private readonly findOneWeekLogUseCase: FindOneWeekLogUseCase,
+    private readonly findActiveWeekLogUseCase: FindActiveWeekLogUseCase,
     private readonly updateDayUseCase: UpdateDayUseCase,
     private readonly updateWeekLogUseCase: UpdateWeekLogUseCase,
     @Inject(forwardRef(() => WorkoutSessionService))
     private readonly workoutSessionService: WorkoutSessionService,
+    @Inject(weekLogRepositoryInterface.WEEK_LOG_REPOSITORY)
+    private readonly weekLogRepository: weekLogRepositoryInterface.IWeekLogRepository,
   ) {}
 
   async create(
@@ -65,81 +78,70 @@ export class WeekLogService {
     userId: string,
     limit: number = 5,
     offset: number = 0,
-  ): Promise<any[]> {
+  ): Promise<WeekLogDomain[]> {
     return this.findAllWeekLogsByUserUseCase.execute(userId, limit, offset);
   }
 
-  async findOne(id: string, userId: string): Promise<any> {
-    const weekLog = await this.weekLogModel
-      .findOne({ _id: id, userId, deleted: { $ne: true } })
-      .populate('days.workoutSessionId')
-      .exec();
-
+  async findOne(id: string, userId: string): Promise<WeekLogDomain | null> {
+    const weekLog = await this.findOneWeekLogUseCase.execute(id, userId);
     if (!weekLog) {
-      throw new NotFoundException(`not found`);
+      throw new NotFoundException('not found');
     }
-
-    return this.mapWeekLog(weekLog);
+    return weekLog;
   }
 
-  async findActiveWeekLog(userId: string): Promise<any | null> {
-    const weekLog = await this.weekLogModel
-      .findOne({ userId, active: true })
-      .populate('days.workoutSessionId')
-      .populate('days.extraSessionIds')
-      .exec();
-
-    if (!weekLog) return null;
-
-    return this.mapWeekLog(weekLog);
+  async findActiveWeekLog(userId: string): Promise<WeekLogDomain | null> {
+    return this.findActiveWeekLogUseCase.execute(userId);
   }
 
-  private mapWeekLog(weekLog: any): any {
-    const weekLogObj = weekLog.toObject ? weekLog.toObject() : weekLog;
+  private mapWeekLog(weekLog: WeekLogDocument): WeekLogDomain {
+    const obj = weekLog.toObject();
 
-    return {
-      ...weekLogObj,
-      id: weekLogObj._id.toString(),
-      days: weekLogObj.days.map((day) => this.mapDay(day)),
-    };
-  }
+    const days = obj.days.map((day: any) => {
+      const session = day.workoutSessionId;
+      const isPopulated = session && typeof session === 'object' && session._id;
 
-  private mapDay(day: any): any {
-    const session = day.workoutSessionId;
-    const extraSessions = day.extraSessionIds;
-    return {
-      ...day,
-      workoutSessionId: session?._id ? session._id.toString() : session,
-      extraSessionIds:
-        extraSessions?.map((es: any) => (es?._id ? es._id.toString() : es)) ||
-        [],
-      exercises: session?.exercises || [],
-    };
+      return new WeekLogDayDomain(
+        day.order,
+        day.date,
+        day.isRest,
+        isPopulated ? session._id : (session ?? null),
+        (day.extraSessionIds ?? []).map((id: any) => id.toString()),
+        day.status,
+        isPopulated ? (session.exercises ?? []) : [],
+      );
+    });
+
+    return new WeekLogDomain(
+      obj._id.toString(),
+      obj.userId.toString(),
+      obj.startDate,
+      obj.endDate,
+      obj.planId ? obj.planId.toString() : null,
+      days,
+      obj.completed,
+      obj.active,
+      obj.notes,
+    );
   }
 
   async findOneDay(
     weekLogId: string,
     order: number,
     userId: string,
-  ): Promise<any> {
-    const weekLog = await this.weekLogModel
-      .findOne({ _id: weekLogId, userId, deleted: { $ne: true } })
-      .populate('days.workoutSessionId')
-      .populate('days.extraSessionIds')
-      .exec();
-
+  ): Promise<WeekLogDayDomain> {
+    const weekLog = await this.findOne(weekLogId, userId);
     if (!weekLog) {
       throw new NotFoundException(
-        `Week log con ID "${weekLogId}" no encontrado`,
+        // `Week log con ID "${weekLogId}" no encontrado`,
+        'not found',
       );
     }
-
     const day = weekLog.days.find((d) => d.order === order);
     if (!day) {
       throw new NotFoundException(`Día con orden ${order} no encontrado`);
     }
-
-    return this.mapDay((day as any).toObject ? (day as any).toObject() : day);
+    return day;
   }
 
   async updateDay(input: UpdateWeekLogDayUnifiedInput, userId: string) {
@@ -154,22 +156,14 @@ export class WeekLogService {
     id: string,
     updateQuery: UpdateQuery<WeekLog>,
     options?: { new?: boolean; runValidators?: boolean },
-  ): Promise<WeekLog> {
-    const weekLog = await this.weekLogModel
-      .findByIdAndUpdate(id, updateQuery, {
-        new: options?.new ?? true,
-        runValidators: options?.runValidators ?? true,
-      })
-      .lean();
-
-    if (!weekLog) {
-      throw new NotFoundException(`WeekLog with ID ${id} not found`);
-    }
-
-    return this.mapWeekLog(weekLog);
+  ): Promise<WeekLogDomain> {
+    return this.weekLogRepository.findByIdAndUpdate(id, updateQuery, options);
   }
 
-  async syncDaysWithSessions(weekLogId: string, userId: string) {
+  async syncDaysWithSessions(
+    weekLogId: string,
+    userId: string,
+  ): Promise<WeekLogDomain> {
     const weekLog = await this.weekLogModel
       .findOne({ _id: weekLogId, userId })
       .exec();
@@ -203,18 +197,15 @@ export class WeekLogService {
       await weekLog.save();
     }
 
-    return this.findOne(weekLogId, userId);
+    const result = await this.findOne(weekLogId, userId);
+    if (!result) {
+      throw new NotFoundException('WeekLog not found');
+    }
+    return result;
   }
 
-  async remove(id: string, userId: string) {
-    const existing = await this.weekLogModel.findOne({
-      _id: id,
-      userId,
-      deleted: { $ne: true },
-    });
-    if (!existing) {
-      throw new NotFoundException(`Week Log with ID "${id}" not found`);
-    }
+  async remove(id: string, userId: string): Promise<WeekLogDomain | null> {
+    await this.findOne(id, userId); // Throws NotFoundException if not found
 
     const updated = await this.weekLogModel
       .findByIdAndUpdate(
@@ -225,15 +216,17 @@ export class WeekLogService {
         },
         { new: true },
       )
+      .populate('days.workoutSessionId')
       .exec();
 
-    return updated;
+    if (!updated) return null;
+    return this.mapWeekLog(updated);
   }
 
   async removeWorkoutSessionFromDay(
     workoutSessionId: string,
     userId: string,
-  ): Promise<any> {
+  ): Promise<WeekLogDayDomain> {
     const weekLog = await this.weekLogModel
       .findOne({ userId, active: true })
       .exec();
@@ -273,7 +266,7 @@ export class WeekLogService {
     date: string, // LocalDate "yyyy-MM-dd"
     userId: string,
     timezone: string = DEFAULT_TIMEZONE,
-  ): Promise<any> {
+  ): Promise<WeekLogDayDomain> {
     try {
       if (!isValidLocalDate(date)) {
         throw new BadRequestException(
@@ -289,6 +282,7 @@ export class WeekLogService {
       }
 
       const weekLog = await this.findActiveWeekLog(userId);
+      console.log('[WeekLogService] Active week log:', weekLog);
       if (!weekLog) {
         throw new BadRequestException(
           'No hay un WeekLog activo para el usuario',
@@ -336,7 +330,7 @@ export class WeekLogService {
         } else {
           const newSession = await this.workoutSessionModel.create({
             userId: new Types.ObjectId(userId),
-            weekLogId: weekLog._id.toString(),
+            weekLogId: weekLog.id,
             date: localDateToUtc(date, timezone), // ✅ LocalDate → UTC
             routineDayId,
             exercises,
@@ -350,7 +344,7 @@ export class WeekLogService {
       } else {
         const newSession = await this.workoutSessionModel.create({
           userId: new Types.ObjectId(userId),
-          weekLogId: weekLog._id.toString(),
+          weekLogId: weekLog.id,
           date: localDateToUtc(date, timezone), // ✅ LocalDate → UTC
           routineDayId,
           exercises,
@@ -363,7 +357,10 @@ export class WeekLogService {
       }
 
       await this.weekLogModel.updateOne(
-        { _id: weekLog._id, 'days.order': dayToUpdate.order },
+        {
+          _id: new Types.ObjectId(weekLog.id),
+          'days.order': dayToUpdate.order,
+        },
         {
           $set: {
             'days.$.workoutSessionId': sessionId,
@@ -373,7 +370,7 @@ export class WeekLogService {
         },
       );
 
-      return this.findOneDay(weekLog._id.toString(), dayToUpdate.order, userId);
+      return this.findOneDay(weekLog.id, dayToUpdate.order, userId);
     } catch (error) {
       console.error('[assignRoutineToDay] Error:', error);
       throw error;
@@ -385,7 +382,7 @@ export class WeekLogService {
     userId: string,
     date: string, // LocalDate "yyyy-MM-dd"
     timezone: string = DEFAULT_TIMEZONE,
-  ): Promise<any> {
+  ): Promise<WeekLogDayDomain> {
     const weekLog = await this.weekLogModel
       .findOne({ userId, active: true })
       .exec();
@@ -427,7 +424,7 @@ export class WeekLogService {
   async updateDayWorkoutStatus(
     input: UpdateDayWorkoutStatusInput & { timezone?: string },
     userId: string,
-  ): Promise<any> {
+  ): Promise<WeekLogDayDomain> {
     const timezone = (input as any).timezone ?? DEFAULT_TIMEZONE;
 
     if (!isValidLocalDate(input.date)) {
@@ -467,7 +464,7 @@ export class WeekLogService {
           status: 'not_started',
           exercises: [],
         });
-        day.workoutSessionId = newSession._id;
+        day.workoutSessionId = new Types.ObjectId(newSession._id as any);
       } else {
         const session = await this.workoutSessionModel
           .findById(day.workoutSessionId)
@@ -480,7 +477,7 @@ export class WeekLogService {
     }
 
     await this.weekLogModel.updateOne(
-      { _id: weekLog.id, 'days.order': day.order },
+      { _id: new Types.ObjectId(weekLog.id), 'days.order': day.order },
       {
         $set: {
           'days.$.isRest': day.isRest,
