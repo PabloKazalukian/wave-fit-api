@@ -83,4 +83,8 @@ export class CreateWorkoutSessionInput {
   @Field(() => Boolean, { nullable: true })
   @IsOptional()
   edited?: boolean;
+
+  @Field(() => Boolean, { nullable: true })
+  @IsOptional()
+  deleted?: boolean;
 }

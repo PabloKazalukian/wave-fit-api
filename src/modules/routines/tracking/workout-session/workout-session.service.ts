@@ -86,6 +86,8 @@ export class WorkoutSessionService {
       exercises: input.exercises,
       status: input.status,
       notes: input.notes || '',
+      edited: input.edited || false,
+      deleted: input.deleted || false,
     });
 
     return session;

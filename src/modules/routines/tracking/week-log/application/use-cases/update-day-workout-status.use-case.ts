@@ -32,9 +32,7 @@ export class UpdateDayWorkoutStatusUseCase {
   ) {}
 
   async execute(
-    // weekLogId: string,
     input: UpdateDayWorkoutStatusInput,
-    // status: WorkoutSessionStatus,
     timezone: string,
     userId: string,
   ): Promise<WeekLogDayDomain> {
@@ -53,6 +51,7 @@ export class UpdateDayWorkoutStatusUseCase {
     );
 
     if (!day) throw new NotFoundException('Day not found in week log');
+
     if (input.isRest) {
       if (day.workoutSessionId) {
         await this.workoutSessionService.remove(

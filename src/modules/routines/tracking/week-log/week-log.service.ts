@@ -88,37 +88,6 @@ export class WeekLogService {
     return this.findActiveWeekLogUseCase.execute(userId);
   }
 
-  // private mapWeekLog(weekLog: WeekLogDocument): WeekLogDomain {
-  //   const obj = weekLog.toObject();
-
-  //   const days = obj.days.map((day: any) => {
-  //     const session = day.workoutSessionId;
-  //     const isPopulated = session && typeof session === 'object' && session._id;
-
-  //     return new WeekLogDayDomain(
-  //       day.order,
-  //       day.date,
-  //       day.isRest,
-  //       isPopulated ? session._id : (session ?? null),
-  //       (day.extraSessionIds ?? []).map((id: any) => id.toString()),
-  //       day.status,
-  //       isPopulated ? (session.exercises ?? []) : [],
-  //     );
-  //   });
-
-  //   return new WeekLogDomain(
-  //     obj._id.toString(),
-  //     obj.userId.toString(),
-  //     obj.startDate,
-  //     obj.endDate,
-  //     obj.planId ? obj.planId.toString() : null,
-  //     days,
-  //     obj.completed,
-  //     obj.active,
-  //     obj.notes,
-  //   );
-  // }
-
   async findOneDay(
     weekLogId: string,
     order: number,
@@ -145,14 +114,6 @@ export class WeekLogService {
   async updateWeekLog(input: UpdateWeekLogInput, userId: string) {
     return this.updateWeekLogUseCase.execute(input, userId);
   }
-
-  // async findByIdAndUpdate(
-  //   id: string,
-  //   updateQuery: UpdateQuery<WeekLog>,
-  //   options?: { new?: boolean; runValidators?: boolean },
-  // ): Promise<WeekLogDomain> {
-  //   return this.weekLogRepository.findByIdAndUpdate(id, updateQuery, options);
-  // }
 
   // TODO: use-case
   async syncDaysWithSessions(
