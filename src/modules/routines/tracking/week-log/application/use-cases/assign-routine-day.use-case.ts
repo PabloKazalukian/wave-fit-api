@@ -133,13 +133,20 @@ export class AssignRoutineDayUseCase {
       sessionId = newSession.id;
     }
 
-    // dayToUpdate.workoutSessionId = sessionId;
-    // dayToUpdate.edited = false;
-    // dayToUpdate.deleted = false;
-    // dayToUpdate.completed = false;
-    // await this.weekLogRepository.update(weekLog);
+    await this.weekLogRepository.updateDayField(weekLog.id, dayToUpdate.order, {
+      workoutSessionId: sessionId,
+      isRest: false,
+      status: 'pending',
+    });
 
-    // this.weekLogRepository.update1;
-    return dayToUpdate;
+    const updatedWeekLog = await this.weekLogRepository.findOne(
+      weekLog.id,
+      userId,
+    );
+    const updatedDay = updatedWeekLog?.days.find(
+      (d) => d.order === dayToUpdate.order,
+    );
+    if (!updatedDay) throw new NotFoundException('Day not found after update');
+    return updatedDay;
   }
 }

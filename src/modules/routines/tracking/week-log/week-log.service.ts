@@ -26,6 +26,7 @@ import {
   RemoveWorkoutSessionUseCase,
   RemoveWeekLogUseCase,
   RemoveExtraSessionUseCase,
+  AssignRoutineDayUseCase,
 } from './application/use-cases';
 import { UpdateDayWorkoutStatusInput } from './presentation/dto/update-day-workout-status.input';
 import {
@@ -56,6 +57,7 @@ export class WeekLogService {
     private readonly removeWeekLogUseCase: RemoveWeekLogUseCase,
     private readonly removeWorkoutSessionUseCase: RemoveWorkoutSessionUseCase,
     private readonly removeExtraSessionUseCase: RemoveExtraSessionUseCase,
+    private readonly assignRoutineDayUseCase: AssignRoutineDayUseCase,
   ) {}
 
   async create(
@@ -171,7 +173,6 @@ export class WeekLogService {
     return this.removeWorkoutSessionUseCase.execute(workoutSessionId, userId);
   }
 
-  // TODO: use-case
   async assignRoutineToDay(
     routineDayId: string,
     date: string, // LocalDate "yyyy-MM-dd"
@@ -179,108 +180,12 @@ export class WeekLogService {
     timezone: string = DEFAULT_TIMEZONE,
   ): Promise<WeekLogDayDomain> {
     try {
-      if (!isValidLocalDate(date)) {
-        throw new BadRequestException(
-          `date "${date}" must be in yyyy-MM-dd format`,
-        );
-      }
-
-      const routineDay = await this.routineDayService.findOne(routineDayId);
-      if (!routineDay) {
-        throw new NotFoundException(
-          `RoutineDay con ID "${routineDayId}" no encontrado`,
-        );
-      }
-
-      const weekLog = await this.findActiveWeekLog(userId);
-      if (!weekLog) {
-        throw new BadRequestException(
-          'No hay un WeekLog activo para el usuario',
-        );
-      }
-
-      // ✅ Comparar LocalDate string con la fecha de cada día (convertida desde UTC)
-      const dayToUpdate = weekLog.days.find((d) =>
-        isDateSameLocalDate(d.date, date, timezone),
+      return this.assignRoutineDayUseCase.execute(
+        routineDayId,
+        date,
+        userId,
+        timezone,
       );
-
-      if (!dayToUpdate) {
-        throw new BadRequestException(
-          `La fecha ${date} no pertenece al WeekLog activo`,
-        );
-      }
-
-      const exercises =
-        routineDay.exercises?.map((e: any) => ({
-          exerciseId: (
-            e.exercise?._id ||
-            e.exercise?.id ||
-            e.exercise ||
-            e.exerciseId ||
-            ''
-          ).toString(),
-          series: 0,
-          sets: [],
-        })) || [];
-
-      let sessionId: Types.ObjectId;
-
-      if (dayToUpdate.workoutSessionId) {
-        const existingSession = await this.workoutSessionModel
-          .findById(dayToUpdate.workoutSessionId)
-          .exec();
-
-        if (existingSession) {
-          existingSession.exercises = exercises;
-          existingSession.routineDayId = routineDayId;
-          existingSession.status = 'not_started';
-          existingSession.edited = false;
-          await existingSession.save();
-          sessionId = existingSession._id;
-        } else {
-          const newSession = await this.workoutSessionModel.create({
-            userId: new Types.ObjectId(userId),
-            weekLogId: weekLog.id,
-            date: localDateToUtc(date, timezone), // ✅ LocalDate → UTC
-            routineDayId,
-            exercises,
-            status: 'not_started',
-            notes: '',
-            edited: false,
-            deleted: false,
-          });
-          sessionId = newSession._id;
-        }
-      } else {
-        const newSession = await this.workoutSessionModel.create({
-          userId: new Types.ObjectId(userId),
-          weekLogId: weekLog.id,
-          date: localDateToUtc(date, timezone), // ✅ LocalDate → UTC
-          routineDayId,
-          exercises,
-          status: 'not_started',
-          notes: '',
-          edited: false,
-          deleted: false,
-        });
-        sessionId = newSession._id;
-      }
-
-      await this.weekLogModel.updateOne(
-        {
-          _id: new Types.ObjectId(weekLog.id),
-          'days.order': dayToUpdate.order,
-        },
-        {
-          $set: {
-            'days.$.workoutSessionId': sessionId,
-            'days.$.isRest': false,
-            'days.$.status': 'pending',
-          },
-        },
-      );
-
-      return this.findOneDay(weekLog.id, dayToUpdate.order, userId);
     } catch (error) {
       console.error('[assignRoutineToDay] Error:', error);
       throw error;
