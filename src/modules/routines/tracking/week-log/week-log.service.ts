@@ -90,6 +90,7 @@ export class WeekLogService {
     return this.findActiveWeekLogUseCase.execute(userId);
   }
 
+  //TODO: use-case
   async findOneDay(
     weekLogId: string,
     order: number,
