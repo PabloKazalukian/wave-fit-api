@@ -10,6 +10,11 @@ export class FindAllWeekLogsByUserUseCase {
   ) {}
 
   async execute(userId: string, limit: number = 5, offset: number = 0) {
-    return this.weekLogRepository.findAllByUser(userId, limit, offset);
+    const trackings = await this.weekLogRepository.findAllByUser(
+      userId,
+      limit,
+      offset,
+    );
+    return trackings;
   }
 }

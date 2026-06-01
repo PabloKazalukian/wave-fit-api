@@ -75,6 +75,7 @@ export class WeekLogService {
     limit: number = 5,
     offset: number = 0,
   ): Promise<WeekLogDomain[]> {
+    console.log('[aca]', limit, offset);
     return this.findAllWeekLogsByUserUseCase.execute(userId, limit, offset);
   }
 
