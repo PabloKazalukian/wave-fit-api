@@ -37,7 +37,7 @@ export class CreateWeekLogUseCase {
     }
 
     // 3. Validate no active week exists
-    await this.validator.validateCreation(input, new Types.ObjectId(userId));
+    await this.validator.validateCreation(input, userId);
 
     // 4. Fetch Plan if necessary
     let plan: any = null;

@@ -7,7 +7,6 @@ import {
 } from '@nestjs/common';
 import { CreateWeekLogInput } from '../../presentation/dto/create-week-log.input';
 import { WeekLog } from '../../infrastructure/schemas/week-log.schema';
-import { Types } from 'mongoose';
 import {
   differenceInLocalDays,
   isValidLocalDate,
@@ -25,7 +24,7 @@ export class WeekLogValidator {
 
   async validateCreation(
     createWeekLogInput: CreateWeekLogInput,
-    userId: Types.ObjectId,
+    userId: string,
   ) {
     const { startDate, endDate } = createWeekLogInput;
 
@@ -39,7 +38,7 @@ export class WeekLogValidator {
       throw new ForbiddenException('Week must be exactly 7 days');
     }
 
-    const existing = await this.weekLogRepository.findActive(userId.toString());
+    const existing = await this.weekLogRepository.findActive(userId);
 
     if (existing !== null) {
       throw new ConflictException('Already active week');

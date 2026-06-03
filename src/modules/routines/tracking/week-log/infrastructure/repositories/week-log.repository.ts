@@ -21,8 +21,8 @@ export class WeekLogRepository implements IWeekLogRepository {
   async findOne(id: string, userId: string): Promise<WeekLogDomain | null> {
     const doc = await this.weekLogModel
       .findOne({
-        _id: id,
-        userId: userId,
+        _id: new Types.ObjectId(id),
+        userId: new Types.ObjectId(userId),
         deleted: { $ne: true },
       })
       .populate('days.workoutSessionId')
@@ -37,10 +37,9 @@ export class WeekLogRepository implements IWeekLogRepository {
     limit?: number,
     offset?: number,
   ): Promise<WeekLogDomain[]> {
-    // console.log('[userID]', userId);
     const query = this.weekLogModel
       .find({
-        userId: userId,
+        userId: new Types.ObjectId(userId),
         active: false,
         deleted: { $ne: true },
       })

@@ -62,12 +62,9 @@ export class WeekLogService {
 
   async create(
     createWeekLogInput: CreateWeekLogInput,
-    userId: Types.ObjectId,
+    userId: string,
   ): Promise<WeekLogDomain | null> {
-    return this.createWeekLogUseCase.execute(
-      createWeekLogInput,
-      userId.toString(),
-    );
+    return this.createWeekLogUseCase.execute(createWeekLogInput, userId);
   }
 
   async findAllByUser(

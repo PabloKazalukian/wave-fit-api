@@ -34,7 +34,8 @@ describe('WeekLogResolver', () => {
     findOne: jest.fn(),
     findActiveWeekLog: jest.fn(),
     // getCurrentWorkoutSession: jest.fn(),
-    update: jest.fn(),
+    updateWeekLog: jest.fn(),
+    updateDay: jest.fn(),
     remove: jest.fn(),
   };
 
@@ -118,7 +119,7 @@ describe('WeekLogResolver', () => {
 
       expect(service.create).toHaveBeenCalledWith(
         input,
-        expect.any(Types.ObjectId),
+        expect.any(String),
       );
     });
 
@@ -150,11 +151,11 @@ describe('WeekLogResolver', () => {
 
       expect(service.create).toHaveBeenCalledWith(
         createInput,
-        expect.any(Types.ObjectId),
+        expect.any(String),
       );
 
       const passedUserId = mockWeekLogService.create.mock.calls[0][1];
-      expect(passedUserId.toHexString()).toBe(mockUserId);
+      expect(passedUserId).toBe(mockUserId);
 
       expect(result).toEqual(mockWeekLog);
     });
@@ -178,13 +179,13 @@ describe('WeekLogResolver', () => {
 
       expect(service.create).toHaveBeenCalledWith(
         createInput,
-        expect.any(Types.ObjectId),
+        expect.any(String),
       );
 
       const createMock = service.create as jest.Mock;
 
       const passedUserId = createMock.mock.calls[0][1];
-      expect(passedUserId.toHexString()).toBe(validUserId);
+      expect(passedUserId).toBe(validUserId);
 
       expect(result).toBe(mockWeekLog);
     });
@@ -201,7 +202,7 @@ describe('WeekLogResolver', () => {
 
       expect(service.create).toHaveBeenCalledWith(
         validInputtoCreate,
-        expect.any(Types.ObjectId),
+        expect.any(String),
       );
       expect(response).toBe(result);
     });
@@ -400,16 +401,16 @@ describe('WeekLogResolver', () => {
         ...updateInput,
       };
 
-      mockWeekLogService.update.mockResolvedValue(updatedWeekLog);
+      mockWeekLogService.updateWeekLog.mockResolvedValue(updatedWeekLog);
 
       const result = await resolver.updateWeekLog(
         updateInput,
         mockContext(validUserId),
       );
 
-      expect(service.update).toHaveBeenCalledWith(
+      expect(service.updateWeekLog).toHaveBeenCalledWith(
         updateInput,
-        mockContext(validUserId),
+        validUserId,
       );
       expect(result?.notes).toBe('Updated notes');
       expect(result?.completed).toBe(true);
@@ -421,7 +422,7 @@ describe('WeekLogResolver', () => {
         notes: 'Updated',
       };
 
-      mockWeekLogService.update.mockRejectedValue(
+      mockWeekLogService.updateWeekLog.mockRejectedValue(
         new Error('WeekLog not found'),
       );
 
@@ -436,7 +437,7 @@ describe('WeekLogResolver', () => {
         notes: 'Updated',
       };
 
-      mockWeekLogService.update.mockRejectedValue(new Error('Forbidden'));
+      mockWeekLogService.updateWeekLog.mockRejectedValue(new Error('Forbidden'));
 
       await expect(
         resolver.updateWeekLog(updateInput, mockContext(validUserId)),
@@ -454,7 +455,7 @@ describe('WeekLogResolver', () => {
         completed: true,
       };
 
-      mockWeekLogService.update.mockResolvedValue(updatedWeekLog);
+      mockWeekLogService.updateWeekLog.mockResolvedValue(updatedWeekLog);
 
       const result = await resolver.updateWeekLog(
         updateInput,
@@ -487,7 +488,7 @@ describe('WeekLogResolver', () => {
 
       expect(service.remove).toHaveBeenCalledWith(
         mockWeekLogId,
-        mockContext(validUserId),
+        validUserId,
       );
       expect(result).toEqual(mockWeekLog);
     });
@@ -563,7 +564,7 @@ describe('WeekLogResolver', () => {
       expect(result).toBeDefined();
       expect(service.create).toHaveBeenCalledWith(
         validInput,
-        mockContext(validUserId),
+        validUserId,
       );
     });
 
@@ -574,7 +575,7 @@ describe('WeekLogResolver', () => {
         completed: true,
       };
 
-      mockWeekLogService.update.mockResolvedValue({
+      mockWeekLogService.updateWeekLog.mockResolvedValue({
         ...mockWeekLog,
         ...validInput,
       });
@@ -585,9 +586,9 @@ describe('WeekLogResolver', () => {
       );
 
       expect(result).toBeDefined();
-      expect(service.update).toHaveBeenCalledWith(
+      expect(service.updateWeekLog).toHaveBeenCalledWith(
         validInput,
-        mockContext(validUserId),
+        validUserId,
       );
     });
   });

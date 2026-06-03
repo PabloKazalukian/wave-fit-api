@@ -65,13 +65,13 @@ describe('WeekLogService', () => {
     create: jest.fn(),
   };
 
-  const mockUserId = new Types.ObjectId();
+  const mockUserId = new Types.ObjectId().toString();
   const mockWeekLogId = new Types.ObjectId();
   const mockPlanId = new Types.ObjectId().toString();
 
   const mockWeekLog = {
     id: mockWeekLogId.toString(),
-    userId: mockUserId.toString(),
+    userId: mockUserId,
     startDate: new Date('2024-01-01'),
     endDate: new Date('2024-01-07'),
     days: [],
@@ -164,7 +164,7 @@ describe('WeekLogService', () => {
           startDate: input.startDate,
           endDate: input.endDate,
         }),
-        mockUserId.toString(),
+        mockUserId,
       );
 
       expect(result).toMatchObject({
@@ -234,16 +234,16 @@ describe('WeekLogService', () => {
   describe('findAll', () => {
     it('should return all week logs for authenticated user', async () => {
       const logs = [
-        { id: new Types.ObjectId().toString(), userId: mockUserId.toString() },
-        { id: new Types.ObjectId().toString(), userId: mockUserId.toString() },
+        { id: new Types.ObjectId().toString(), userId: mockUserId },
+        { id: new Types.ObjectId().toString(), userId: mockUserId },
       ];
 
       mockFindAllWeekLogsByUserUseCase.execute.mockResolvedValue(logs);
 
-      const result = await service.findAllByUser(mockUserId.toHexString());
+      const result = await service.findAllByUser(mockUserId);
 
       expect(mockFindAllWeekLogsByUserUseCase.execute).toHaveBeenCalledWith(
-        mockUserId.toHexString(),
+        mockUserId,
         5,
         0,
       );
@@ -254,21 +254,21 @@ describe('WeekLogService', () => {
     it('should return empty array if user has no week logs', async () => {
       mockFindAllWeekLogsByUserUseCase.execute.mockResolvedValue([]);
 
-      const result = await service.findAllByUser(mockUserId.toHexString());
+      const result = await service.findAllByUser(mockUserId);
 
       expect(result).toEqual([]);
     });
 
     it('should only return week logs belonging to the authenticated user', async () => {
       const logs = [
-        { id: new Types.ObjectId().toString(), userId: mockUserId.toString() },
+        { id: new Types.ObjectId().toString(), userId: mockUserId },
       ];
 
       mockFindAllWeekLogsByUserUseCase.execute.mockResolvedValue(logs);
 
-      const result = await service.findAllByUser(mockUserId.toHexString());
+      const result = await service.findAllByUser(mockUserId);
 
-      expect(result?.every((log) => log.userId === mockUserId.toString())).toBe(
+      expect(result?.every((log) => log.userId === mockUserId)).toBe(
         true,
       );
     });
@@ -294,12 +294,12 @@ describe('WeekLogService', () => {
 
       const result = await service.findOne(
         mockWeekLogId.toString(),
-        mockUserId.toString(),
+        mockUserId,
       );
 
       expect(mockWeekLogModel.findOne).toHaveBeenCalledWith({
         _id: mockWeekLogId.toString(),
-        userId: mockUserId.toString(),
+        userId: mockUserId,
       });
       expect(result).toBeDefined();
     });
@@ -312,7 +312,7 @@ describe('WeekLogService', () => {
       mockWeekLogModel.findOne.mockReturnValue(mockPopulateQuery);
 
       await expect(
-        service.findOne(mockWeekLogId.toHexString(), mockUserId.toHexString()),
+        service.findOne(mockWeekLogId.toHexString(), mockUserId),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -336,10 +336,10 @@ describe('WeekLogService', () => {
       };
       mockWeekLogModel.findOne.mockReturnValue(mockPopulateQuery);
 
-      const result = await service.findActiveWeekLog(mockUserId.toString());
+      const result = await service.findActiveWeekLog(mockUserId);
 
       expect(mockWeekLogModel.findOne).toHaveBeenCalledWith({
-        userId: mockUserId.toString(),
+        userId: mockUserId,
         active: true,
       });
       expect(result).toBeDefined();
@@ -352,7 +352,7 @@ describe('WeekLogService', () => {
       };
       mockWeekLogModel.findOne.mockReturnValue(mockPopulateQuery);
 
-      const result = await service.findActiveWeekLog(mockUserId.toString());
+      const result = await service.findActiveWeekLog(mockUserId);
 
       expect(result).toBeNull();
     });
@@ -375,7 +375,7 @@ describe('WeekLogService', () => {
       };
       mockWeekLogModel.findOne.mockReturnValue(mockPopulateQuery);
 
-      const result = await service.findActiveWeekLog(mockUserId.toString());
+      const result = await service.findActiveWeekLog(mockUserId);
 
       expect(result).toBeDefined();
     });

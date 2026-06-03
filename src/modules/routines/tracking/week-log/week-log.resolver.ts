@@ -28,19 +28,33 @@ import { Audit } from 'src/modules/audit-logs/audit-logs.decorator';
 export class WeekLogResolver {
   constructor(private readonly weekLogService: WeekLogService) {}
 
-  @Mutation(() => WeekLog)
-  async createWeekLog(
-    @Args('createWeekLogInput') createWeekLogInput: CreateWeekLogInput,
-    @Context() context,
-  ) {
+  private extractUserId(context: any): string {
+    // console.log('[context]', context);
     const userId =
       context?.req?.user?._id?.toString() ||
       context?.req?.user?.id ||
       context?.req?.user?.userId;
 
+    console.log(
+      '[UserId]',
+      userId,
+      typeof userId,
+      Types.ObjectId.isValid(userId),
+    );
+
     if (!userId || !Types.ObjectId.isValid(userId)) {
       throw new BadRequestException('Invalid user id');
     }
+
+    return userId;
+  }
+
+  @Mutation(() => WeekLog)
+  async createWeekLog(
+    @Args('createWeekLogInput') createWeekLogInput: CreateWeekLogInput,
+    @Context() context,
+  ) {
+    const userId = this.extractUserId(context);
 
     const createdWeekLog = await this.weekLogService.create(
       createWeekLogInput,
@@ -62,14 +76,7 @@ export class WeekLogResolver {
     @Args('offset', { type: () => Int, nullable: true, defaultValue: 0 })
     offset: number,
   ) {
-    const userId =
-      context?.req?.user?._id?.toString() ||
-      context?.req?.user?.id ||
-      context?.req?.user?.userId;
-
-    if (!userId || !Types.ObjectId.isValid(userId)) {
-      throw new BadRequestException('Invalid user id');
-    }
+    const userId = this.extractUserId(context);
 
     return this.weekLogService.findAllByUser(userId, limit, offset);
   }
@@ -79,27 +86,14 @@ export class WeekLogResolver {
     @Args('id', { type: () => String }) id: string,
     @Context() context,
   ) {
-    const userId =
-      context?.req?.user?._id?.toString() ||
-      context?.req?.user?.id ||
-      context?.req?.user?.userId;
+    const userId = this.extractUserId(context);
 
-    if (!userId || !Types.ObjectId.isValid(userId)) {
-      throw new BadRequestException('Invalid user id');
-    }
     return this.weekLogService.findOne(id, userId);
   }
 
   @Query(() => ActiveWeekLogResponse, { name: 'activeWeekLog' })
   async findActiveWeekLog(@Context() context) {
-    const userId =
-      context?.req?.user?._id?.toString() ||
-      context?.req?.user?.id ||
-      context?.req?.user?.userId;
-
-    if (!userId || !Types.ObjectId.isValid(userId)) {
-      throw new BadRequestException('Invalid user id');
-    }
+    const userId = this.extractUserId(context);
 
     const week = await this.weekLogService.findActiveWeekLog(userId);
 
@@ -112,14 +106,8 @@ export class WeekLogResolver {
 
   @Query(() => WeekLog, { name: 'currentWorkoutSession' })
   async getCurrentWorkoutSession(@Context() context) {
-    const userId =
-      context?.req?.user?._id?.toString() ||
-      context?.req?.user?.id ||
-      context?.req?.user?.userId;
+    const userId = this.extractUserId(context);
 
-    if (!userId || !Types.ObjectId.isValid(userId)) {
-      throw new BadRequestException('Invalid user id');
-    }
     return this.weekLogService.findActiveWeekLog(userId);
   }
 
@@ -132,14 +120,7 @@ export class WeekLogResolver {
     @Args('input') input: UpdateWeekLogDayUnifiedInput,
     @Context() context,
   ) {
-    const userId =
-      context?.req?.user?._id?.toString() ||
-      context?.req?.user?.id ||
-      context?.req?.user?.userId;
-
-    if (!userId || !Types.ObjectId.isValid(userId)) {
-      throw new BadRequestException('Invalid user id');
-    }
+    const userId = this.extractUserId(context);
 
     return this.weekLogService.updateDay(input, userId);
   }
@@ -149,13 +130,8 @@ export class WeekLogResolver {
     @Args('input') input: UpdateDayWorkoutStatusInput,
     @Context() context,
   ) {
-    const userId =
-      context?.req?.user?._id?.toString() ||
-      context?.req?.user?.id ||
-      context?.req?.user?.userId;
-    if (!userId || !Types.ObjectId.isValid(userId)) {
-      throw new BadRequestException('Invalid user id');
-    }
+    const userId = this.extractUserId(context);
+
     return this.weekLogService.updateDayWorkoutStatus(input, userId);
   }
 
@@ -171,14 +147,7 @@ export class WeekLogResolver {
     @Args('input') input: UpdateWeekLogInput,
     @Context() context,
   ) {
-    const userId =
-      context?.req?.user?._id?.toString() ||
-      context?.req?.user?.id ||
-      context?.req?.user?.userId;
-
-    if (!userId || !Types.ObjectId.isValid(userId)) {
-      throw new BadRequestException('Invalid user id');
-    }
+    const userId = this.extractUserId(context);
 
     return this.weekLogService.updateWeekLog(input, userId);
   }
@@ -188,10 +157,8 @@ export class WeekLogResolver {
     @Args('weekLogId', { type: () => String }) weekLogId: string,
     @Context() context,
   ) {
-    const userId =
-      context?.req?.user?._id?.toString() ||
-      context?.req?.user?.id ||
-      context?.req?.user?.userId;
+    const userId = this.extractUserId(context);
+
     return this.weekLogService.syncDaysWithSessions(weekLogId, userId);
   }
 
@@ -202,13 +169,8 @@ export class WeekLogResolver {
     @Args('date', { type: () => String }) date: string,
     @Context() context,
   ) {
-    const userId =
-      context?.req?.user?._id?.toString() ||
-      context?.req?.user?.id ||
-      context?.req?.user?.userId;
-    if (!userId || !Types.ObjectId.isValid(userId)) {
-      throw new BadRequestException('Invalid user id');
-    }
+    const userId = this.extractUserId(context);
+
     return this.weekLogService.assignRoutineToDay(routineDayId, date, userId);
   }
 
@@ -217,7 +179,8 @@ export class WeekLogResolver {
     @Args('workoutSessionId', { type: () => String }) workoutSessionId: string,
     @Context() context,
   ) {
-    const userId = context.req.user?.id;
+    const userId = this.extractUserId(context);
+
     return this.weekLogService.removeWorkoutSessionFromDay(
       workoutSessionId,
       userId,
@@ -230,7 +193,8 @@ export class WeekLogResolver {
     @Args('extraSessionId', { type: () => String }) extraSessionId: string,
     @Context() context,
   ) {
-    const userId = context.req.user?.id;
+    const userId = this.extractUserId(context);
+
     return this.weekLogService.removeExtraSessionFromDay(
       extraSessionId,
       userId,
@@ -244,10 +208,8 @@ export class WeekLogResolver {
     @Args('id', { type: () => String }) id: string,
     @Context() context,
   ) {
-    const userId = context.req.user?.id;
-    if (!userId || !Types.ObjectId.isValid(userId)) {
-      throw new BadRequestException('Invalid user id');
-    }
+    const userId = this.extractUserId(context);
+
     return this.weekLogService.remove(id, userId);
   }
 }

@@ -13,10 +13,10 @@ export enum StatusWorkoutSessionEnum {
 
 @Schema({ timestamps: true })
 export class WorkoutSession {
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   userId: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'WeekLog', default: null, index: true })
+  @Prop({ type: Types.ObjectId, ref: 'WeekLog', default: null })
   weekLogId: Types.ObjectId | null;
 
   @Prop({ type: Date, required: true })

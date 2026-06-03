@@ -33,10 +33,10 @@ const WeekLogDaySchema = SchemaFactory.createForClass(WeekLogDay);
 
 @Schema({ timestamps: true })
 export class WeekLog {
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   userId: Types.ObjectId;
 
-  @Prop({ type: Date, required: true, index: true })
+  @Prop({ type: Date, required: true })
   startDate: Date;
 
   @Prop({ type: Date, required: true })
@@ -51,7 +51,7 @@ export class WeekLog {
   })
   days: WeekLogDay[];
 
-  @Prop({ type: Boolean, default: false, index: true })
+  @Prop({ type: Boolean, default: false })
   completed: boolean;
 
   @Prop({ type: Boolean, default: true, index: true })
