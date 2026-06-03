@@ -1,6 +1,5 @@
 import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { WeekLogDomain } from '../week-log/domain/entities/week-log.domain';
-import { ExercisePerformance } from './schema/exercise-performance.schema';
 import { WorkoutSession } from './schema/workout-session.schema';
 import { CreateWorkoutSessionInput } from './dto/create-workout-session.input';
 import { UpdateWorkoutSessionInput } from './dto/update-workout-session.input';
@@ -37,7 +36,7 @@ export class WorkoutSessionValidator {
     }
   }
 
-  private validateExercises(exercises: ExercisePerformance[]) {
+  private validateExercises(exercises: { exerciseId: string; series: number; sets: any[] }[]) {
     for (const exercise of exercises) {
       if (exercise.series !== exercise.sets.length) {
         throw new BadRequestException(

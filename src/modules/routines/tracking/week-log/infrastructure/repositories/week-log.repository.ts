@@ -21,7 +21,7 @@ export class WeekLogRepository implements IWeekLogRepository {
   async findOne(id: string, userId: string): Promise<WeekLogDomain | null> {
     const doc = await this.weekLogModel
       .findOne({
-        _id: new Types.ObjectId(id),
+        _id: id,
         userId: userId,
         deleted: { $ne: true },
       })
@@ -37,6 +37,7 @@ export class WeekLogRepository implements IWeekLogRepository {
     limit?: number,
     offset?: number,
   ): Promise<WeekLogDomain[]> {
+    // console.log('[userID]', userId);
     const query = this.weekLogModel
       .find({
         userId: userId,
@@ -74,7 +75,7 @@ export class WeekLogRepository implements IWeekLogRepository {
   }
 
   async findPlanById(planId: string): Promise<any> {
-    return this.weekLogModel.findById(new Types.ObjectId(planId)).exec();
+    return this.weekLogModel.findById(planId).exec();
   }
 
   // ─── Commands ────────────────────────────────────────────────────────────────
@@ -84,7 +85,9 @@ export class WeekLogRepository implements IWeekLogRepository {
       order: d.order,
       date: d.date,
       isRest: d.isRest,
-      workoutSessionId: d.workoutSessionId,
+      workoutSessionId: d.workoutSessionId
+        ? new Types.ObjectId(d.workoutSessionId)
+        : null,
       extraSessionIds: (d.extraSessionIds ?? []).map((id: any) =>
         typeof id === 'string' ? new Types.ObjectId(id) : id,
       ),
@@ -118,7 +121,9 @@ export class WeekLogRepository implements IWeekLogRepository {
       order: d.order,
       date: d.date,
       isRest: d.isRest,
-      workoutSessionId: d.workoutSessionId,
+      workoutSessionId: d.workoutSessionId
+        ? new Types.ObjectId(d.workoutSessionId)
+        : null,
       extraSessionIds: (d.extraSessionIds ?? []).map((id: any) =>
         typeof id === 'string' ? new Types.ObjectId(id) : id,
       ),
@@ -206,7 +211,7 @@ export class WeekLogRepository implements IWeekLogRepository {
     }
 
     await this.weekLogModel.updateOne(
-      { _id: weekLogId, 'days.order': order },
+      { _id: new Types.ObjectId(weekLogId), 'days.order': order },
       { $set: setPayload },
     );
   }
@@ -248,7 +253,9 @@ export class WeekLogRepository implements IWeekLogRepository {
         $set: {
           'days.$.isRest': data.isRest,
           'days.$.status': data.status,
-          'days.$.workoutSessionId': data.workoutSessionId,
+          'days.$.workoutSessionId': data.workoutSessionId
+            ? new Types.ObjectId(data.workoutSessionId)
+            : null,
         },
       },
     );
@@ -282,7 +289,11 @@ export class WeekLogRepository implements IWeekLogRepository {
         day.order,
         day.date,
         day.isRest,
-        isPopulated ? session._id : (session ?? null),
+        isPopulated
+          ? session._id.toString()
+          : session
+            ? session.toString()
+            : null,
         (day.extraSessionIds ?? []).map((id: any) => {
           if (id && typeof id === 'object' && id._id) {
             return id._id.toString();

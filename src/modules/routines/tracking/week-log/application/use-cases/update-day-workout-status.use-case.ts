@@ -14,7 +14,6 @@ import {
 } from 'src/common/utils/date.utils';
 import { UpdateDayWorkoutStatusInput } from '../../presentation/dto/update-day-workout-status.input';
 import { WorkoutSessionService } from '../../../workout-session/workout-session.service';
-import { Types } from 'mongoose';
 import { StatusWorkoutSessionEnum } from '../../../workout-session/schema/workout-session.schema';
 import { WeekLogService } from '../../week-log.service';
 import type { IWeekLogRepository } from '../../domain/interfaces/repositories/week-log.repository.interface';
@@ -78,7 +77,7 @@ export class UpdateDayWorkoutStatusUseCase {
           },
           userId,
         );
-        day.workoutSessionId = new Types.ObjectId(newSession.id);
+        day.workoutSessionId = newSession.id;
       } else {
         await this.workoutSessionService.update(
           day.workoutSessionId.toString(),

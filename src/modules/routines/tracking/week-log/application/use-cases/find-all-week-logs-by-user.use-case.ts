@@ -15,6 +15,7 @@ export class FindAllWeekLogsByUserUseCase {
       limit,
       offset,
     );
+    // console.log('[findAllWeekLogsByUser] trackings:', { trackings });
     return trackings;
   }
 }

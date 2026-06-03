@@ -1,8 +1,8 @@
-import { Types } from 'mongoose';
+import { randomBytes } from 'crypto';
 import { LocalDate, localDateToUtc, addDaysToLocalDate } from 'src/common/utils/date.utils';
 
 export interface WorkoutSessionCreationData {
-  _id: Types.ObjectId;
+  _id: string;
   userId: string;
   weekLogId: string;
   /** Date UTC para guardar en MongoDB — derivado de LocalDate + timezone */
@@ -16,7 +16,7 @@ export class WeekLogDayDomain {
   public readonly order: number;
   public readonly date: Date;
   private _isRest: boolean;
-  private _workoutSessionId: Types.ObjectId | null;
+  private _workoutSessionId: string | null;
   private _extraSessionIds: string[];
   private _status: string;
   public readonly exercises: any[];
@@ -25,7 +25,7 @@ export class WeekLogDayDomain {
     order: number,
     date: Date,
     isRest: boolean,
-    workoutSessionId: Types.ObjectId | null,
+    workoutSessionId: string | null,
     extraSessionIds: string[],
     status: string,
     exercises: any[] = [],
@@ -47,11 +47,11 @@ export class WeekLogDayDomain {
     this._isRest = value;
   }
 
-  get workoutSessionId(): Types.ObjectId | null {
+  get workoutSessionId(): string | null {
     return this._workoutSessionId;
   }
 
-  set workoutSessionId(value: Types.ObjectId | null) {
+  set workoutSessionId(value: string | null) {
     this._workoutSessionId = value;
   }
 
@@ -75,7 +75,7 @@ export class WeekLogDayDomain {
     order: number,
     date: Date,
     isRest: boolean,
-    workoutSessionId: Types.ObjectId | null = null,
+    workoutSessionId: string | null = null,
   ): WeekLogDayDomain {
     return new WeekLogDayDomain(order, date, isRest, workoutSessionId, [], 'pending');
   }
@@ -171,7 +171,7 @@ export class WeekLogDomain {
       const dayLocalDate: LocalDate = addDaysToLocalDate(startDate, index);
       const dayUtcDate: Date = localDateToUtc(dayLocalDate, timezone);
 
-      let workoutSessionId: Types.ObjectId | null = null;
+      let workoutSessionId: string | null = null;
 
       if (plan && plan.week && plan.week.length === 7 && !isRestMap[index]) {
         const planDay = plan.week[index];
@@ -184,10 +184,10 @@ export class WeekLogDomain {
               sets: [],
             })) || [];
 
-          const sessionObjectId = new Types.ObjectId();
-          workoutSessionId = sessionObjectId;
+          const sessionId = randomBytes(12).toString('hex');
+          workoutSessionId = sessionId;
           sessionsToInsert.push({
-            _id: sessionObjectId,
+            _id: sessionId,
             userId,
             weekLogId,
             date: dayUtcDate, // ✅ Date UTC derivada del LocalDate del usuario

@@ -12,13 +12,13 @@ export class WeekLogDay {
   @Field()
   isRest: boolean;
 
-  @Field(() => String, { nullable: true })
+  @Field(() => ID, { nullable: true })
   workoutSessionId?: string | null;
 
   @Field(() => [ExercisePerformance], { nullable: true })
   exercises?: ExercisePerformance[];
 
-  @Field(() => [String])
+  @Field(() => [ID])
   extraSessionIds: string[];
 
   @Field()
@@ -30,7 +30,7 @@ export class WeekLog {
   @Field(() => ID)
   id: string;
 
-  @Field(() => String)
+  @Field(() => ID)
   userId: string;
 
   @Field()
@@ -39,7 +39,7 @@ export class WeekLog {
   @Field()
   endDate: Date;
 
-  @Field(() => String, { nullable: true })
+  @Field(() => ID, { nullable: true })
   planId?: string | null;
 
   @Field(() => [WeekLogDay]) // 👈 esto es lo que falta

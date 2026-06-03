@@ -1,5 +1,5 @@
-import { Inject, Injectable, ForbiddenException } from '@nestjs/common';
-import { Model, Types } from 'mongoose';
+import { Inject, Injectable, ForbiddenException, forwardRef } from '@nestjs/common';
+import { Types } from 'mongoose';
 import { differenceInLocalDays, isValidLocalDate } from 'src/common/utils/date.utils';
 import type { IWeekLogRepository } from '../../domain/interfaces/repositories/week-log.repository.interface';
 import { WEEK_LOG_REPOSITORY } from '../../domain/interfaces/repositories/week-log.repository.interface';
@@ -7,8 +7,7 @@ import { CreateWeekLogInput } from '../../presentation/dto/create-week-log.input
 import { WeekLogDomain } from '../../domain/entities/week-log.domain';
 import { WeekLogValidator } from '../validators/week-log.validator';
 import { RoutinePlanService } from 'src/modules/routines/templates/routine-plan/routine-plan.service';
-import { InjectModel } from '@nestjs/mongoose';
-import { WorkoutSession } from '../../../workout-session/schema/workout-session.schema';
+import { WorkoutSessionService } from '../../../workout-session/workout-session.service';
 
 @Injectable()
 export class CreateWeekLogUseCase {
@@ -17,8 +16,8 @@ export class CreateWeekLogUseCase {
     private readonly weekLogRepository: IWeekLogRepository,
     private readonly validator: WeekLogValidator,
     private routinePlanService: RoutinePlanService,
-    @InjectModel(WorkoutSession.name)
-    private workoutSessionModel: Model<WorkoutSession>,
+    @Inject(forwardRef(() => WorkoutSessionService))
+    private workoutSessionService: WorkoutSessionService,
   ) {}
 
   async execute(
@@ -59,7 +58,7 @@ export class CreateWeekLogUseCase {
     );
 
     if (sessions.length > 0) {
-      await this.workoutSessionModel.insertMany(sessions);
+      await this.workoutSessionService.insertMany(sessions);
     }
 
     // 6. Persistence

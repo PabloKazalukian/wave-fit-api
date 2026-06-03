@@ -11,7 +11,7 @@ export class SetPerformance {
 
 @ObjectType()
 export class ExercisePerformance {
-  @Field()
+  @Field(() => ID)
   exerciseId: string;
 
   @Field(() => Int)
@@ -29,16 +29,16 @@ export class WorkoutSession {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => ID)
   userId: string;
 
-  @Field()
+  @Field(() => ID)
   weekLogId: string;
 
   @Field()
   date: Date;
 
-  @Field({ nullable: true })
+  @Field(() => ID, { nullable: true })
   routineDayId?: string;
 
   @Field(() => [ExercisePerformance])

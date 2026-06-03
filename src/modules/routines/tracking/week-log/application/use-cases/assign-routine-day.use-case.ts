@@ -83,27 +83,28 @@ export class AssignRoutineDayUseCase {
         series: 0,
         sets: [],
       })) || [];
-    let sessionId: Types.ObjectId;
+    let sessionId: string;
 
     if (dayToUpdate.workoutSessionId) {
       const existingSession = await this.workoutSessionService.findOne(
-        dayToUpdate.workoutSessionId.toString(),
+        dayToUpdate.workoutSessionId,
         userId,
       );
 
       if (existingSession) {
         existingSession.exercises = exercises;
-        existingSession.routineDayId = routineDayId;
+        existingSession.routineDayId = routineDayId
+          ? new Types.ObjectId(routineDayId)
+          : undefined;
         existingSession.status = 'not_started';
         existingSession.edited = false;
         await existingSession.save();
-        sessionId = existingSession._id;
+        sessionId = existingSession.id;
       } else {
         const newSession = await this.workoutSessionService.create(
           {
-            //   userId: new Types.ObjectId(userId),
             weekLogId: weekLog.id,
-            date: localDateToUtc(date, timezone), // ✅ LocalDate → UTC
+            date: localDateToUtc(date, timezone),
             routineDayId,
             exercises,
             status: StatusWorkoutSessionEnum.NOT_STARTED,
@@ -118,9 +119,8 @@ export class AssignRoutineDayUseCase {
     } else {
       const newSession = await this.workoutSessionService.create(
         {
-          // userId: new Types.ObjectId(userId),
           weekLogId: weekLog.id,
-          date: localDateToUtc(date, timezone), // ✅ LocalDate → UTC
+          date: localDateToUtc(date, timezone),
           routineDayId,
           exercises,
           status: StatusWorkoutSessionEnum.NOT_STARTED,

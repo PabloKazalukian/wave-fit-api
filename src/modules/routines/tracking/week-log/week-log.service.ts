@@ -75,7 +75,6 @@ export class WeekLogService {
     limit: number = 5,
     offset: number = 0,
   ): Promise<WeekLogDomain[]> {
-    console.log('[aca]', limit, offset);
     return this.findAllWeekLogsByUserUseCase.execute(userId, limit, offset);
   }
 
@@ -130,8 +129,8 @@ export class WeekLogService {
     if (!weekLog) throw new NotFoundException('WeekLog not found');
 
     const sessions = await this.workoutSessionModel.find({
-      weekLogId,
-      userId,
+      weekLogId: new Types.ObjectId(weekLogId),
+      userId: new Types.ObjectId(userId),
     });
 
     let updated = false;

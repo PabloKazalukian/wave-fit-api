@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 import {
   ExercisePerformance,
   ExercisePerformanceSchema,
@@ -13,17 +13,17 @@ export enum StatusWorkoutSessionEnum {
 
 @Schema({ timestamps: true })
 export class WorkoutSession {
-  @Prop({ type: String, required: true })
-  userId: string;
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
+  userId: Types.ObjectId;
 
-  @Prop({ type: String, default: null })
-  weekLogId: string | null;
+  @Prop({ type: Types.ObjectId, ref: 'WeekLog', default: null, index: true })
+  weekLogId: Types.ObjectId | null;
 
   @Prop({ type: Date, required: true })
   date: Date;
 
-  @Prop({ type: String })
-  routineDayId?: string;
+  @Prop({ type: Types.ObjectId, ref: 'RoutineDay' })
+  routineDayId?: Types.ObjectId;
 
   @Prop({ type: [ExercisePerformanceSchema], required: true })
   exercises: ExercisePerformance[];

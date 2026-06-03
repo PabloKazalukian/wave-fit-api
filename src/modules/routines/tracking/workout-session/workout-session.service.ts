@@ -95,20 +95,29 @@ export class WorkoutSessionService {
 
   findAllByUser(userId: string): Promise<WorkoutSession[]> {
     return this.sessionModel
-      .find({ userId, deleted: { $ne: true } })
+      .find({ userId: new Types.ObjectId(userId), deleted: { $ne: true } })
       .populate('exercises')
       .exec();
   }
 
-  findOne(id: string, userId: string) {
+  async findOne(id: string, userId: string) {
     return this.sessionModel
-      .findOne({ _id: id, userId, deleted: { $ne: true } })
+      .findOne({ _id: new Types.ObjectId(id), userId: new Types.ObjectId(userId), deleted: { $ne: true } })
       .populate('exercises')
       .exec();
   }
 
   async insertMany(sessions: WorkoutSessionCreationData[]) {
-    return this.sessionModel.insertMany(sessions);
+    const sessionsWithObjectIds = sessions.map((s) => ({
+      ...s,
+      _id: new Types.ObjectId(s._id),
+      userId: new Types.ObjectId(s.userId),
+      weekLogId: s.weekLogId ? new Types.ObjectId(s.weekLogId) : undefined,
+      routineDayId: s.routineDayId
+        ? new Types.ObjectId(s.routineDayId)
+        : undefined,
+    }));
+    return this.sessionModel.insertMany(sessionsWithObjectIds);
   }
 
   /**
@@ -138,7 +147,7 @@ export class WorkoutSessionService {
 
     return this.sessionModel
       .findOne({
-        userId,
+        userId: new Types.ObjectId(userId),
         deleted: { $ne: true },
         date: {
           $gte: startUtc,
@@ -155,8 +164,8 @@ export class WorkoutSessionService {
     userId: string,
   ): Promise<WorkoutSessionDocument> {
     const existing = await this.sessionModel.findOne({
-      _id: id,
-      userId,
+      _id: new Types.ObjectId(id),
+      userId: new Types.ObjectId(userId),
       deleted: { $ne: true },
     });
     if (!existing) {
@@ -193,8 +202,8 @@ export class WorkoutSessionService {
 
   async remove(id: string, userId: string) {
     const existing = await this.sessionModel.findOne({
-      _id: id,
-      userId,
+      _id: new Types.ObjectId(id),
+      userId: new Types.ObjectId(userId),
       deleted: { $ne: true },
     });
     if (!existing) {

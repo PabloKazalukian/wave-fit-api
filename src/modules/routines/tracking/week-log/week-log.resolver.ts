@@ -70,6 +70,7 @@ export class WeekLogResolver {
     if (!userId || !Types.ObjectId.isValid(userId)) {
       throw new BadRequestException('Invalid user id');
     }
+
     return this.weekLogService.findAllByUser(userId, limit, offset);
   }
 

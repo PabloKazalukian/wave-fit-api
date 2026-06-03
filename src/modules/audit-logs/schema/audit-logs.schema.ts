@@ -1,6 +1,6 @@
 // src/audit-logs/schemas/audit-log.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 @Schema({ collection: 'audit_logs', timestamps: true })
 export class AuditLog extends Document {
@@ -10,11 +10,11 @@ export class AuditLog extends Document {
   @Prop({ required: true, index: true })
   entity: string; // 'WeeklyRoutine'
 
-  @Prop({ index: true })
-  entityId: string; // ID de la rutina creada
+  @Prop({ type: Types.ObjectId, index: true })
+  entityId: Types.ObjectId; // ID de la rutina creada
 
-  @Prop({ index: true })
-  userId?: string; // Usuario que ejecutó la acción
+  @Prop({ type: Types.ObjectId, index: true })
+  userId?: Types.ObjectId; // Usuario que ejecutó la acción
 
   @Prop()
   userEmail: string;

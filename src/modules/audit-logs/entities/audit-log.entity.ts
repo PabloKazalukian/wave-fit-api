@@ -12,10 +12,10 @@ export class AuditLogEntity {
   @Field()
   entity: string;
 
-  @Field({ nullable: true })
+  @Field(() => ID, { nullable: true })
   entityId?: string;
 
-  @Field({ nullable: true })
+  @Field(() => ID, { nullable: true })
   userId?: string;
 
   @Field({ nullable: true })
