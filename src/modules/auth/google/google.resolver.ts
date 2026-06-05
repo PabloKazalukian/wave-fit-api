@@ -5,6 +5,14 @@ import { UserService } from '../../../modules/user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import { UserGoogle } from '../../../common/interfaces/user.interface';
 import { GoogleLoginOutput } from './dto/google-login.output';
+import { StorageService } from '../../../modules/storage/storage.service';
+
+const MIME_TO_EXT: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
+};
 
 @Resolver(() => Google)
 export class GoogleResolver {
@@ -12,6 +20,7 @@ export class GoogleResolver {
     private readonly googleService: GoogleService,
     private userService: UserService,
     private jwtService: JwtService,
+    private storageService: StorageService,
   ) {}
 
   @Mutation(() => GoogleLoginOutput)
@@ -29,10 +38,36 @@ export class GoogleResolver {
       tokens.id_token,
     );
 
+    const { buffer: avatarBuffer, contentType } =
+      await this.googleService.getAvatarGoogle(userInfo.picture);
+
     let user = await this.userService.findByEmail(userInfo.email);
 
     if (!user) {
       user = await this.userService.createGoogleUser(userInfo);
+    }
+
+    const needsAvatar = !user.avatar || !user.avatar.storageKey;
+
+    if (needsAvatar) {
+      const ext = MIME_TO_EXT[contentType] || 'jpg';
+      const key = `avatars/${user._id}/google-${Date.now()}.${ext}`;
+
+      const url = await this.storageService.uploadFile(
+        key,
+        avatarBuffer,
+        contentType,
+      );
+
+      user = await this.userService.updateAvatar(user._id.toString(), {
+        storageKey: key,
+        url,
+        source: 'google',
+      });
+    }
+
+    if (!user) {
+      throw new Error('User not found after creation');
     }
 
     const payload = { sub: user._id, email: user.email, role: user.role };
@@ -47,7 +82,7 @@ export class GoogleResolver {
     });
 
     return {
-      access_token, // Keeping it for compatibility with the DTO for now, but the important part is the cookie
+      access_token,
       user,
     };
   }

@@ -35,13 +35,6 @@ export class WeekLogResolver {
       context?.req?.user?.id ||
       context?.req?.user?.userId;
 
-    console.log(
-      '[UserId]',
-      userId,
-      typeof userId,
-      Types.ObjectId.isValid(userId),
-    );
-
     if (!userId || !Types.ObjectId.isValid(userId)) {
       throw new BadRequestException('Invalid user id');
     }

@@ -21,6 +21,7 @@ import { SeedModule } from './database/seed.module';
 import { CommonResolver } from './common/common.resolver';
 import { DayLogModule } from './modules/routines/tracking/day-log/day-log.module';
 import { StatsModule } from './modules/stats/stats.module';
+import { StorageModule } from './modules/storage/storage.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { StatsModule } from './modules/stats/stats.module';
     SeedModule,
     DayLogModule,
     StatsModule,
+    StorageModule,
   ],
   controllers: [AppController],
   providers: [

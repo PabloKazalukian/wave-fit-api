@@ -48,4 +48,16 @@ export class GoogleService {
       googleId: data.sub,
     };
   }
+
+  async getAvatarGoogle(
+    picture: string,
+  ): Promise<{ buffer: Buffer; contentType: string }> {
+    const response = await fetch(picture);
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const contentType =
+      response.headers.get('content-type') || 'image/jpeg';
+
+    return { buffer, contentType };
+  }
 }

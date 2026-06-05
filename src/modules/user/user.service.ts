@@ -87,6 +87,15 @@ export class UserService {
     return createdUser.save();
   }
 
+  async updateAvatar(
+    userId: string,
+    avatar: { storageKey: string; url: string; source: string },
+  ): Promise<UserMongoose | null> {
+    return this.userModel
+      .findByIdAndUpdate(userId, { $set: { avatar } }, { new: true })
+      .exec();
+  }
+
   async findOneByEmail(email: string): Promise<UserMongoose | null> {
     return this.userModel.findOne({ email: email }).exec();
   }

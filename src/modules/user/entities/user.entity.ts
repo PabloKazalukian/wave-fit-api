@@ -7,6 +7,18 @@ registerEnumType(UserRole, {
 });
 
 @ObjectType()
+export class Avatar {
+  @Field()
+  storageKey: string;
+
+  @Field()
+  url: string;
+
+  @Field()
+  source: string;
+}
+
+@ObjectType()
 export class User {
   @Field(() => ID)
   id: string;
@@ -27,6 +39,9 @@ export class User {
 
   @Field({ nullable: true })
   picture?: string;
+
+  @Field(() => Avatar, { nullable: true })
+  avatar?: Avatar;
 
   @Field({ nullable: true })
   timezone?: string;

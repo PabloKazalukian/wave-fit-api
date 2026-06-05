@@ -6,6 +6,8 @@ import { GoogleStrategy } from './google.strategy';
 import { GoogleTokenStrategy } from './google-token.strategy';
 import { PassportModule } from '@nestjs/passport';
 import { AuthModule } from '../auth.module';
+import { StorageService } from 'src/modules/storage/storage.service';
+import { StorageModule } from 'src/modules/storage/storage.module';
 
 @Module({
   providers: [
@@ -13,12 +15,9 @@ import { AuthModule } from '../auth.module';
     GoogleService,
     GoogleStrategy,
     GoogleTokenStrategy,
+    StorageService,
   ],
-  imports: [
-    UserModule,
-    PassportModule,
-    AuthModule, // <-- agregás esto
-  ],
+  imports: [UserModule, PassportModule, StorageModule, AuthModule],
   exports: [GoogleService],
 })
 export class GoogleModule {}
