@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 
 import * as dotenv from 'dotenv';
 dotenv.config();
@@ -34,5 +34,14 @@ export class StorageService {
     );
 
     return `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+  }
+
+  async deleteFile(key: string): Promise<void> {
+    await this.s3.send(
+      new DeleteObjectCommand({
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: key,
+      }),
+    );
   }
 }

@@ -6,11 +6,22 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User as UserMongoose, UserRole } from './schema/user.schema';
 import { UserGoogle } from '../../common/interfaces/user.interface';
+import { StorageService } from '../storage/storage.service';
+import sharp from 'sharp';
+
+const AVATAR_MIME_MAP: Record<string, string> = {
+  jpeg: 'image/jpeg',
+  jpg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+  gif: 'image/gif',
+};
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectModel(UserMongoose.name) private userModel: Model<UserMongoose>,
+    private readonly storageService: StorageService,
   ) {}
 
   async create(createUserInput: CreateUser): Promise<UserMongoose | undefined> {
@@ -103,5 +114,53 @@ export class UserService {
   async isEmailAvailable(email: string): Promise<boolean> {
     const user = await this.userModel.findOne({ email: email }).exec();
     return user === null;
+  }
+
+  async uploadAvatar(base64Image: string, userId: string) {
+    const matches = base64Image.match(
+      /^data:image\/(?<ext>jpeg|jpg|png|webp|gif);base64,(?<data>.+)$/,
+    );
+    if (!matches || !matches.groups) {
+      throw new Error(
+        'Invalid image format. Expected data:image/(jpeg|png|webp|gif);base64,...',
+      );
+    }
+
+    const ext = matches.groups.ext === 'jpeg' ? 'jpg' : matches.groups.ext;
+    const contentType = AVATAR_MIME_MAP[ext] || 'image/jpeg';
+    const buffer = Buffer.from(matches.groups.data, 'base64');
+
+    if (buffer.length > 5 * 1024 * 1024) {
+      throw new Error('Image too large. Maximum size is 5MB.');
+    }
+
+    const processed = await sharp(buffer)
+      .resize(60, 60, { fit: 'cover', position: 'centre' })
+      .jpeg({ quality: 80 })
+      .toBuffer();
+
+    const key = `avatars/${userId}/avatar.jpg`;
+
+    const currentUser = await this.findOne(userId);
+    if (
+      currentUser?.avatar?.storageKey &&
+      currentUser.avatar.storageKey !== key
+    ) {
+      await this.storageService
+        .deleteFile(currentUser.avatar.storageKey)
+        .catch(() => {});
+    }
+
+    const url = await this.storageService.uploadFile(
+      key,
+      processed,
+      contentType,
+    );
+
+    return this.updateAvatar(userId, {
+      storageKey: key,
+      url,
+      source: 'upload',
+    });
   }
 }

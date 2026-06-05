@@ -21,6 +21,7 @@ import { GqlAuthGuard } from '../../../../modules/auth/guards/gql-auth.guard';
 import { Types } from 'mongoose';
 import { AuditInterceptor } from 'src/modules/audit-logs/audit-logs.interceptor';
 import { Audit } from 'src/modules/audit-logs/audit-logs.decorator';
+import { extractUserId } from 'src/common/utils/user-id.utils';
 
 @Resolver(() => WeekLog)
 @UseGuards(GqlAuthGuard)
@@ -28,26 +29,12 @@ import { Audit } from 'src/modules/audit-logs/audit-logs.decorator';
 export class WeekLogResolver {
   constructor(private readonly weekLogService: WeekLogService) {}
 
-  private extractUserId(context: any): string {
-    // console.log('[context]', context);
-    const userId =
-      context?.req?.user?._id?.toString() ||
-      context?.req?.user?.id ||
-      context?.req?.user?.userId;
-
-    if (!userId || !Types.ObjectId.isValid(userId)) {
-      throw new BadRequestException('Invalid user id');
-    }
-
-    return userId;
-  }
-
   @Mutation(() => WeekLog)
   async createWeekLog(
     @Args('createWeekLogInput') createWeekLogInput: CreateWeekLogInput,
     @Context() context,
   ) {
-    const userId = this.extractUserId(context);
+    const userId = extractUserId(context);
 
     const createdWeekLog = await this.weekLogService.create(
       createWeekLogInput,
@@ -69,7 +56,7 @@ export class WeekLogResolver {
     @Args('offset', { type: () => Int, nullable: true, defaultValue: 0 })
     offset: number,
   ) {
-    const userId = this.extractUserId(context);
+    const userId = extractUserId(context);
 
     return this.weekLogService.findAllByUser(userId, limit, offset);
   }
@@ -79,14 +66,14 @@ export class WeekLogResolver {
     @Args('id', { type: () => String }) id: string,
     @Context() context,
   ) {
-    const userId = this.extractUserId(context);
+    const userId = extractUserId(context);
 
     return this.weekLogService.findOne(id, userId);
   }
 
   @Query(() => ActiveWeekLogResponse, { name: 'activeWeekLog' })
   async findActiveWeekLog(@Context() context) {
-    const userId = this.extractUserId(context);
+    const userId = extractUserId(context);
 
     const week = await this.weekLogService.findActiveWeekLog(userId);
 
@@ -99,7 +86,7 @@ export class WeekLogResolver {
 
   @Query(() => WeekLog, { name: 'currentWorkoutSession' })
   async getCurrentWorkoutSession(@Context() context) {
-    const userId = this.extractUserId(context);
+    const userId = extractUserId(context);
 
     return this.weekLogService.findActiveWeekLog(userId);
   }
@@ -113,7 +100,7 @@ export class WeekLogResolver {
     @Args('input') input: UpdateWeekLogDayUnifiedInput,
     @Context() context,
   ) {
-    const userId = this.extractUserId(context);
+    const userId = extractUserId(context);
 
     return this.weekLogService.updateDay(input, userId);
   }
@@ -123,7 +110,7 @@ export class WeekLogResolver {
     @Args('input') input: UpdateDayWorkoutStatusInput,
     @Context() context,
   ) {
-    const userId = this.extractUserId(context);
+    const userId = extractUserId(context);
 
     return this.weekLogService.updateDayWorkoutStatus(input, userId);
   }
@@ -140,7 +127,7 @@ export class WeekLogResolver {
     @Args('input') input: UpdateWeekLogInput,
     @Context() context,
   ) {
-    const userId = this.extractUserId(context);
+    const userId = extractUserId(context);
 
     return this.weekLogService.updateWeekLog(input, userId);
   }
@@ -150,7 +137,7 @@ export class WeekLogResolver {
     @Args('weekLogId', { type: () => String }) weekLogId: string,
     @Context() context,
   ) {
-    const userId = this.extractUserId(context);
+    const userId = extractUserId(context);
 
     return this.weekLogService.syncDaysWithSessions(weekLogId, userId);
   }
@@ -162,7 +149,7 @@ export class WeekLogResolver {
     @Args('date', { type: () => String }) date: string,
     @Context() context,
   ) {
-    const userId = this.extractUserId(context);
+    const userId = extractUserId(context);
 
     return this.weekLogService.assignRoutineToDay(routineDayId, date, userId);
   }
@@ -172,7 +159,7 @@ export class WeekLogResolver {
     @Args('workoutSessionId', { type: () => String }) workoutSessionId: string,
     @Context() context,
   ) {
-    const userId = this.extractUserId(context);
+    const userId = extractUserId(context);
 
     return this.weekLogService.removeWorkoutSessionFromDay(
       workoutSessionId,
@@ -186,7 +173,7 @@ export class WeekLogResolver {
     @Args('extraSessionId', { type: () => String }) extraSessionId: string,
     @Context() context,
   ) {
-    const userId = this.extractUserId(context);
+    const userId = extractUserId(context);
 
     return this.weekLogService.removeExtraSessionFromDay(
       extraSessionId,
@@ -201,7 +188,7 @@ export class WeekLogResolver {
     @Args('id', { type: () => String }) id: string,
     @Context() context,
   ) {
-    const userId = this.extractUserId(context);
+    const userId = extractUserId(context);
 
     return this.weekLogService.remove(id, userId);
   }
