@@ -1,0 +1,14 @@
+export { UserProfileModule } from './user-profile.module';
+export { UserProfileService } from './user-profile.service';
+export { UserProfileResolver } from './user-profile.resolver';
+export { UserProfile } from './entities/user-profile.entity';
+export { CreateUserProfileInput } from './dto/create-user-profile.input';
+export { UpdateUserProfileInput } from './dto/update-user-profile.input';
+export { UserProfile as UserProfileSchema } from './schema/user-profile.schema';
+export { UserGoal } from './schema/goals.schema';
+export { UserStrengthMetric } from './schema/strength-metrics.schema';
+export { UserResource } from './schema/resourse.schema';
+export { UserSchedule } from './schema/schedule.schema';
+export { UserHealthConstraint } from './schema/health-constraints.schema';
+export { UserTrainingPreference } from './schema/trainning-performance.schema';
+export { WeightLog } from './schema/weight.schema';
