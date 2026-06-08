@@ -4,7 +4,7 @@ import { Document, Types } from 'mongoose';
 // Tabla separada de user_profile para trackear evolución del peso en el tiempo.
 // user_profile.weightKg siempre es el peso actual; esta colección es el historial.
 @Schema({ timestamps: true })
-export class WeightLog extends Document {
+export class UserWeightLog extends Document {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
   userId: Types.ObjectId;
 
@@ -21,6 +21,6 @@ export class WeightLog extends Document {
   notes?: string;
 }
 
-export const WeightLogSchema = SchemaFactory.createForClass(WeightLog);
+export const UserWeightLogSchema = SchemaFactory.createForClass(UserWeightLog);
 
-WeightLogSchema.index({ userId: 1, loggedAt: -1 });
+UserWeightLogSchema.index({ userId: 1, loggedAt: -1 });

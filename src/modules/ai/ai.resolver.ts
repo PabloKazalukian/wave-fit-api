@@ -7,29 +7,4 @@ import { UpdateAiInput } from './dto/update-ai.input';
 @Resolver(() => Ai)
 export class AiResolver {
   constructor(private readonly aiService: AiService) {}
-
-  @Mutation(() => Ai)
-  createAi(@Args('createAiInput') createAiInput: CreateAiInput) {
-    return this.aiService.create(createAiInput);
-  }
-
-  @Query(() => [Ai], { name: 'ai' })
-  findAll() {
-    return this.aiService.findAll();
-  }
-
-  @Query(() => Ai, { name: 'ai' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
-    return this.aiService.findOne(id);
-  }
-
-  @Mutation(() => Ai)
-  updateAi(@Args('updateAiInput') updateAiInput: UpdateAiInput) {
-    return this.aiService.update(updateAiInput.id, updateAiInput);
-  }
-
-  @Mutation(() => Ai)
-  removeAi(@Args('id', { type: () => Int }) id: number) {
-    return this.aiService.remove(id);
-  }
 }

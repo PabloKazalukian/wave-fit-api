@@ -1,12 +1,32 @@
 import { Module } from '@nestjs/common';
 import { TrainingPlanService } from './training-plan.service';
 import { TrainingPlanResolver } from './training-plan.resolver';
-import { UserModule } from '../user/user.module';
-import { UserProfileModule } from '../user/user-profile/user-profile.module';
 import { PlanGeneratorService } from './plan-generator/plan-generator.service';
+import { MongooseModule } from '@nestjs/mongoose';
+import { TrainingPlan } from './entities/training-plan.entity';
+import { TrainingPlanSchema } from './schema/training-plan.schema';
+import { AiService } from '../ai/ai.service';
+import { UserProfileModule, UserProfileService } from '../user/user-profile';
+import { AiModule } from '../ai/ai.module';
 
 @Module({
-  providers: [TrainingPlanResolver, TrainingPlanService, PlanGeneratorService],
-  imports: [UserModule, UserProfileModule],
+  imports: [
+    // 1. REGISTRA EL MODELO AQUÍ PARA ESTE MÓDULO
+    MongooseModule.forFeature([
+      { name: TrainingPlan.name, schema: TrainingPlanSchema },
+    ]),
+
+    // 2. Tus otros módulos externos que ya arreglamos
+    AiModule,
+    UserProfileModule,
+  ],
+  providers: [
+    TrainingPlanService,
+    TrainingPlanResolver,
+    PlanGeneratorService,
+    UserProfileService,
+    AiService,
+  ],
+  exports: [TrainingPlanService],
 })
 export class TrainingPlanModule {}

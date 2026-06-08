@@ -72,7 +72,8 @@ export function bmrMifflinStJeor(
   return Math.round(base + adjustment);
 }
 
-export function buildUserContextForAI(input: UserContextInput): Record<string, unknown> {
+//arreglar el Type de input, obtendra el profile completo.
+export function buildUserContextForAI(input: any): Record<string, unknown> {
   const ctx: Record<string, unknown> = {};
 
   if (input.profile) {
@@ -107,7 +108,10 @@ export function buildUserContextForAI(input: UserContextInput): Record<string, u
   }
 
   if (input.strengthMetrics && input.strengthMetrics.length > 0) {
-    const latestByExercise = new Map<string, (typeof input.strengthMetrics)[0]>();
+    const latestByExercise = new Map<
+      string,
+      (typeof input.strengthMetrics)[0]
+    >();
     for (const m of input.strengthMetrics) {
       const existing = latestByExercise.get(m.exerciseKey);
       if (!existing || m.measuredAt > existing.measuredAt) {

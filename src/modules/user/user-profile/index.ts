@@ -10,5 +10,5 @@ export { UserStrengthMetric } from './schema/strength-metrics.schema';
 export { UserResource } from './schema/resourse.schema';
 export { UserSchedule } from './schema/schedule.schema';
 export { UserHealthConstraint } from './schema/health-constraints.schema';
-export { UserTrainingPreference } from './schema/trainning-performance.schema';
-export { WeightLog } from './schema/weight.schema';
+export { UserTrainingPreference } from './schema/training-preference.schema';
+export { UserWeightLogSchema } from './schema/weight.schema';

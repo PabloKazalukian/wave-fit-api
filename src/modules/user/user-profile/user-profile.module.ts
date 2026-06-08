@@ -15,8 +15,8 @@ import {
 import {
   UserTrainingPreference,
   UserTrainingPreferenceSchema,
-} from './schema/trainning-performance.schema';
-import { WeightLog, WeightLogSchema } from './schema/weight.schema';
+} from './schema/training-preference.schema';
+import { UserWeightLog, UserWeightLogSchema } from './schema/weight.schema';
 import {
   WorkoutSession,
   WorkoutSessionSchema,
@@ -37,7 +37,7 @@ import { UserResource, UserResourceSchema } from './schema/resourse.schema';
         schema: UserTrainingPreferenceSchema,
       },
       { name: WorkoutSession.name, schema: WorkoutSessionSchema },
-      { name: WeightLog.name, schema: WeightLogSchema },
+      { name: UserWeightLog.name, schema: UserWeightLogSchema },
     ]),
   ],
   exports: [MongooseModule],

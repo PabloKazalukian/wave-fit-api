@@ -1,88 +1,84 @@
-// training-plan.service.ts — método principal
+// plan-generator.service.ts — método secundario
 
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { TrainingPlanService } from '../training-plan.service';
-import { UserService } from 'src/modules/user/user.service';
 import { UserProfileService } from 'src/modules/user/user-profile';
-import { addDays, addWeeks } from 'date-fns';
+import { addWeeks } from 'date-fns';
 import { buildUserContextForAI } from 'src/modules/user/user-profile/user-profile.utils';
 import { TrainingPlan } from '../entities/training-plan.entity';
-import { WeekLogService } from 'src/modules/routines/tracking/week-log/week-log.service';
-import { addDaysToLocalDate } from 'src/common/utils/date.utils';
 import { Model } from 'mongoose';
 import { AiService } from 'src/modules/ai/ai.service';
+import { InjectModel } from '@nestjs/mongoose';
 
 @Injectable()
 export class PlanGeneratorService {
   constructor(
-    private readonly trainingPlanService: TrainingPlanService,
-    private readonly userService: UserService,
     private readonly userProfileService: UserProfileService,
-    private readonly weekLogService: WeekLogService,
-    private readonly aiService: AiService,
+    @InjectModel(TrainingPlan.name) // <-- ¡AQUÍ ESTÁ LA MAGIA! Dile a Nest qué modelo inyectar
     private readonly trainingPlanModel: Model<TrainingPlan>,
-    // private readonly userGoalService:UserGoalService
+    private readonly aiService: AiService,
   ) {}
 
   async generatePlan(userId: string, goalId: string): Promise<TrainingPlan> {
-    // 1. Obtener perfil completo
-    const profile = await this.userProfileService.findByUserId(userId);
-
-    if (!profile) {
-      throw new NotFoundException('User profile not found');
-    }
+    const profile = await this.userProfileService.getFullLlmContext(userId);
+    if (!profile) throw new NotFoundException('User profile not found');
 
     const goal = await this.userProfileService.findUserGoalsActive(userId);
+    if (!goal) throw new NotFoundException('User goal not found');
 
-    if (!goal) {
-      throw new NotFoundException('User goal not found');
-    }
+    const aiContext = buildUserContextForAI(profile);
 
-    // 2. Construir contexto para la IA
-    const aiContext = buildUserContextForAI(profile); // tu util existente
+    // Definimos prompts limpios
+    const systemPrompt = `Eres un experto preparador físico global con +10 años de experiencia... Generas planes realistas en formato JSON válido.`;
 
-    // 3. Llamar a la IA
-    const { rawResponse, promptUsed, tokensUsed } =
-      await this.aiService.generatePlan(aiContext);
+    const userPrompt = `Genera un plan de entrenamiento completo para el usuario con los siguientes datos:
+    CONTEXTO DEL USUARIO (JSON):
+    ${JSON.stringify(aiContext, null, 2)}
+    
+    REGLAS:
+    - El plan debe tener ${goal?.timelineWeeks || 4} semanas.
+    - Debe generar ${profile?.schedule?.daysPerWeek || 3} sesiones/semana.
+    - NO incluyas secciones extra ni introducciones, solo devuelve un objeto JSON puro.`;
 
-    // 4. Parsear la respuesta (el JSON que devuelve la IA)
-    const parsedPlan: GeneratedPlanDto = JSON.parse(rawResponse.content); //nose que es GeneratedPlanDto
+    // 3. LLAMADA GENERALIZADA A LA IA
+    // Puedes cambiar 'groq' por 'openai' y el código de abajo ni se entera
+    const providerTarget = process.env.PREFERRED_AI_PROVIDER || 'groq';
 
-    // 5. Crear el TrainingPlan con el snapshot
+    const { rawContent, modelUsed, promptUsed, tokensUsed } =
+      await this.aiService.executePrompt({
+        providerName: providerTarget,
+        systemPrompt,
+        userPrompt,
+      });
+
+    // 4. Parsear la respuesta de forma segura
+    // (Limpiamos posibles marcas de Markdown que a veces ponen los LLMs como ```json ... ```)
+    const cleanJsonString = rawContent.replace(/```json|```/g, '').trim();
+    const parsedPlan = JSON.parse(cleanJsonString);
+
+    // 5. Crear el TrainingPlan en MongoDB con el snapshot unificado
     const plan = await this.trainingPlanModel.create({
       userId,
-      userProfileId: profile._id,
+      userProfileId: profile.profile?.id,
       goalId,
-      title: parsedPlan.title,
-      focus: parsedPlan.focus,
+      title: parsedPlan.title || 'Plan de Entrenamiento Personalizado',
+      focus: parsedPlan.focus || 'General',
       startDate: new Date(),
-      endDate: addWeeks(new Date(), parsedPlan.durationWeeks),
-      durationWeeks: parsedPlan.durationWeeks,
-      trainingDaysPerWeek: parsedPlan.daysPerWeek,
-      totalSessionsPlanned: parsedPlan.durationWeeks * parsedPlan.daysPerWeek,
+      endDate: addWeeks(new Date(), parsedPlan.durationWeeks || 4),
+      durationWeeks: parsedPlan.durationWeeks || 4,
+      trainingDaysPerWeek: parsedPlan.daysPerWeek || 3,
+      totalSessionsPlanned:
+        (parsedPlan.durationWeeks || 4) * (parsedPlan.daysPerWeek || 3),
       aiSnapshot: {
         contextSentToAI: aiContext,
         promptUsed,
-        modelUsed: 'gpt-4o',
-        rawResponse,
+        modelUsed: modelUsed, // Guardará exactamente si fue llama3 o gpt4o
+        rawResponse: rawContent,
         tokensUsed,
         generatedAt: new Date(),
       },
     });
 
-    // 6. Crear los WeekLogs con sus sesiones
-    for (let week = 1; week <= parsedPlan.durationWeeks; week++) {
-      const weekStart = addWeeks(plan.startDate, week - 1);
-      //Crear un week-log para iniciar.
-      //   await this.weekLogService.create({
-      //     planId: plan._id,
-      //     // weekNumber: week,
-      //     startDate: weekStart,
-      //     endDate: addDaysToLocalDate(weekStart, 6),
-      //     // sessions: parsedPlan.weeks[week - 1].sessions, // ya parseado desde IA
-      //   },userId);
-    }
-
+    // 6. Lógica de tus WeekLogs...
     return plan;
   }
 }

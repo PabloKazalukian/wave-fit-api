@@ -9,13 +9,38 @@ import { UserProfile, UserProfileDocument } from './schema/user-profile.schema';
 import { CreateUserProfileInput } from './dto/create-user-profile.input';
 import { UpdateUserProfileInput } from './dto/update-user-profile.input';
 import { UserGoal } from './schema/goals.schema';
+import { UserHealthConstraint } from './schema/health-constraints.schema';
+import { UserSchedule } from './schema/schedule.schema';
+import { UserStrengthMetric } from './schema/strength-metrics.schema';
+import { UserResource } from './schema/resourse.schema';
+import { UserTrainingPreference } from './schema/training-preference.schema';
+import { UserWeightLog } from './schema/weight.schema';
 
 @Injectable()
 export class UserProfileService {
   constructor(
+    // @InjectModel(UserProfile.name)
+    // private profileModel: Model<UserProfile>,
+    // private userGoals: Model<UserGoal>,
+    @InjectModel(UserGoal.name) private readonly goalModel: Model<UserGoal>,
+    @InjectModel(UserHealthConstraint.name)
+    private readonly healthModel: Model<UserHealthConstraint>,
+    @InjectModel(UserResource.name)
+    private readonly resourceModel: Model<UserResource>,
+    @InjectModel(UserSchedule.name)
+    private readonly scheduleModel: Model<UserSchedule>,
+    @InjectModel(UserStrengthMetric.name)
+    private readonly strengthModel: Model<UserStrengthMetric>,
+    @InjectModel(UserTrainingPreference.name)
+    private readonly trainingPreferenceModel: Model<UserTrainingPreference>,
+
     @InjectModel(UserProfile.name)
-    private profileModel: Model<UserProfile>,
-    private userGoals: Model<UserGoal>,
+    private readonly profileModel: Model<UserProfile>,
+    @InjectModel(UserWeightLog.name)
+    private readonly weightLogModel: Model<UserWeightLog>,
+    // @InjectModel(UserProfileTrainingPreference.name) private readonly trainingPreferenceModel: Model<UserProfileTrainingPreference>,
+    // @InjectModel(WeightLog.name) private readonly weightLogModel: Model<WeightLo>,
+    // ... los demás modelos que requieras
   ) {}
 
   async create(
@@ -67,6 +92,38 @@ export class UserProfileService {
       .exec();
   }
 
+  async getFullLlmContext(userId: string) {
+    // Ejecutamos las consultas en paralelo en MongoDB
+    const [
+      profile,
+      activeGoal,
+      schedule,
+      constraints,
+      metrics,
+      trainingPreferences,
+      recources,
+      weightLogs,
+    ] = await Promise.all([
+      this.profileModel.findOne({ userId }).lean(),
+      this.goalModel.findOne({ userId, isActive: true }).lean(),
+      this.scheduleModel.findOne({ userId }).lean(),
+      this.healthModel.findOne({ userId }).lean(),
+      this.strengthModel.findOne({ userId }).lean(),
+      this.trainingPreferenceModel.findOne({ userId }).lean(),
+      this.resourceModel.findOne({ userId }).lean(),
+      this.weightLogModel.find({ userId }).lean(),
+    ]);
+
+    // Retornamos un objeto plano y estructurado listo para ser transformado por tu 'buildUserContextForAI'
+    return {
+      profile,
+      goal: activeGoal,
+      schedule,
+      healthConstraints: constraints,
+      strengthMetrics: metrics,
+    };
+  }
+
   async update(
     id: string,
     input: UpdateUserProfileInput,
@@ -104,7 +161,7 @@ export class UserProfileService {
   }
 
   async findUserGoalsActive(userId: string) {
-    return this.userGoals.findOne({ isActive: true, userId }).exec();
+    return this.goalModel.findOne({ isActive: true, userId }).exec();
   }
 
   async upsert(

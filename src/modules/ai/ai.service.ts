@@ -1,69 +1,57 @@
-import { Injectable } from '@nestjs/common';
-import { CreateAiInput } from './dto/create-ai.input';
-import { UpdateAiInput } from './dto/update-ai.input';
-import { UserContextInput } from '../user/user-profile/user-profile.utils';
+// modules/ai/ai.service.ts
+import { Injectable, Inject, BadRequestException } from '@nestjs/common';
+import { SystemMessage, HumanMessage } from '@langchain/core/messages';
+import { IAiProvider } from './interfaces/ai-proider.interface';
 
 @Injectable()
 export class AiService {
-  create(createAiInput: CreateAiInput) {
-    return 'This action adds a new ai';
-  }
+  constructor(
+    @Inject('AI_PROVIDERS')
+    private readonly providers: Map<string, IAiProvider>,
+  ) {}
 
-  findAll() {
-    return `This action returns all ai`;
-  }
+  /**
+   * Método generalizado para consultar a cualquier IA
+   * @param providerName 'groq' | 'openai'
+   */
+  async executePrompt(options: {
+    providerName: string;
+    systemPrompt: string;
+    userPrompt: string;
+  }) {
+    // 1. Validar y obtener el proveedor dinámicamente
+    const provider = this.providers.get(options.providerName);
+    if (!provider) {
+      throw new BadRequestException(
+        `Proveedor de IA no soportado: ${options.providerName}`,
+      );
+    }
 
-  findOne(id: number) {
-    return `This action returns a #${id} ai`;
-  }
+    const model = provider.getModel();
 
-  update(id: number, updateAiInput: UpdateAiInput) {
-    return `This action updates a #${id} ai`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} ai`;
-  }
-
-  async generatePlan(userContext: UserContextInput): Promise<{
-    rawResponse;
-    promptUsed: string;
-    tokensUsed: number;
-  }> {
-    const messages: ChatCompletionMessageParam[] = [
-      {
-        role: 'system',
-        content:
-          'Eres un experto preparador físico global con +10 años de experiencia en entrenamiento funcional, hipertrofia, pérdida de grasa y rendimiento deportivo. Generas planes de entrenamiento realistas, progresivos y adaptados a la persona.',
-      },
-      {
-        role: 'user',
-        content: `Genera un plan de entrenamiento completo para el usuario con los siguientes datos:
-
-CONTEXTO DEL USUARIO (JSON):
-${JSON.stringify(userContext, null, 2)}
-
-REGLAS:
-- El plan debe tener ${userContext.goal.timelineWeeks} semanas
-- Debe generar ${userContext.schedule.daysPerWeek} sesiones/semana en formato JSON válido.
-- Incluye calentamiento, sesiones de fuerza/hipertrofia y vuelta a la calma.
-- Añade notas de progresión y consejos personalizados.
-- NO incluyas secciones extra, solo el JSON del plan.
-`,
-      },
+    // 2. Estructurar los mensajes con LangChain
+    const messages = [
+      new SystemMessage(options.systemPrompt),
+      new HumanMessage(options.userPrompt),
     ];
 
-    const response = await langChain.chat.completions.create({
-      model: 'gpt-4o',
-      messages,
-    });
+    // 3. Ejecutar la llamada de manera unificada
+    // LangChain estandariza la ejecución con .invoke()
+    const response = await model.invoke(messages);
 
-    const rawText = response.choices[0].message.content;
+    // 4. Control y mapeo de restricciones / tokens de forma unificada
+    // LangChain guarda los metadatos de tokens en 'response_metadata' de manera estándar
+    const tokenUsage = response.response_metadata?.tokenUsage || {
+      completionTokens: 0,
+      promptTokens: 0,
+      totalTokens: 0,
+    };
 
     return {
-      rawResponse: rawText,
-      promptUsed: messages.map((m) => m.content).join('\n'),
-      tokensUsed: response.usage?.total_tokens || 0,
+      rawContent: response.content as string,
+      modelUsed: response.response_metadata?.model_name || options.providerName,
+      promptUsed: `${options.systemPrompt}\n${options.userPrompt}`,
+      tokensUsed: tokenUsage || 0,
     };
   }
 }
