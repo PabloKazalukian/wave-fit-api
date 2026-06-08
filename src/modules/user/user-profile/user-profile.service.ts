@@ -5,18 +5,17 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import {
-  UserProfile,
-  UserProfileDocument,
-} from './schema/user-profile.schema';
+import { UserProfile, UserProfileDocument } from './schema/user-profile.schema';
 import { CreateUserProfileInput } from './dto/create-user-profile.input';
 import { UpdateUserProfileInput } from './dto/update-user-profile.input';
+import { UserGoal } from './schema/goals.schema';
 
 @Injectable()
 export class UserProfileService {
   constructor(
     @InjectModel(UserProfile.name)
     private profileModel: Model<UserProfile>,
+    private userGoals: Model<UserGoal>,
   ) {}
 
   async create(
@@ -50,7 +49,10 @@ export class UserProfileService {
     return this.profileModel.find().exec();
   }
 
-  async findOne(id: string, userId: string): Promise<UserProfileDocument | null> {
+  async findOne(
+    id: string,
+    userId: string,
+  ): Promise<UserProfileDocument | null> {
     return this.profileModel
       .findOne({
         _id: new Types.ObjectId(id),
@@ -101,6 +103,10 @@ export class UserProfileService {
     return updated;
   }
 
+  async findUserGoalsActive(userId: string) {
+    return this.userGoals.findOne({ isActive: true, userId }).exec();
+  }
+
   async upsert(
     input: CreateUserProfileInput | UpdateUserProfileInput,
     userId: string,
@@ -110,7 +116,11 @@ export class UserProfileService {
       .exec();
 
     if (existing) {
-      return this.update(existing._id.toString(), input as UpdateUserProfileInput, userId);
+      return this.update(
+        existing._id.toString(),
+        input as UpdateUserProfileInput,
+        userId,
+      );
     }
 
     return this.create(input as CreateUserProfileInput, userId);
@@ -126,9 +136,7 @@ export class UserProfileService {
       throw new NotFoundException('User profile not found');
     }
 
-    const deleted = await this.profileModel
-      .findByIdAndDelete(id)
-      .exec();
+    const deleted = await this.profileModel.findByIdAndDelete(id).exec();
 
     if (!deleted) {
       throw new NotFoundException('User profile not found');

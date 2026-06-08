@@ -22,6 +22,9 @@ import { CommonResolver } from './common/common.resolver';
 import { DayLogModule } from './modules/routines/tracking/day-log/day-log.module';
 import { StatsModule } from './modules/stats/stats.module';
 import { StorageModule } from './modules/storage/storage.module';
+import { TrainningPlanModule } from './modules/trainning-plan/trainning-plan.module';
+import { TrainingPlanModule } from './modules/training-plan/training-plan.module';
+import { AiModule } from './modules/ai/ai.module';
 
 @Module({
   imports: [
@@ -52,6 +55,9 @@ import { StorageModule } from './modules/storage/storage.module';
     DayLogModule,
     StatsModule,
     StorageModule,
+    TrainningPlanModule,
+    TrainingPlanModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [
