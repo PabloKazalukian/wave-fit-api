@@ -8,6 +8,13 @@ import { Model, Types } from 'mongoose';
 import { UserProfile, UserProfileDocument } from './schema/user-profile.schema';
 import { CreateUserProfileInput } from './dto/create-user-profile.input';
 import { UpdateUserProfileInput } from './dto/update-user-profile.input';
+import { UpdateGoalsInput } from './dto/update-goals.input';
+import { UpdateHealthConstraintsInput } from './dto/update-health-constraints.input';
+import { UpdateScheduleInput } from './dto/update-schedule.input';
+import { UpdateTrainingPreferenceInput } from './dto/update-training-preference.input';
+import { UpdateResourceInput } from './dto/update-resource.input';
+import { CreateStrengthMetricInput } from './dto/create-strength-metric.input';
+import { CreateWeightLogInput } from './dto/create-weight-log.input';
 import { UserGoal } from './schema/goals.schema';
 import { UserHealthConstraint } from './schema/health-constraints.schema';
 import { UserSchedule } from './schema/schedule.schema';
@@ -100,9 +107,9 @@ export class UserProfileService {
       schedule,
       constraints,
       metrics,
-      trainingPreferences,
-      recources,
-      weightLogs,
+      _trainingPreferences,
+      _recources,
+      _weightLogs,
     ] = await Promise.all([
       this.profileModel.findOne({ userId }).lean(),
       this.goalModel.findOne({ userId, isActive: true }).lean(),
@@ -200,5 +207,209 @@ export class UserProfileService {
     }
 
     return deleted;
+  }
+
+  // ──────────────────────────────────────────────
+  // Upserts 1:1 (crea si no existe)
+  // ──────────────────────────────────────────────
+
+  async updateGoals(
+    userId: string,
+    input: UpdateGoalsInput,
+  ): Promise<UserGoal> {
+    const objectId = new Types.ObjectId(userId);
+    return this.goalModel
+      .findOneAndUpdate(
+        { userId: objectId },
+        {
+          $set: {
+            ...input,
+            userId: objectId,
+            isActive: true,
+          },
+        },
+        { upsert: true, new: true },
+      )
+      .exec();
+  }
+
+  async updateHealthConstraints(
+    userId: string,
+    input: UpdateHealthConstraintsInput,
+  ): Promise<UserHealthConstraint> {
+    const objectId = new Types.ObjectId(userId);
+    const updateData: Record<string, unknown> = {};
+    if (input.injuries !== undefined) updateData.injuries = input.injuries;
+    if (input.movementRestrictions !== undefined)
+      updateData.movementRestrictions = input.movementRestrictions;
+    if (input.conditions !== undefined) updateData.conditions = input.conditions;
+    if (input.mobilityLevel !== undefined)
+      updateData.mobilityLevel = input.mobilityLevel;
+    if (input.hasHealthcareSupervision !== undefined)
+      updateData.hasHealthcareSupervision = input.hasHealthcareSupervision;
+
+    return this.healthModel
+      .findOneAndUpdate(
+        { userId: objectId },
+        { $set: { ...updateData, userId: objectId } },
+        { upsert: true, new: true },
+      )
+      .exec();
+  }
+
+  async updateSchedule(
+    userId: string,
+    input: UpdateScheduleInput,
+  ): Promise<UserSchedule> {
+    const objectId = new Types.ObjectId(userId);
+    return this.scheduleModel
+      .findOneAndUpdate(
+        { userId: objectId },
+        {
+          $set: {
+            ...input,
+            userId: objectId,
+          },
+        },
+        { upsert: true, new: true },
+      )
+      .exec();
+  }
+
+  async updateTrainingPreference(
+    userId: string,
+    input: UpdateTrainingPreferenceInput,
+  ): Promise<UserTrainingPreference> {
+    const objectId = new Types.ObjectId(userId);
+    return this.trainingPreferenceModel
+      .findOneAndUpdate(
+        { userId: objectId },
+        {
+          $set: {
+            ...input,
+            userId: objectId,
+          },
+        },
+        { upsert: true, new: true },
+      )
+      .exec();
+  }
+
+  async updateResource(
+    userId: string,
+    input: UpdateResourceInput,
+  ): Promise<UserResource> {
+    const objectId = new Types.ObjectId(userId);
+    return this.resourceModel
+      .findOneAndUpdate(
+        { userId: objectId },
+        {
+          $set: {
+            ...input,
+            userId: objectId,
+          },
+        },
+        { upsert: true, new: true },
+      )
+      .exec();
+  }
+
+  // ──────────────────────────────────────────────
+  // Queries 1:1
+  // ──────────────────────────────────────────────
+
+  async findGoals(userId: string): Promise<UserGoal | null> {
+    return this.goalModel
+      .findOne({ userId: new Types.ObjectId(userId) })
+      .exec();
+  }
+
+  async findHealthConstraints(
+    userId: string,
+  ): Promise<UserHealthConstraint | null> {
+    return this.healthModel
+      .findOne({ userId: new Types.ObjectId(userId) })
+      .exec();
+  }
+
+  async findSchedule(userId: string): Promise<UserSchedule | null> {
+    return this.scheduleModel
+      .findOne({ userId: new Types.ObjectId(userId) })
+      .exec();
+  }
+
+  async findTrainingPreference(
+    userId: string,
+  ): Promise<UserTrainingPreference | null> {
+    return this.trainingPreferenceModel
+      .findOne({ userId: new Types.ObjectId(userId) })
+      .exec();
+  }
+
+  async findResource(userId: string): Promise<UserResource | null> {
+    return this.resourceModel
+      .findOne({ userId: new Types.ObjectId(userId) })
+      .exec();
+  }
+
+  // ──────────────────────────────────────────────
+  // Colecciones 1:N
+  // ──────────────────────────────────────────────
+
+  async createStrengthMetric(
+    userId: string,
+    input: CreateStrengthMetricInput,
+  ): Promise<UserStrengthMetric> {
+    const objectId = new Types.ObjectId(userId);
+    return this.strengthModel.create({
+      ...input,
+      userId: objectId,
+      measuredAt: input.measuredAt ? new Date(input.measuredAt) : new Date(),
+      confidenceLevel: input.confidenceLevel ?? 'self_reported',
+    });
+  }
+
+  async removeStrengthMetric(
+    userId: string,
+    metricId: string,
+  ): Promise<UserStrengthMetric> {
+    const deleted = await this.strengthModel
+      .findOneAndDelete({
+        _id: new Types.ObjectId(metricId),
+        userId: new Types.ObjectId(userId),
+      })
+      .exec();
+    if (!deleted) {
+      throw new NotFoundException('Strength metric not found');
+    }
+    return deleted;
+  }
+
+  async findStrengthMetrics(
+    userId: string,
+  ): Promise<UserStrengthMetric[]> {
+    return this.strengthModel
+      .find({ userId: new Types.ObjectId(userId) })
+      .sort({ measuredAt: -1 })
+      .exec();
+  }
+
+  async createWeightLog(
+    userId: string,
+    input: CreateWeightLogInput,
+  ): Promise<UserWeightLog> {
+    const objectId = new Types.ObjectId(userId);
+    return this.weightLogModel.create({
+      ...input,
+      userId: objectId,
+      loggedAt: input.loggedAt ? new Date(input.loggedAt) : new Date(),
+    });
+  }
+
+  async findWeightLogs(userId: string): Promise<UserWeightLog[]> {
+    return this.weightLogModel
+      .find({ userId: new Types.ObjectId(userId) })
+      .sort({ loggedAt: -1 })
+      .exec();
   }
 }
