@@ -100,34 +100,62 @@ export class UserProfileService {
   }
 
   async getFullLlmContext(userId: string) {
-    // Ejecutamos las consultas en paralelo en MongoDB
-    const [
-      profile,
-      activeGoal,
-      schedule,
-      constraints,
-      metrics,
-      _trainingPreferences,
-      _recources,
-      _weightLogs,
-    ] = await Promise.all([
-      this.profileModel.findOne({ userId }).lean(),
-      this.goalModel.findOne({ userId, isActive: true }).lean(),
-      this.scheduleModel.findOne({ userId }).lean(),
-      this.healthModel.findOne({ userId }).lean(),
-      this.strengthModel.findOne({ userId }).lean(),
-      this.trainingPreferenceModel.findOne({ userId }).lean(),
-      this.resourceModel.findOne({ userId }).lean(),
-      this.weightLogModel.find({ userId }).lean(),
-    ]);
+    const [profile, activeGoal, schedule, constraints, metrics] =
+      await Promise.all([
+        this.profileModel.findOne({ userId }).lean(),
+        this.goalModel.findOne({ userId, isActive: true }).lean(),
+        this.scheduleModel.findOne({ userId }).lean(),
+        this.healthModel.findOne({ userId }).lean(),
+        this.strengthModel.findOne({ userId }).lean(),
+      ]);
 
-    // Retornamos un objeto plano y estructurado listo para ser transformado por tu 'buildUserContextForAI'
     return {
       profile,
       goal: activeGoal,
       schedule,
       healthConstraints: constraints,
       strengthMetrics: metrics,
+    };
+  }
+
+  async getFullProfileContext(userId: string) {
+    const [
+      profile,
+      activeGoal,
+      schedule,
+      constraints,
+      trainingPreferences,
+      resources,
+      strengthMetrics,
+      weightLogs,
+    ] = await Promise.all([
+      this.profileModel.findOne({ userId }).lean(),
+      this.goalModel.findOne({ userId, isActive: true }).lean(),
+      this.scheduleModel.findOne({ userId }).lean(),
+      this.healthModel.findOne({ userId }).lean(),
+      this.trainingPreferenceModel.findOne({ userId }).lean(),
+      this.resourceModel.findOne({ userId }).lean(),
+      this.strengthModel.find({ userId }).sort({ measuredAt: -1 }).lean(),
+      this.weightLogModel.find({ userId }).sort({ loggedAt: -1 }).lean(),
+    ]);
+    console.log('[profile]', profile);
+    console.log('[activeGoal]', activeGoal);
+    console.log('[schedule]', schedule);
+    console.log('[constraints]', constraints);
+    console.log('[trainingPreferences]', trainingPreferences);
+    console.log('[resources]', resources);
+    console.log('[strengthMetrics]', strengthMetrics);
+    console.log('[weightLogs]', weightLogs);
+
+    return {
+      profile,
+      goal: activeGoal,
+      healthConstraints: constraints,
+      schedule,
+      trainingPreferences,
+      resources,
+      strengthMetrics,
+      weightLogs,
     };
   }
 
@@ -218,18 +246,21 @@ export class UserProfileService {
     input: UpdateGoalsInput,
   ): Promise<UserGoal> {
     const objectId = new Types.ObjectId(userId);
+    const exists = await this.goalModel.exists({ userId: objectId }).exec();
+    if (!exists) {
+      await this.goalModel.create({
+        userId: objectId,
+        ...input,
+        isActive: true,
+      });
+    }
     return this.goalModel
       .findOneAndUpdate(
         { userId: objectId },
-        {
-          $set: {
-            ...input,
-            userId: objectId,
-            isActive: true,
-          },
-        },
-        { upsert: true, new: true },
+        { $set: { ...input, userId: objectId, isActive: true } },
+        { new: true },
       )
+      .orFail()
       .exec();
   }
 
@@ -238,11 +269,16 @@ export class UserProfileService {
     input: UpdateHealthConstraintsInput,
   ): Promise<UserHealthConstraint> {
     const objectId = new Types.ObjectId(userId);
+    const exists = await this.healthModel.exists({ userId: objectId }).exec();
+    if (!exists) {
+      await this.healthModel.create({ userId: objectId });
+    }
     const updateData: Record<string, unknown> = {};
     if (input.injuries !== undefined) updateData.injuries = input.injuries;
     if (input.movementRestrictions !== undefined)
       updateData.movementRestrictions = input.movementRestrictions;
-    if (input.conditions !== undefined) updateData.conditions = input.conditions;
+    if (input.conditions !== undefined)
+      updateData.conditions = input.conditions;
     if (input.mobilityLevel !== undefined)
       updateData.mobilityLevel = input.mobilityLevel;
     if (input.hasHealthcareSupervision !== undefined)
@@ -252,8 +288,9 @@ export class UserProfileService {
       .findOneAndUpdate(
         { userId: objectId },
         { $set: { ...updateData, userId: objectId } },
-        { upsert: true, new: true },
+        { new: true },
       )
+      .orFail()
       .exec();
   }
 
@@ -262,17 +299,17 @@ export class UserProfileService {
     input: UpdateScheduleInput,
   ): Promise<UserSchedule> {
     const objectId = new Types.ObjectId(userId);
+    const exists = await this.scheduleModel.exists({ userId: objectId }).exec();
+    if (!exists) {
+      await this.scheduleModel.create({ userId: objectId, ...input });
+    }
     return this.scheduleModel
       .findOneAndUpdate(
         { userId: objectId },
-        {
-          $set: {
-            ...input,
-            userId: objectId,
-          },
-        },
-        { upsert: true, new: true },
+        { $set: { ...input, userId: objectId } },
+        { new: true },
       )
+      .orFail()
       .exec();
   }
 
@@ -281,17 +318,19 @@ export class UserProfileService {
     input: UpdateTrainingPreferenceInput,
   ): Promise<UserTrainingPreference> {
     const objectId = new Types.ObjectId(userId);
+    const exists = await this.trainingPreferenceModel
+      .exists({ userId: objectId })
+      .exec();
+    if (!exists) {
+      await this.trainingPreferenceModel.create({ userId: objectId, ...input });
+    }
     return this.trainingPreferenceModel
       .findOneAndUpdate(
         { userId: objectId },
-        {
-          $set: {
-            ...input,
-            userId: objectId,
-          },
-        },
-        { upsert: true, new: true },
+        { $set: { ...input, userId: objectId } },
+        { new: true },
       )
+      .orFail()
       .exec();
   }
 
@@ -300,17 +339,17 @@ export class UserProfileService {
     input: UpdateResourceInput,
   ): Promise<UserResource> {
     const objectId = new Types.ObjectId(userId);
+    const exists = await this.resourceModel.exists({ userId: objectId }).exec();
+    if (!exists) {
+      await this.resourceModel.create({ userId: objectId, ...input });
+    }
     return this.resourceModel
       .findOneAndUpdate(
         { userId: objectId },
-        {
-          $set: {
-            ...input,
-            userId: objectId,
-          },
-        },
-        { upsert: true, new: true },
+        { $set: { ...input, userId: objectId } },
+        { new: true },
       )
+      .orFail()
       .exec();
   }
 
@@ -385,9 +424,7 @@ export class UserProfileService {
     return deleted;
   }
 
-  async findStrengthMetrics(
-    userId: string,
-  ): Promise<UserStrengthMetric[]> {
+  async findStrengthMetrics(userId: string): Promise<UserStrengthMetric[]> {
     return this.strengthModel
       .find({ userId: new Types.ObjectId(userId) })
       .sort({ measuredAt: -1 })

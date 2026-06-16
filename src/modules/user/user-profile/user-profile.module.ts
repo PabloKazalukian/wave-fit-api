@@ -22,6 +22,8 @@ import {
   WorkoutSessionSchema,
 } from 'src/modules/routines/tracking/workout-session/schema/workout-session.schema';
 import { UserResource, UserResourceSchema } from './schema/resourse.schema';
+import { UserProfileResolver } from './user-profile.resolver';
+import { UserProfileService } from './user-profile.service';
 
 @Module({
   imports: [
@@ -40,6 +42,8 @@ import { UserResource, UserResourceSchema } from './schema/resourse.schema';
       { name: UserWeightLog.name, schema: UserWeightLogSchema },
     ]),
   ],
+  providers: [UserProfileResolver, UserProfileService],
+
   exports: [MongooseModule],
 })
 export class UserProfileModule {}

@@ -3,6 +3,7 @@ export { UserProfileService } from './user-profile.service';
 export { UserProfileResolver } from './user-profile.resolver';
 
 // Entities
+export { UserProfileContext } from './entities/user-profile-context.entity';
 export { UserProfile } from './entities/user-profile.entity';
 export { Goal } from './entities/goal.entity';
 export { HealthConstraint } from './entities/health-constraint.entity';
