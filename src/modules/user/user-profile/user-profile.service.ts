@@ -129,23 +129,27 @@ export class UserProfileService {
       strengthMetrics,
       weightLogs,
     ] = await Promise.all([
-      this.profileModel.findOne({ userId }).lean(),
-      this.goalModel.findOne({ userId, isActive: true }).lean(),
-      this.scheduleModel.findOne({ userId }).lean(),
-      this.healthModel.findOne({ userId }).lean(),
-      this.trainingPreferenceModel.findOne({ userId }).lean(),
-      this.resourceModel.findOne({ userId }).lean(),
+      this.profileModel.findOne({ userId: new Types.ObjectId(userId) }).lean(),
+      this.goalModel
+        .findOne({ userId: new Types.ObjectId(userId), isActive: true })
+        .lean(),
+      this.scheduleModel.findOne({ userId: new Types.ObjectId(userId) }).lean(),
+      this.healthModel.findOne({ userId: new Types.ObjectId(userId) }).lean(),
+      this.trainingPreferenceModel
+        .findOne({ userId: new Types.ObjectId(userId) })
+        .lean(),
+      this.resourceModel.findOne({ userId: new Types.ObjectId(userId) }).lean(),
       this.strengthModel.find({ userId }).sort({ measuredAt: -1 }).lean(),
       this.weightLogModel.find({ userId }).sort({ loggedAt: -1 }).lean(),
     ]);
-    console.log('[profile]', profile);
-    console.log('[activeGoal]', activeGoal);
-    console.log('[schedule]', schedule);
-    console.log('[constraints]', constraints);
-    console.log('[trainingPreferences]', trainingPreferences);
-    console.log('[resources]', resources);
-    console.log('[strengthMetrics]', strengthMetrics);
-    console.log('[weightLogs]', weightLogs);
+    // console.log('[profile]', profile);
+    // console.log('[activeGoal]', activeGoal);
+    // console.log('[schedule]', schedule);
+    // console.log('[constraints]', constraints);
+    // console.log('[trainingPreferences]', trainingPreferences);
+    // console.log('[resources]', resources);
+    // console.log('[strengthMetrics]', strengthMetrics);
+    // console.log('[weightLogs]', weightLogs);
 
     return {
       profile,
