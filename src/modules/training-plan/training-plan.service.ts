@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { CreateTrainingPlanInput } from './dto/create-training-plan.input';
 import { UpdateTrainingPlanInput } from './dto/update-training-plan.input';
+import { PlanGeneratorService } from './plan-generator/plan-generator.service';
 
 @Injectable()
 export class TrainingPlanService {
+  constructor(private readonly generator: PlanGeneratorService) {}
   create(createTrainingPlanInput: CreateTrainingPlanInput) {
     return 'This action adds a new trainingPlan';
   }
@@ -22,5 +24,10 @@ export class TrainingPlanService {
 
   remove(id: number) {
     return `This action removes a #${id} trainingPlan`;
+  }
+  async generate(userId: string, goalId: string) {
+    const plan = await this.generator.generatePlan(userId, goalId);
+
+    return plan;
   }
 }

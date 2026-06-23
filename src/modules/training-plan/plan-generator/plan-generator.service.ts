@@ -1,6 +1,8 @@
-// plan-generator.service.ts — método secundario
-
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { UserProfileService } from 'src/modules/user/user-profile';
 import { addWeeks } from 'date-fns';
 import { buildUserContextForAI } from 'src/modules/user/user-profile/user-profile.utils';
@@ -8,39 +10,39 @@ import { TrainingPlan } from '../entities/training-plan.entity';
 import { Model } from 'mongoose';
 import { AiService } from 'src/modules/ai/ai.service';
 import { InjectModel } from '@nestjs/mongoose';
+import { PlanValidatorService } from '../plan-validator/plan-validator.service';
+import { buildPlanPrompts } from './plan-generator.prompt';
 
 @Injectable()
 export class PlanGeneratorService {
   constructor(
     private readonly userProfileService: UserProfileService,
-    @InjectModel(TrainingPlan.name) // <-- ¡AQUÍ ESTÁ LA MAGIA! Dile a Nest qué modelo inyectar
+    @InjectModel(TrainingPlan.name)
     private readonly trainingPlanModel: Model<TrainingPlan>,
     private readonly aiService: AiService,
+    private readonly planValidator: PlanValidatorService,
   ) {}
 
   async generatePlan(userId: string, goalId: string): Promise<TrainingPlan> {
-    const profile = await this.userProfileService.getFullLlmContext(userId);
-    if (!profile) throw new NotFoundException('User profile not found');
+    const validation = await this.planValidator.validate(userId);
+    if (!validation.valid) {
+      throw new BadRequestException({
+        message: 'Faltan datos obligatorios para generar el plan',
+        missing: validation.missing,
+        recommended: validation.recommended,
+      });
+    }
 
-    const goal = await this.userProfileService.findUserGoalsActive(userId);
-    if (!goal) throw new NotFoundException('User goal not found');
+    const profile = await this.userProfileService.getFullProfileContext(userId);
+    if (!profile.profile) throw new NotFoundException('User profile not found');
+
+    // const goal = await this.userProfileService.findUserGoalsActive(userId);
+    // if (!goal) throw new NotFoundException('User goal not found');
 
     const aiContext = buildUserContextForAI(profile);
 
-    // Definimos prompts limpios
-    const systemPrompt = `Eres un experto preparador físico global con +10 años de experiencia... Generas planes realistas en formato JSON válido.`;
+    const { systemPrompt, userPrompt } = buildPlanPrompts(aiContext);
 
-    const userPrompt = `Genera un plan de entrenamiento completo para el usuario con los siguientes datos:
-    CONTEXTO DEL USUARIO (JSON):
-    ${JSON.stringify(aiContext, null, 2)}
-    
-    REGLAS:
-    - El plan debe tener ${goal?.timelineWeeks || 4} semanas.
-    - Debe generar ${profile?.schedule?.daysPerWeek || 3} sesiones/semana.
-    - NO incluyas secciones extra ni introducciones, solo devuelve un objeto JSON puro.`;
-
-    // 3. LLAMADA GENERALIZADA A LA IA
-    // Puedes cambiar 'groq' por 'openai' y el código de abajo ni se entera
     const providerTarget = process.env.PREFERRED_AI_PROVIDER || 'groq';
 
     const { rawContent, modelUsed, promptUsed, tokensUsed } =
@@ -50,15 +52,12 @@ export class PlanGeneratorService {
         userPrompt,
       });
 
-    // 4. Parsear la respuesta de forma segura
-    // (Limpiamos posibles marcas de Markdown que a veces ponen los LLMs como ```json ... ```)
     const cleanJsonString = rawContent.replace(/```json|```/g, '').trim();
     const parsedPlan = JSON.parse(cleanJsonString);
 
-    // 5. Crear el TrainingPlan en MongoDB con el snapshot unificado
     const plan = await this.trainingPlanModel.create({
       userId,
-      userProfileId: profile.profile?.id,
+      userProfileId: profile.profile._id,
       goalId,
       title: parsedPlan.title || 'Plan de Entrenamiento Personalizado',
       focus: parsedPlan.focus || 'General',
@@ -71,14 +70,13 @@ export class PlanGeneratorService {
       aiSnapshot: {
         contextSentToAI: aiContext,
         promptUsed,
-        modelUsed: modelUsed, // Guardará exactamente si fue llama3 o gpt4o
+        modelUsed,
         rawResponse: rawContent,
         tokensUsed,
         generatedAt: new Date(),
       },
     });
 
-    // 6. Lógica de tus WeekLogs...
     return plan;
   }
 }
