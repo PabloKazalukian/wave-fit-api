@@ -31,14 +31,14 @@ export class UserProfile extends Document {
   @Prop({ required: true, enum: Gender })
   gender: Gender;
 
-  @Prop({ required: true, type: Date })
-  birthDate: Date;
+  @Prop({ type: Date, default: null })
+  birthDate?: Date;
 
-  @Prop({ required: true, type: Number, min: 50, max: 280 })
-  heightCm: number;
+  @Prop({ type: Number, min: 50, max: 280, default: null })
+  heightCm?: number;
 
-  @Prop({ required: true, type: Number, min: 20, max: 500 })
-  weightKg: number;
+  @Prop({ type: Number, min: 20, max: 500, default: null })
+  weightKg?: number;
 
   @Prop({ type: Number, min: 1, max: 70, default: null })
   bodyFatPct?: number;

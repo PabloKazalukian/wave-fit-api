@@ -44,6 +44,6 @@ import { UserProfileService } from './user-profile.service';
   ],
   providers: [UserProfileResolver, UserProfileService],
 
-  exports: [MongooseModule],
+  exports: [MongooseModule, UserProfileService],
 })
 export class UserProfileModule {}

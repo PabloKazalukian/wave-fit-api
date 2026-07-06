@@ -13,12 +13,10 @@ import {
 import { UpdateDayWorkoutStatusInput } from './presentation/dto/update-day-workout-status.input';
 import {
   BadRequestException,
-  NotFoundException,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { GqlAuthGuard } from '../../../../modules/auth/guards/gql-auth.guard';
-import { Types } from 'mongoose';
 import { AuditInterceptor } from 'src/modules/audit-logs/audit-logs.interceptor';
 import { Audit } from 'src/modules/audit-logs/audit-logs.decorator';
 import { extractUserId } from 'src/common/utils/user-id.utils';

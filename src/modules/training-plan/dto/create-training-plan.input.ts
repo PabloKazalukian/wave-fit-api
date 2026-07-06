@@ -1,7 +1,26 @@
-import { InputType, Int, Field } from '@nestjs/graphql';
+import { InputType, Field, Int } from '@nestjs/graphql';
+import { PlanFocus } from '../schema/training-plan.schema';
 
 @InputType()
 export class CreateTrainingPlanInput {
-  @Field(() => Int, { description: 'Example field (placeholder)' })
-  exampleField: number;
+  @Field()
+  title: string;
+
+  @Field({ nullable: true })
+  description?: string;
+
+  @Field(() => PlanFocus)
+  focus: PlanFocus;
+
+  @Field(() => Int)
+  durationWeeks: number;
+
+  @Field(() => Int)
+  trainingDaysPerWeek: number;
+
+  @Field({ nullable: true })
+  startDate?: string;
+
+  @Field(() => [String], { nullable: true })
+  tags?: string[];
 }

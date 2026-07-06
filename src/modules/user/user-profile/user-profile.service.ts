@@ -66,10 +66,10 @@ export class UserProfileService {
 
     const profile = await this.profileModel.create({
       userId: new Types.ObjectId(userId),
-      sex: input.sex,
-      birthDate: new Date(input.birthDate),
-      heightCm: input.heightCm,
-      weightKg: input.weightKg,
+      gender: input.gender,
+      birthDate: input.birthDate ? new Date(input.birthDate) : null,
+      heightCm: input.heightCm ?? null,
+      weightKg: input.weightKg ?? null,
       bodyFatPct: input.bodyFatPct ?? null,
       unitsPreference: input.unitsPreference ?? 'metric',
     });
@@ -178,7 +178,7 @@ export class UserProfileService {
     }
 
     const updateData: Record<string, unknown> = {};
-    if (input.sex !== undefined) updateData.sex = input.sex;
+    if (input.gender !== undefined) updateData.gender = input.gender;
     if (input.birthDate !== undefined)
       updateData.birthDate = new Date(input.birthDate);
     if (input.heightCm !== undefined) updateData.heightCm = input.heightCm;

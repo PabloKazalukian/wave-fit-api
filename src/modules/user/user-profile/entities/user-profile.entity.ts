@@ -9,22 +9,22 @@ export class UserProfile {
   userId: string;
 
   @Field()
-  sex: string;
+  gender: string;
 
-  @Field()
+  @Field({ nullable: true })
   birthDate: Date;
 
-  @Field(() => Float)
-  heightCm: number;
+  @Field(() => Float, { nullable: true })
+  heightCm?: number;
 
-  @Field(() => Float)
-  weightKg: number;
+  @Field(() => Float, { nullable: true })
+  weightKg?: number;
 
   @Field(() => Float, { nullable: true })
   bodyFatPct?: number;
 
-  @Field()
-  unitsPreference: string;
+  @Field({ nullable: true })
+  unitsPreference?: string;
 
   @Field()
   createdAt: Date;

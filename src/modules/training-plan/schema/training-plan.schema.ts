@@ -29,8 +29,8 @@ export class TrainingPlan extends Document {
   @Prop({ type: Types.ObjectId, ref: 'UserProfile', required: true })
   userProfileId: Types.ObjectId;
 
-  // El objetivo activo en el momento de generar el plan
-  @Prop({ type: Types.ObjectId, ref: 'UserGoal', required: true })
+  // El snapshot del perfil del usuario en el momento de generar el plan
+  @Prop({ type: Types.ObjectId, ref: 'Goal', required: true })
   goalId: Types.ObjectId;
 
   // ── Metadata del plan ────────────────────────────────────────────────────

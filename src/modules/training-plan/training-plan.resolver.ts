@@ -1,11 +1,14 @@
-import { Resolver, Query, Mutation, Args, Int, Context } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args, Context } from '@nestjs/graphql';
+import { UseGuards } from '@nestjs/common';
 import { TrainingPlanService } from './training-plan.service';
 import { TrainingPlan } from './entities/training-plan.entity';
 import { CreateTrainingPlanInput } from './dto/create-training-plan.input';
 import { UpdateTrainingPlanInput } from './dto/update-training-plan.input';
 import { extractUserId } from 'src/common/utils/user-id.utils';
+import { GqlAuthGuard } from 'src/modules/auth/guards/gql-auth.guard';
 
 @Resolver(() => TrainingPlan)
+@UseGuards(GqlAuthGuard)
 export class TrainingPlanResolver {
   constructor(private readonly trainingPlanService: TrainingPlanService) {}
 
@@ -13,43 +16,53 @@ export class TrainingPlanResolver {
   createTrainingPlan(
     @Args('createTrainingPlanInput')
     createTrainingPlanInput: CreateTrainingPlanInput,
+    @Context() context,
   ) {
-    return this.trainingPlanService.create(createTrainingPlanInput);
+    const userId = extractUserId(context);
+    return this.trainingPlanService.create(createTrainingPlanInput, userId);
   }
 
-  @Query(() => [TrainingPlan], { name: 'trainingPlan' })
-  findAll() {
-    return this.trainingPlanService.findAll();
+  @Query(() => [TrainingPlan], { name: 'trainingPlans' })
+  findAll(@Context() context) {
+    const userId = extractUserId(context);
+    return this.trainingPlanService.findAll(userId);
   }
 
   @Query(() => TrainingPlan, { name: 'trainingPlan' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
-    return this.trainingPlanService.findOne(id);
+  findOne(
+    @Args('id', { type: () => String }) id: string,
+    @Context() context,
+  ) {
+    const userId = extractUserId(context);
+    return this.trainingPlanService.findOne(id, userId);
   }
 
   @Mutation(() => TrainingPlan)
   updateTrainingPlan(
     @Args('updateTrainingPlanInput')
     updateTrainingPlanInput: UpdateTrainingPlanInput,
+    @Context() context,
   ) {
+    const userId = extractUserId(context);
     return this.trainingPlanService.update(
       updateTrainingPlanInput.id,
       updateTrainingPlanInput,
+      userId,
     );
   }
 
   @Mutation(() => TrainingPlan)
-  removeTrainingPlan(@Args('id', { type: () => Int }) id: number) {
-    return this.trainingPlanService.remove(id);
-  }
-
-  @Mutation(() => TrainingPlan, { name: 'generatePlan' })
-  async generatePlan(
-    @Args('goalId', { type: () => String }) goalId: string,
+  removeTrainingPlan(
+    @Args('id', { type: () => String }) id: string,
     @Context() context,
   ) {
     const userId = extractUserId(context);
+    return this.trainingPlanService.remove(id, userId);
+  }
 
-    return this.trainingPlanService.generate(userId, goalId);
+  @Mutation(() => TrainingPlan, { name: 'generatePlan' })
+  async generatePlan(@Context() context) {
+    const userId = extractUserId(context);
+    return this.trainingPlanService.generate(userId);
   }
 }

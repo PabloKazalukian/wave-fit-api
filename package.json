@@ -52,6 +52,7 @@
     "dotenv": "^17.2.3",
     "fastest-levenshtein": "^1.0.16",
     "graphql": "^16.11.0",
+    "graphql-type-json": "^0.3.2",
     "langchain": "^1.4.4",
     "module-alias": "^2.3.4",
     "mongoose": "^8.19.2",

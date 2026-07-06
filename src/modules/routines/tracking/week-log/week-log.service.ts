@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateWeekLogInput } from './presentation/dto/create-week-log.input';
 import { WeekLog } from './infrastructure/schemas/week-log.schema';
 import { InjectModel } from '@nestjs/mongoose';
@@ -10,11 +6,8 @@ import { Model, Types } from 'mongoose';
 import {
   isDateSameLocalDate,
   utcToLocalDate,
-  localDateToUtc,
-  isValidLocalDate,
 } from '../../../../common/utils/date.utils';
 import { WorkoutSession } from '../workout-session/schema/workout-session.schema';
-import { RoutineDayService } from '../../templates/routine-day/routine-day.service';
 import {
   CreateWeekLogUseCase,
   FindAllWeekLogsByUserUseCase,
@@ -46,7 +39,6 @@ export class WeekLogService {
     @InjectModel(WeekLog.name) private weekLogModel: Model<WeekLog>,
     @InjectModel(WorkoutSession.name)
     private workoutSessionModel: Model<WorkoutSession>,
-    private routineDayService: RoutineDayService,
     private readonly createWeekLogUseCase: CreateWeekLogUseCase,
     private readonly findAllWeekLogsByUserUseCase: FindAllWeekLogsByUserUseCase,
     private readonly findOneWeekLogUseCase: FindOneWeekLogUseCase,

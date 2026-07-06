@@ -7,11 +7,13 @@ import { UserProfileService } from 'src/modules/user/user-profile';
 import { addWeeks } from 'date-fns';
 import { buildUserContextForAI } from 'src/modules/user/user-profile/user-profile.utils';
 import { TrainingPlan } from '../entities/training-plan.entity';
+import { Goal } from '../entities/goal.entity';
 import { Model } from 'mongoose';
 import { AiService } from 'src/modules/ai/ai.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { PlanValidatorService } from '../plan-validator/plan-validator.service';
 import { buildPlanPrompts } from './plan-generator.prompt';
+import { PlanGeneratorParser } from './plan-generator.parser';
 
 @Injectable()
 export class PlanGeneratorService {
@@ -19,11 +21,14 @@ export class PlanGeneratorService {
     private readonly userProfileService: UserProfileService,
     @InjectModel(TrainingPlan.name)
     private readonly trainingPlanModel: Model<TrainingPlan>,
+    @InjectModel(Goal.name)
+    private readonly goalModel: Model<Goal>,
     private readonly aiService: AiService,
     private readonly planValidator: PlanValidatorService,
+    private readonly parser: PlanGeneratorParser,
   ) {}
 
-  async generatePlan(userId: string, goalId: string): Promise<TrainingPlan> {
+  async generatePlan(userId: string): Promise<TrainingPlan> {
     const validation = await this.planValidator.validate(userId);
     if (!validation.valid) {
       throw new BadRequestException({
@@ -36,10 +41,13 @@ export class PlanGeneratorService {
     const profile = await this.userProfileService.getFullProfileContext(userId);
     if (!profile.profile) throw new NotFoundException('User profile not found');
 
-    // const goal = await this.userProfileService.findUserGoalsActive(userId);
-    // if (!goal) throw new NotFoundException('User goal not found');
-
     const aiContext = buildUserContextForAI(profile);
+
+    const goal = await this.goalModel.create({
+      userId,
+      contextSnapshot: aiContext,
+      capturedAt: new Date(),
+    });
 
     const { systemPrompt, userPrompt } = buildPlanPrompts(aiContext);
 
@@ -52,13 +60,12 @@ export class PlanGeneratorService {
         userPrompt,
       });
 
-    const cleanJsonString = rawContent.replace(/```json|```/g, '').trim();
-    const parsedPlan = JSON.parse(cleanJsonString);
+    const parsedPlan = this.parser.parse(rawContent);
 
     const plan = await this.trainingPlanModel.create({
       userId,
       userProfileId: profile.profile._id,
-      goalId,
+      goalId: goal._id,
       title: parsedPlan.title || 'Plan de Entrenamiento Personalizado',
       focus: parsedPlan.focus || 'General',
       startDate: new Date(),

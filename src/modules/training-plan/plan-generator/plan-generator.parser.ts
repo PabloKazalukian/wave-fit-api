@@ -29,13 +29,9 @@ export class PlanGeneratorParser {
   private normalize(plan: any) {
     return {
       title: plan.title ?? 'Training Plan',
-
+      focus: plan.focus ?? 'general',
       durationWeeks: Number(plan.durationWeeks ?? 4),
-
       daysPerWeek: Number(plan.daysPerWeek ?? 3),
-
-      //   weeks:
-      //       plan.weeks.map(...)
     };
   }
 }

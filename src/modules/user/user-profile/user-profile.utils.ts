@@ -1,6 +1,6 @@
 export interface UserContextInput {
   profile?: {
-    sex: string;
+    gender: string;
     birthDate: Date;
     heightCm: number;
     weightKg: number;
@@ -82,7 +82,7 @@ export function buildUserContextForAI(input: any): Record<string, unknown> {
         (365.25 * 24 * 60 * 60 * 1000),
     );
     ctx.biometrics = {
-      sex: input.profile.sex,
+      sex: input.profile.gender,
       age: ageYears,
       heightCm: input.profile.heightCm,
       weightKg: input.profile.weightKg,
@@ -91,7 +91,7 @@ export function buildUserContextForAI(input: any): Record<string, unknown> {
         input.profile.weightKg,
         input.profile.heightCm,
         ageYears,
-        input.profile.sex,
+        input.profile.gender,
       ),
     };
   }

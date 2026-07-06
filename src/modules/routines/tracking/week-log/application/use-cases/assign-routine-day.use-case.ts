@@ -15,7 +15,6 @@ import {
   localDateToUtc,
 } from 'src/common/utils/date.utils';
 import { WeekLogValidator } from '../validators/week-log.validator';
-import { ExtraSessionService } from '../../../extra-session/extra-session.service';
 import { RoutineDayService } from 'src/modules/routines/templates/routine-day/routine-day.service';
 import { Types } from 'mongoose';
 import { WorkoutSessionService } from '../../../workout-session/workout-session.service';
