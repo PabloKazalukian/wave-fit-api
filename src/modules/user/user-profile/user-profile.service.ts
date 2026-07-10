@@ -129,7 +129,7 @@ export class UserProfileService {
       strengthMetrics,
       weightLogs,
     ] = await Promise.all([
-      this.profileModel.findOne({ userId: new Types.ObjectId(userId) }).lean(),
+      this.profileModel.findOne({ userId: new Types.ObjectId(userId) }).exec(),
       this.goalModel
         .findOne({ userId: new Types.ObjectId(userId), isActive: true })
         .lean(),
