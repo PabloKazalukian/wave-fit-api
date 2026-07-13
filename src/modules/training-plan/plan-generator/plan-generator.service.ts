@@ -32,7 +32,7 @@ export class PlanGeneratorService {
     const validation = await this.planValidator.validate(userId);
     if (!validation.valid) {
       throw new BadRequestException({
-        message: 'Faltan datos obligatorios para generar el plan',
+        message: `Faltan datos obligatorios para generar el plan: [${validation.missing.join(', ')}]`,
         missing: validation.missing,
         recommended: validation.recommended,
       });
@@ -52,6 +52,8 @@ export class PlanGeneratorService {
     const { systemPrompt, userPrompt } = buildPlanPrompts(aiContext);
 
     const providerTarget = process.env.PREFERRED_AI_PROVIDER || 'groq';
+
+    // console.log('[prompt]', { providerTarget, systemPrompt, userPrompt });
 
     const { rawContent, modelUsed, promptUsed, tokensUsed } =
       await this.aiService.executePrompt({
@@ -78,7 +80,7 @@ export class PlanGeneratorService {
         contextSentToAI: aiContext,
         promptUsed,
         modelUsed,
-        rawResponse: rawContent,
+        rawResponse: JSON.parse(rawContent),
         tokensUsed,
         generatedAt: new Date(),
       },

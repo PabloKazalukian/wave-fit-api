@@ -8,7 +8,7 @@ registerEnumType(PlanFocus, { name: 'PlanFocus' });
 @ObjectType()
 export class TrainingPlan {
   @Field(() => ID)
-  _id: string;
+  id: string;
 
   @Field(() => ID)
   userId: string;

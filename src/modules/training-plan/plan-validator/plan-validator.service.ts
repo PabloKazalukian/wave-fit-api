@@ -23,8 +23,6 @@ export class PlanValidatorService {
     if (!ctx.profile) {
       missing.push('UserProfile: No existe perfil de usuario');
     } else {
-      if (!ctx.profile.gender)
-        missing.push('UserProfile.gender: Sexo no especificado');
       if (!ctx.profile.birthDate)
         missing.push(
           'UserProfile.birthDate: Fecha de nacimiento no especificada',
@@ -46,32 +44,19 @@ export class PlanValidatorService {
         missing.push(
           'UserGoal.trainingExperience: Nivel de experiencia no especificado',
         );
-      if (!ctx.goal.timelineWeeks || ctx.goal.timelineWeeks <= 0)
-        missing.push(
-          'UserGoal.timelineWeeks: Duración del plan en semanas no especificada',
-        );
     }
 
     if (!ctx.schedule) {
       missing.push('UserSchedule: No hay configuración de horario');
     } else {
-      if (!ctx.schedule.daysPerWeek || ctx.schedule.daysPerWeek <= 0)
+      const hasDaysPerWeek =
+        ctx.schedule.daysPerWeek && ctx.schedule.daysPerWeek > 0;
+      const hasPreferredDays =
+        ctx.schedule.preferredDays && ctx.schedule.preferredDays.length > 0;
+      if (!hasDaysPerWeek && !hasPreferredDays)
         missing.push(
-          'UserSchedule.daysPerWeek: Días de entrenamiento por semana no especificados',
+          'UserSchedule: Días de entrenamiento por semana no especificados (daysPerWeek o preferredDays)',
         );
-      if (
-        !ctx.schedule.sessionDurationMin ||
-        ctx.schedule.sessionDurationMin <= 0
-      )
-        missing.push(
-          'UserSchedule.sessionDurationMin: Duración de sesión no especificada',
-        );
-    }
-
-    if (!ctx.healthConstraints) {
-      missing.push(
-        'UserHealthConstraint: No hay registro de salud / lesiones',
-      );
     }
 
     // ── Recomendados (no bloquean, pero mejoran la calidad del plan) ──

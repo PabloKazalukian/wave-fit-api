@@ -37,7 +37,7 @@ export class AiService {
 
     // 3. Ejecutar la llamada de manera unificada
     // LangChain estandariza la ejecución con .invoke()
-    const response = await model.invoke(messages);
+    const response: any = await model.invoke(messages);
 
     // 4. Control y mapeo de restricciones / tokens de forma unificada
     // LangChain guarda los metadatos de tokens en 'response_metadata' de manera estándar
@@ -46,12 +46,13 @@ export class AiService {
       promptTokens: 0,
       totalTokens: 0,
     };
+    console.log('[tokenUsage]', { tokenUsage });
 
     return {
       rawContent: response.content as string,
       modelUsed: response.response_metadata?.model_name || options.providerName,
       promptUsed: `${options.systemPrompt}\n${options.userPrompt}`,
-      tokensUsed: tokenUsage || 0,
+      tokensUsed: tokenUsage?.totalTokens || 0,
     };
   }
 }
