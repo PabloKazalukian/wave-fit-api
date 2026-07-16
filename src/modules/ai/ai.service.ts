@@ -46,7 +46,7 @@ export class AiService {
       promptTokens: 0,
       totalTokens: 0,
     };
-    console.log('[tokenUsage]', { tokenUsage });
+    // console.log('[tokenUsage]', { tokenUsage });
 
     return {
       rawContent: response.content as string,
