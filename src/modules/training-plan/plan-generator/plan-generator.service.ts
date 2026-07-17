@@ -4,31 +4,54 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { UserProfileService } from 'src/modules/user/user-profile';
-import { addWeeks } from 'date-fns';
 import { buildUserContextForAI } from 'src/modules/user/user-profile/user-profile.utils';
-import { TrainingPlan } from '../entities/training-plan.entity';
 import { Goal } from '../entities/goal.entity';
 import { Model } from 'mongoose';
 import { AiService } from 'src/modules/ai/ai.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { PlanValidatorService } from '../plan-validator/plan-validator.service';
 import { buildPlanPrompts } from './plan-generator.prompt';
-import { PlanGeneratorParser } from './plan-generator.parser';
+import { PlanGeneratorParser, ParsedPlan } from './plan-generator.parser';
+import { ExerciseService } from 'src/modules/routines/templates/exercise/exercise.service';
+import {
+  WeekLogDomain,
+  WeekLogDayDomain,
+  WorkoutSessionCreationData,
+} from 'src/modules/routines/tracking/week-log/domain/entities/week-log.domain';
+import {
+  todayInTimezone,
+  addDaysToLocalDate,
+  localDateToUtc,
+  LocalDate,
+} from 'src/common/utils/date.utils';
+import { randomBytes } from 'crypto';
+
+const DEFAULT_TIMEZONE = 'America/Argentina/Buenos_Aires';
+
+export interface GeneratePlanResult {
+  weekLog: WeekLogDomain;
+  sessions: WorkoutSessionCreationData[];
+  metadata: {
+    title: string;
+    focus: string;
+    durationWeeks: number;
+    daysPerWeek: number;
+  };
+}
 
 @Injectable()
 export class PlanGeneratorService {
   constructor(
     private readonly userProfileService: UserProfileService,
-    @InjectModel(TrainingPlan.name)
-    private readonly trainingPlanModel: Model<TrainingPlan>,
     @InjectModel(Goal.name)
     private readonly goalModel: Model<Goal>,
     private readonly aiService: AiService,
     private readonly planValidator: PlanValidatorService,
     private readonly parser: PlanGeneratorParser,
+    private readonly exerciseService: ExerciseService,
   ) {}
 
-  async generatePlan(userId: string): Promise<TrainingPlan> {
+  async generatePlan(userId: string): Promise<GeneratePlanResult> {
     const validation = await this.planValidator.validate(userId);
     if (!validation.valid) {
       throw new BadRequestException({
@@ -49,11 +72,19 @@ export class PlanGeneratorService {
       capturedAt: new Date(),
     });
 
-    const { systemPrompt, userPrompt } = buildPlanPrompts(aiContext);
+    const exercises = await this.exerciseService.findAll();
+    const exercisesForAI = exercises.map((e) => ({
+      id: e.id,
+      name: e.name,
+      category: e.category,
+    }));
+
+    const { systemPrompt, userPrompt } = buildPlanPrompts(
+      aiContext,
+      exercisesForAI,
+    );
 
     const providerTarget = process.env.PREFERRED_AI_PROVIDER || 'groq';
-
-    // console.log('[prompt]', { providerTarget, systemPrompt, userPrompt });
 
     const { rawContent, modelUsed, promptUsed, tokensUsed } =
       await this.aiService.executePrompt({
@@ -64,28 +95,82 @@ export class PlanGeneratorService {
 
     const parsedPlan = this.parser.parse(rawContent);
 
-    const plan = await this.trainingPlanModel.create({
-      userId,
-      userProfileId: profile.profile._id,
-      goalId: goal._id,
-      title: parsedPlan.title || 'Plan de Entrenamiento Personalizado',
-      focus: parsedPlan.focus || 'General',
-      startDate: new Date(),
-      endDate: addWeeks(new Date(), parsedPlan.durationWeeks || 4),
-      durationWeeks: parsedPlan.durationWeeks || 4,
-      trainingDaysPerWeek: parsedPlan.daysPerWeek || 3,
-      totalSessionsPlanned:
-        (parsedPlan.durationWeeks || 4) * (parsedPlan.daysPerWeek || 3),
-      aiSnapshot: {
-        contextSentToAI: aiContext,
-        promptUsed,
-        modelUsed,
-        rawResponse: JSON.parse(rawContent),
-        tokensUsed,
-        generatedAt: new Date(),
+    const result = this.buildWeekLogFromPlan(userId, parsedPlan);
+
+    return {
+      ...result,
+      metadata: {
+        title: parsedPlan.title,
+        focus: parsedPlan.focus,
+        durationWeeks: parsedPlan.durationWeeks,
+        daysPerWeek: parsedPlan.daysPerWeek,
       },
+    };
+  }
+
+  private buildWeekLogFromPlan(
+    userId: string,
+    plan: ParsedPlan,
+  ): { weekLog: WeekLogDomain; sessions: WorkoutSessionCreationData[] } {
+    const startDate: LocalDate = todayInTimezone(DEFAULT_TIMEZONE);
+    const endDate: LocalDate = addDaysToLocalDate(startDate, 6);
+    const weekLogId = randomBytes(12).toString('hex');
+
+    const sessionsToInsert: WorkoutSessionCreationData[] = [];
+
+    const days: WeekLogDayDomain[] = plan.days.map((day, index) => {
+      const dayLocalDate: LocalDate = addDaysToLocalDate(startDate, index);
+      const dayUtcDate: Date = localDateToUtc(dayLocalDate, DEFAULT_TIMEZONE);
+
+      let workoutSessionId: string | null = null;
+      let exercises: any[] = [];
+
+      if (!day.isRest && day.exercises.length > 0) {
+        const sessionId = randomBytes(12).toString('hex');
+        workoutSessionId = sessionId;
+
+        exercises = day.exercises.map((e) => ({
+          exerciseId: e.exerciseId,
+          series: 0,
+          sets: [],
+        }));
+
+        sessionsToInsert.push({
+          _id: sessionId,
+          userId,
+          weekLogId,
+          date: dayUtcDate,
+          exercises: day.exercises.map((e) => ({
+            exerciseId: e.exerciseId,
+            series: 0,
+            sets: [],
+          })),
+          status: 'not_started',
+        });
+      }
+
+      return new WeekLogDayDomain(
+        day.order,
+        dayUtcDate,
+        day.isRest,
+        workoutSessionId,
+        [],
+        'pending',
+        exercises,
+      );
     });
 
-    return plan;
+    const weekLog = new WeekLogDomain(
+      weekLogId,
+      userId,
+      localDateToUtc(startDate, DEFAULT_TIMEZONE),
+      localDateToUtc(endDate, DEFAULT_TIMEZONE),
+      null,
+      days,
+      false,
+      true,
+    );
+
+    return { weekLog, sessions: sessionsToInsert };
   }
 }

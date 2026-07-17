@@ -9,6 +9,7 @@ import { TrainingPlan, TrainingPlanSchema } from './schema/training-plan.schema'
 import { Goal, GoalSchema } from './schema/goal.schema';
 import { UserProfileModule } from '../user/user-profile';
 import { AiModule } from '../ai/ai.module';
+import { ExerciseModule } from '../routines/templates/exercise/exercise.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { AiModule } from '../ai/ai.module';
     ]),
     AiModule,
     UserProfileModule,
+    ExerciseModule,
   ],
   providers: [
     TrainingPlanService,

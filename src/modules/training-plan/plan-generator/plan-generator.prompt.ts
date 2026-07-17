@@ -3,8 +3,15 @@ export interface BuiltPrompts {
   userPrompt: string;
 }
 
+export interface ExerciseForAI {
+  id: string;
+  name: string;
+  category: string;
+}
+
 export function buildPlanPrompts(
   aiContext: Record<string, unknown>,
+  exercises: ExerciseForAI[],
 ): BuiltPrompts {
   const ctx = aiContext as any;
 
@@ -35,42 +42,42 @@ export function buildPlanPrompts(
     '3. Considera el equipamiento disponible',
     '4. La duración de las sesiones no debe exceder el tiempo disponible',
     '5. Distribuye los grupos musculares según la frecuencia semanal',
-    '6. Incluye progresión semanal (incremento de volumen o intensidad)',
-    '7. El volumen total debe ser apropiado para el nivel de experiencia',
-    '8. Antes de cada sesión incluir 5-10 min de calentamiento y al final 5-10 min de enfriamiento',
+    '6. El volumen total debe ser apropiado para el nivel de experiencia',
+    '7. Antes de cada sesión incluir 5-10 min de calentamiento y al final 5-10 min de enfriamiento',
     '',
-    'ESTRUCTURA JSON ESPERADA:',
+    'ESTRUCTURA JSON ESPERADA (SEMANA COMPLETA DE 7 DÍAS):',
     '{',
     '  "title": "string (nombre del plan)",',
     '  "focus": "hypertrophy|strength|fat_loss|endurance|maintenance|recomp|sport_specific",',
     '  "durationWeeks": "number",',
     '  "daysPerWeek": "number",',
-    '  "weeks": [',
+    '  "days": [',
     '    {',
-    '      "weekNumber": "number",',
-    '      "days": [',
+    '      "order": "number (1-7, donde 1 es el primer día de la semana)",',
+    '      "isRest": "boolean",',
+    '      "focus": "string (opcional, ej: Push, Pull, Piernas)",',
+    '      "exercises": [',
     '        {',
-    '          "order": "number (1-7)",',
-    '          "isRest": "boolean",',
-    '          "focus": "string (opcional, ej: Push, Pull, Piernas)",',
-    '          "exercises": [',
-    '            {',
-    '              "name": "string (nombre del ejercicio en español)",',
-    '              "sets": "number",',
-    '              "reps": "string (ej: 8-10, 12, 5x5)",',
-    '              "rpe": "number (opcional, 1-10)",',
-    '              "restSeconds": "number (opcional)",',
-    '              "notes": "string (opcional)"',
-    '            }',
-    '          ]',
+    '          "exerciseId": "string (ID real del catálogo proporcionado, NO inventar IDs)",',
+    '          "name": "string (nombre del ejercicio)",',
+    '          "plannedSets": "number (series planeadas)",',
+    '          "plannedReps": "string (ej: 8-10, 12, 5x5)",',
+    '          "rpe": "number (opcional, 1-10)",',
+    '          "restSeconds": "number (opcional, en segundos)",',
+    '          "notes": "string (opcional)"',
     '        }',
     '      ]',
     '    }',
     '  ]',
     '}',
     '',
-    'Los días con isRest: true no deben incluir exercises.',
-    'Si el usuario no tiene suficiente equipamiento, adapta los ejercicios a su realidad.',
+    'IMPORTANTE:',
+    '- El array "days" debe contener EXACTAMENTE 7 elementos (una semana completa)',
+    '- El order 1 corresponde al primer día de entrenamiento de la semana',
+    '- isRest: true → el array exercises debe ser []',
+    '- exerciseId DEBE ser un ID válido del catálogo de ejercicios proporcionado',
+    '- NO inventes IDs que no estén en el catálogo',
+    '- Si el usuario no tiene suficiente equipamiento, adapta los ejercicios a su realidad',
   ].join('\n');
 
   let userPrompt = [
@@ -150,6 +157,16 @@ export function buildPlanPrompts(
     userPrompt +=
       '\n\n--- CONSIDERACIONES ADICIONALES ---\n' + extras.join('\n');
   }
+
+  const exerciseList = exercises
+    .map((e) => `- ${e.id} | ${e.name} | ${e.category}`)
+    .join('\n');
+
+  userPrompt += `
+\n--- CATÁLOGO DE EJERCICIOS DISPONIBLES ---
+Usa SOLO estos ejercicios. Cada ejercicio tiene: id | nombre | categoría.
+${exerciseList}
+`;
 
   userPrompt +=
     '\n\nDevuelve SOLO el objeto JSON, sin explicaciones, sin notas adicionales, sin marcas de código.';

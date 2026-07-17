@@ -3,7 +3,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { CreateTrainingPlanInput } from './dto/create-training-plan.input';
 import { UpdateTrainingPlanInput } from './dto/update-training-plan.input';
-import { PlanGeneratorService } from './plan-generator/plan-generator.service';
+import {
+  PlanGeneratorService,
+  GeneratePlanResult,
+} from './plan-generator/plan-generator.service';
 import { TrainingPlan } from './schema/training-plan.schema';
 
 @Injectable()
@@ -81,8 +84,7 @@ export class TrainingPlanService {
     return plan;
   }
 
-  async generate(userId: string) {
-    const plan = await this.generator.generatePlan(userId);
-    return plan;
+  async generate(userId: string): Promise<GeneratePlanResult> {
+    return this.generator.generatePlan(userId);
   }
 }
