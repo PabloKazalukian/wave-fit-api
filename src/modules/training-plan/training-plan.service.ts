@@ -14,7 +14,10 @@ export class TrainingPlanService {
     private readonly generator: PlanGeneratorService,
   ) {}
 
-  async create(createTrainingPlanInput: CreateTrainingPlanInput, userId: string) {
+  async create(
+    createTrainingPlanInput: CreateTrainingPlanInput,
+    userId: string,
+  ) {
     const plan = await this.trainingPlanModel.create({
       userId: new Types.ObjectId(userId),
       title: createTrainingPlanInput.title,
@@ -32,7 +35,7 @@ export class TrainingPlanService {
 
   async findAll(userId: string) {
     return this.trainingPlanModel
-      .find({ userId: new Types.ObjectId(userId) })
+      .find({ userId: userId })
       .sort({ createdAt: -1 })
       .exec();
   }
@@ -48,7 +51,11 @@ export class TrainingPlanService {
     return plan;
   }
 
-  async update(id: string, updateTrainingPlanInput: UpdateTrainingPlanInput, userId: string) {
+  async update(
+    id: string,
+    updateTrainingPlanInput: UpdateTrainingPlanInput,
+    userId: string,
+  ) {
     const plan = await this.trainingPlanModel
       .findOneAndUpdate(
         {
