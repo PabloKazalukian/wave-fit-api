@@ -43,8 +43,8 @@ export class TrainingPlanService {
   async findOne(id: string, userId: string) {
     const plan = await this.trainingPlanModel
       .findOne({
-        _id: new Types.ObjectId(id),
-        userId: new Types.ObjectId(userId),
+        _id: id,
+        userId: userId,
       })
       .exec();
     if (!plan) throw new NotFoundException('Training plan not found');
@@ -60,7 +60,7 @@ export class TrainingPlanService {
       .findOneAndUpdate(
         {
           _id: new Types.ObjectId(id),
-          userId: new Types.ObjectId(userId),
+          userId: userId,
         },
         { $set: updateTrainingPlanInput },
         { new: true },
