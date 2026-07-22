@@ -22,7 +22,9 @@
     "test:module": "node scripts/test-module.js",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "migration:fix-ids": "ts-node -r tsconfig-paths/register src/database/migrations/001-fix-string-ids.migration.ts"
+    "migration:fix-ids": "ts-node -r tsconfig-paths/register src/database/migrations/001-fix-string-ids.migration.ts",
+    "check:exercise-refs": "ts-node -r tsconfig-paths/register src/database/scripts/check-exercise-references.ts",
+    "fix:exercise-refs": "ts-node -r tsconfig-paths/register src/database/scripts/fix-exercise-references.ts"
   },
   "dependencies": {
     "@apollo/server": "^5.0.0",
