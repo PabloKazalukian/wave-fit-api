@@ -71,7 +71,7 @@ export class PlanGeneratorParser {
     return {
       title: plan.title ?? 'Training Plan',
       focus: plan.focus ?? 'general',
-      durationWeeks: Number(plan.durationWeeks ?? 4),
+      durationWeeks: Math.max(1, Number(plan.durationWeeks ?? 1)),
       daysPerWeek: Number(plan.daysPerWeek ?? 3),
       days: this.normalizeDays(plan.days),
     };

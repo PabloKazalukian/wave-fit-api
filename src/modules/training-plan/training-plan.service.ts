@@ -3,11 +3,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { CreateTrainingPlanInput } from './dto/create-training-plan.input';
 import { UpdateTrainingPlanInput } from './dto/update-training-plan.input';
-import {
-  PlanGeneratorService,
-  GeneratePlanResult,
-} from './plan-generator/plan-generator.service';
-import { TrainingPlan } from './schema/training-plan.schema';
+import { PlanGeneratorService } from './plan-generator/plan-generator.service';
+import { TrainingPlan, PlanStatus } from './schema/training-plan.schema';
 
 @Injectable()
 export class TrainingPlanService {
@@ -84,7 +81,40 @@ export class TrainingPlanService {
     return plan;
   }
 
-  async generate(userId: string): Promise<GeneratePlanResult> {
-    return this.generator.generatePlan(userId);
+  async generate(userId: string) {
+    const result = await this.generator.generatePlan(userId);
+
+    const startDate = result.weekLog.startDate;
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + result.metadata.durationWeeks * 7);
+
+    const plan = await this.trainingPlanModel.create({
+      userId: new Types.ObjectId(userId),
+      userProfileId: new Types.ObjectId(result.userProfileId),
+      goalId: new Types.ObjectId(result.goalId),
+      title: result.metadata.title,
+      focus: result.metadata.focus,
+      status: PlanStatus.DRAFT,
+      startDate,
+      endDate,
+      durationWeeks: result.metadata.durationWeeks,
+      trainingDaysPerWeek: result.metadata.daysPerWeek,
+      aiSnapshot: result.aiSnapshot,
+      confirmed: false,
+    });
+
+    return plan;
+  }
+
+  async confirm(id: string, userId: string) {
+    const plan = await this.trainingPlanModel
+      .findOneAndUpdate(
+        { _id: new Types.ObjectId(id), userId },
+        { $set: { confirmed: true } },
+        { new: true },
+      )
+      .exec();
+    if (!plan) throw new NotFoundException('Training plan not found');
+    return plan;
   }
 }

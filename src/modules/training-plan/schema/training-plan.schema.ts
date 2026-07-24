@@ -92,6 +92,18 @@ export class TrainingPlan extends Document {
   // Etiquetas libres para filtrar en el historial
   @Prop({ type: [String], default: [] })
   tags: string[];
+
+  // ── Confirmación ────────────────────────────────────────────────────────
+  // true = plan confirmado por el usuario, listo para activar/tracking
+  @Prop({ type: Boolean, default: false })
+  confirmed: boolean;
+
+  // ── Timestamps (declarados explícitamente para tipado TS con timestamps: true) ──
+  @Prop({ type: Date })
+  createdAt: Date;
+
+  @Prop({ type: Date })
+  updatedAt: Date;
 }
 
 export const TrainingPlanSchema = SchemaFactory.createForClass(TrainingPlan);

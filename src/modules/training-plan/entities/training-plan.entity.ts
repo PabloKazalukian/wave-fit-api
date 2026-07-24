@@ -64,6 +64,9 @@ export class TrainingPlan {
   @Field(() => [String])
   tags: string[];
 
+  @Field()
+  confirmed: boolean;
+
   @Field(() => GraphQLISODateTime)
   createdAt: Date;
 

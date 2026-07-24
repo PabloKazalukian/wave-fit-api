@@ -4,7 +4,7 @@
 
 ### `generatePlan`
 
-Genera un plan de entrenamiento personalizado usando IA y devuelve un **WeekLog simulado** (sin persistir) con WorkoutSessions que referencian exercises reales del catálogo. No recibe argumentos; obtiene el userId del JWT.
+Genera un plan de entrenamiento personalizado usando IA, lo **persiste** en MongoDB como `TrainingPlan` con `confirmed: false`, y lo devuelve. No recibe argumentos; obtiene el userId del JWT.
 
 **Qué hace:**
 
@@ -14,14 +14,15 @@ Genera un plan de entrenamiento personalizado usando IA y devuelve un **WeekLog 
 4. Obtiene el catálogo completo de exercises (`ExerciseService.findAll()`).
 5. Envía el contexto + exercises a la IA (Groq por defecto) con un prompt que incluye la lista de exercises disponibles (id, name, category).
 6. La IA responde con una semana completa (7 días) usando **IDs reales** del catálogo.
-7. Parsea y valida la respuesta: exactamente 7 días, exerciseIds válidos.
+7. Parsea y valida la respuesta: exactamente 7 días, exerciseIds válidos. `durationWeeks` mínimo 1.
 8. Construye un `WeekLogDomain` en memoria con WorkoutSessions para cada día de entrenamiento.
-9. Devuelve el WeekLog simulado al cliente (sin persistir en MongoDB).
+9. **Persiste** un `TrainingPlan` en MongoDB con status DRAFT y `confirmed: false`.
+10. Devuelve el `TrainingPlan` al cliente.
 
 **Flujo del cliente:**
 
 ```
-generatePlan → WeekLog simulado → cliente modifica si quiere → savePlan (futuro)
+generatePlan → TrainingPlan (confirmed: false) → cliente revisa → confirmPlan(id)
 ```
 
 **Requisitos previos (si falla, 400):**
@@ -35,123 +36,101 @@ mutation GeneratePlan {
   generatePlan {
     id
     userId
+    userProfileId
+    goalId
+    title
+    description
+    focus
+    status
     startDate
     endDate
-    planId
-    completed
-    active
-    days {
-      order
-      date
-      isRest
-      workoutSessionId
-      exercises {
-        exerciseId
-        series
-        sets {
-          reps
-          weights
-        }
-        notes
-      }
-      extraSessionIds
-      status
+    durationWeeks
+    trainingDaysPerWeek
+    confirmed
+    aiSnapshot {
+      modelUsed
+      tokensUsed
+      generatedAt
     }
+    overallAdherencePercent
+    totalSessionsCompleted
+    totalSessionsPlanned
+    version
+    tags
+    createdAt
+    updatedAt
   }
 }
 ```
 
-**Apollo Angular:**
-
-```typescript
-// generate-plan.mutation.ts
-import { gql } from 'apollo-angular';
-
-export const GENERATE_PLAN = gql`
-  mutation GeneratePlan {
-    generatePlan {
-      id
-      userId
-      startDate
-      endDate
-      completed
-      active
-      days {
-        order
-        date
-        isRest
-        workoutSessionId
-        exercises {
-          exerciseId
-          series
-          sets {
-            reps
-            weights
-          }
-        }
-        status
-      }
-    }
-  }
-`;
-```
-
-```typescript
-// componente.service.ts o componente.ts
-import { GENERATE_PLAN } from './generate-plan.mutation';
-
-constructor(private apollo: Apollo) {}
-
-generatePlan() {
-  return this.apollo.mutate({
-    mutation: GENERATE_PLAN,
-  }).subscribe(({ data }) => {
-    const weekLog = data?.generatePlan;
-    console.log('WeekLog generado:', weekLog.id);
-    console.log('Días:', weekLog.days.length);
-  });
-}
-```
-
-**Valores de retorno (WeekLog):**
+**Valores de retorno (TrainingPlan):**
 
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
-| `id` | `ID` | ID temporal del WeekLog (random hex, se reemplaza al persistir) |
+| `id` | `ID` | ID del TrainingPlan persistido |
 | `userId` | `ID` | ID del usuario |
+| `userProfileId` | `ID` | ID del perfil de usuario usado para generar |
+| `goalId` | `ID` | ID del snapshot de Goal (auditoría) |
+| `title` | `String` | Nombre del plan (generado por la IA) |
+| `description` | `String?` | Descripción opcional |
+| `focus` | `PlanFocus` | `hypertrophy`, `strength`, `endurance`, `fat_loss`, `recomp`, `maintenance`, `sport_specific` |
+| `status` | `PlanStatus` | `draft` (al generar) |
 | `startDate` | `DateTime` | Fecha de inicio (hoy en UTC) |
-| `endDate` | `DateTime` | Fecha fin (startDate + 6 días) |
-| `planId` | `ID?` | `null` (no hay RoutinePlan asociado) |
-| `completed` | `Boolean` | `false` (recién generado) |
-| `active` | `Boolean` | `true` |
-| `days` | `[WeekLogDay]` | 7 días de la semana |
-
-**`days[]` (WeekLogDay):**
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `order` | `Int` | Posición del día (1–7) |
-| `date` | `DateTime` | Fecha UTC del día |
-| `isRest` | `Boolean` | Si es día de descanso |
-| `workoutSessionId` | `ID?` | ID temporal de la WorkoutSession asociada (null si es rest) |
-| `exercises` | `[ExercisePerformance]` | Ejercicios planeados (solo días de entrenamiento) |
-| `extraSessionIds` | `[ID]` | `[]` (sin sesiones extras) |
-| `status` | `String` | `'pending'` |
-
-**`exercises[]` (ExercisePerformance):**
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `exerciseId` | `ID` | ID real del catálogo de exercises |
-| `series` | `Int` | `0` (el usuario completa) |
-| `sets` | `[SetPerformance]` | `[]` (el usuario completa) |
-| `notes` | `String?` | Notas de la IA (opcional) |
+| `endDate` | `DateTime` | Fecha fin (startDate + durationWeeks * 7 días) |
+| `durationWeeks` | `Int` | Duración en semanas (mínimo 1, definido por la IA) |
+| `trainingDaysPerWeek` | `Int` | Días de entrenamiento por semana |
+| `confirmed` | `Boolean` | `false` (recién generado, pendiente de confirmación) |
+| `aiSnapshot` | `AiSnapshot` | Contexto enviado, prompt, modelo, respuesta cruda, tokens |
+| `overallAdherencePercent` | `Float` | `0` (sin datos de progreso) |
+| `totalSessionsCompleted` | `Int` | `0` |
+| `totalSessionsPlanned` | `Int` | `0` |
+| `version` | `Int` | `1` |
+| `tags` | `[String]` | `[]` |
+| `createdAt` | `DateTime` | Fecha de creación |
+| `updatedAt` | `DateTime` | Fecha de última actualización |
 
 **Errores posibles:**
 
 - `400 Bad Request` — Faltan datos en el UserProfile (campos faltantes en `missing`)
 - `400 Bad Request` — La IA devolvió una estructura inválida (menos de 7 días, exerciseId faltante)
 - `404 Not Found` — UserProfile no encontrado
+
+---
+
+### `confirmPlan(id: String)`
+
+Confirma un plan generado previamente, cambiando `confirmed` de `false` a `true`. Recibe el ID del TrainingPlan; el userId se obtiene del JWT.
+
+**Qué hace:**
+
+1. Busca el `TrainingPlan` por `_id` y `userId` (scope por usuario).
+2. Si no existe, lanza `NotFoundException`.
+3. Setea `confirmed: true`.
+4. Devuelve el `TrainingPlan` actualizado.
+
+**Flujo del cliente:**
+
+```
+generatePlan → TrainingPlan (confirmed: false) → confirmPlan(id) → TrainingPlan (confirmed: true)
+```
+
+**GraphQL:**
+
+```graphql
+mutation ConfirmPlan($id: String!) {
+  confirmPlan(id: $id) {
+    id
+    title
+    confirmed
+    status
+    updatedAt
+  }
+}
+```
+
+**Errores posibles:**
+
+- `404 Not Found` — TrainingPlan no encontrado (ID inválido o no pertenece al usuario)
 
 ---
 
@@ -168,6 +147,7 @@ query GetTrainingPlans {
     title
     focus
     status
+    confirmed
     durationWeeks
     trainingDaysPerWeek
     createdAt
@@ -187,6 +167,7 @@ query GetTrainingPlan($id: String!) {
     description
     focus
     status
+    confirmed
     startDate
     endDate
     durationWeeks
@@ -232,20 +213,26 @@ mutation RemoveTrainingPlan($id: String!) {
 
 ```
 PlanGeneratorService
-  ├─ ExerciseService.findAll()        → catálogo de exercises
-  ├─ UserProfileService               → contexto del usuario
-  ├─ buildPlanPrompts(ctx, exercises)  → systemPrompt + userPrompt
+  ├─ PlanValidatorService.validate()    → valida perfil completo
+  ├─ ExerciseService.findAll()          → catálogo de exercises
+  ├─ UserProfileService                 → contexto del usuario
+  ├─ Goal model.create()                → snapshot de auditoría
+  ├─ buildPlanPrompts(ctx, exercises)   → systemPrompt + userPrompt
   │    ├─ systemPrompt: rol + estructura JSON esperada (days[])
   │    └─ userPrompt: datos usuario + consideraciones + catálogo exercises
-  ├─ AiService.executePrompt()         → rawContent (JSON)
-  ├─ PlanGeneratorParser.parse()       → ParsedPlan { days: ParsedDay[] }
+  ├─ AiService.executePrompt()          → rawContent (JSON)
+  ├─ PlanGeneratorParser.parse()        → ParsedPlan { days: ParsedDay[] }
   │    ├─ validate(): 7 días, order/isRest/exerciseId
-  │    └─ normalize(): estructura tipada
-  └─ buildWeekLogFromPlan()            → WeekLogDomain + WorkoutSessionCreationData[]
+  │    └─ normalize(): estructura tipada (durationWeeks min 1)
+  └─ buildWeekLogFromPlan()             → WeekLogDomain + WorkoutSessionCreationData[]
        ├─ startDate = hoy (LocalDate)
        ├─ endDate = hoy + 6 días
        ├─ days[0-6]: WeekLogDayDomain con dates UTC
        └─ sessions: WorkoutSessionCreationData para días no-rest
+
+TrainingPlanService.generate()
+  ├─ PlanGeneratorService.generatePlan() → result (goalId, userProfileId, aiSnapshot, weekLog, metadata)
+  └─ trainingPlanModel.create()          → TrainingPlan persistido (confirmed: false)
 ```
 
-**Nota:** El WeekLog y las WorkoutSessions se construyen en memoria con IDs temporales (random hex). No se persisten hasta que el cliente llame a la mutación `savePlan` (futuro).
+**Nota:** El WeekLog y las WorkoutSessions se construyen en memoria dentro del PlanGeneratorService. Se persisten como parte del TrainingPlan. La confirmación del plan (`confirmPlan`) es el paso siguiente para activarlo.

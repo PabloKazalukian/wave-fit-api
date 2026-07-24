@@ -31,6 +31,15 @@ const DEFAULT_TIMEZONE = 'America/Argentina/Buenos_Aires';
 export interface GeneratePlanResult {
   weekLog: WeekLogDomain;
   sessions: WorkoutSessionCreationData[];
+  goalId: string;
+  userProfileId: string;
+  aiSnapshot: {
+    contextSentToAI: Record<string, any>;
+    promptUsed: string;
+    modelUsed: string;
+    rawResponse: Record<string, any>;
+    tokensUsed?: number;
+  };
   metadata: {
     title: string;
     focus: string;
@@ -99,6 +108,15 @@ export class PlanGeneratorService {
 
     return {
       ...result,
+      goalId: goal._id.toString(),
+      userProfileId: profile.profile._id.toString(),
+      aiSnapshot: {
+        contextSentToAI: aiContext,
+        promptUsed,
+        modelUsed,
+        rawResponse: JSON.parse(rawContent),
+        tokensUsed,
+      },
       metadata: {
         title: parsedPlan.title,
         focus: parsedPlan.focus,
