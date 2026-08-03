@@ -38,15 +38,30 @@ export class TrainingPlanService {
     return plan;
   }
 
-  async findAll(userId: string) {
-    const plans = await this.trainingPlanModel
-      .find({ userId: new Types.ObjectId(userId) })
-      .sort({ createdAt: -1 })
-      .exec();
+  async findAll(userId: string, limit: number = 5, offset: number = 0) {
+    const userIdObj = new Types.ObjectId(userId);
+
+    const [plans, total] = await Promise.all([
+      this.trainingPlanModel
+        .find({ userId: userIdObj })
+        .sort({ createdAt: -1 })
+        .skip(offset)
+        .limit(limit)
+        .exec(),
+      this.trainingPlanModel.countDocuments({ userId: userIdObj }),
+    ]);
+
     plans.forEach((plan) => {
       plan.focus = normalizePlanFocus(plan.focus as string);
     });
-    return plans;
+
+    return {
+      items: plans,
+      total,
+      limit,
+      offset,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async findOne(id: string, userId: string) {

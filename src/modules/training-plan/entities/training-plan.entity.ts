@@ -73,3 +73,27 @@ export class TrainingPlan {
   @Field(() => GraphQLISODateTime)
   updatedAt: Date;
 }
+
+// Página paginada de TrainingPlans (paginación numerada con offset/limit)
+@ObjectType()
+export class TrainingPlanPage {
+  // Plans de la página actual
+  @Field(() => [TrainingPlan])
+  items: TrainingPlan[];
+
+  // Total de planes del usuario (para calcular totalPages)
+  @Field(() => Int)
+  total: number;
+
+  // Tamaño de página usado en la consulta
+  @Field(() => Int)
+  limit: number;
+
+  // Desplazamiento usado en la consulta (offset = (page - 1) * limit)
+  @Field(() => Int)
+  offset: number;
+
+  // Páginas totales: ceil(total / limit)
+  @Field(() => Int)
+  totalPages: number;
+}

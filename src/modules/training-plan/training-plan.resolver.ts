@@ -1,7 +1,10 @@
-import { Resolver, Query, Mutation, Args, Context } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args, Context, Int } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { TrainingPlanService } from './training-plan.service';
-import { TrainingPlan } from './entities/training-plan.entity';
+import {
+  TrainingPlan,
+  TrainingPlanPage,
+} from './entities/training-plan.entity';
 import { CreateTrainingPlanInput } from './dto/create-training-plan.input';
 import { UpdateTrainingPlanInput } from './dto/update-training-plan.input';
 import { extractUserId } from 'src/common/utils/user-id.utils';
@@ -22,10 +25,16 @@ export class TrainingPlanResolver {
     return this.trainingPlanService.create(createTrainingPlanInput, userId);
   }
 
-  @Query(() => [TrainingPlan], { name: 'trainingPlans' })
-  findAll(@Context() context) {
+  @Query(() => TrainingPlanPage, { name: 'trainingPlans' })
+  findAll(
+    @Context() context,
+    @Args('limit', { type: () => Int, nullable: true, defaultValue: 5 })
+    limit: number,
+    @Args('offset', { type: () => Int, nullable: true, defaultValue: 0 })
+    offset: number,
+  ) {
     const userId = extractUserId(context);
-    return this.trainingPlanService.findAll(userId);
+    return this.trainingPlanService.findAll(userId, limit, offset);
   }
 
   @Query(() => TrainingPlan, { name: 'trainingPlan' })

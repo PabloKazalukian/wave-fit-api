@@ -138,22 +138,37 @@ mutation ConfirmPlan($id: String!) {
 
 ### `trainingPlans`
 
-Devuelve todos los planes del usuario autenticado, ordenados por `createdAt` descendente.
+Devuelve los planes del usuario autenticado con **paginación numerada** (offset/limit), ordenados por `createdAt` descendente.
+
+| Argumento | Tipo | Default | Descripción |
+|-----------|------|---------|-------------|
+| `limit` | `Int` | `5` | Cantidad de planes por página |
+| `offset` | `Int` | `0` | Desplazamiento (`(page - 1) * limit`) |
+
+Retorna un objeto `TrainingPlanPage`: `items[]`, `total`, `limit`, `offset`, `totalPages`.
 
 ```graphql
-query GetTrainingPlans {
-  trainingPlans {
-    id
-    title
-    focus
-    status
-    confirmed
-    durationWeeks
-    trainingDaysPerWeek
-    createdAt
+query GetTrainingPlans($limit: Int!, $offset: Int!) {
+  trainingPlans(limit: $limit, offset: $offset) {
+    items {
+      id
+      title
+      focus
+      status
+      confirmed
+      durationWeeks
+      trainingDaysPerWeek
+      createdAt
+    }
+    total
+    limit
+    offset
+    totalPages
   }
 }
 ```
+
+**Cálculo de páginas:** `page 1 → offset 0`, `page 2 → offset = limit`, `page N → offset = (N - 1) * limit`. Total de páginas: `totalPages = Math.ceil(total / limit)`.
 
 ### `trainingPlan(id: String)`
 
