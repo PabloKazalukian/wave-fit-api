@@ -22,6 +22,22 @@ export enum PlanFocus {
   RECOMP = 'recomp', // Recomposición corporal (bajar grasa + ganar músculo)
 }
 
+// Mapeo de valores legacy (enum anterior) o desconocidos a valores válidos.
+// Se aplica al leer documentos para que el enum GraphQL nunca reciba un
+// valor inválido (ej: "hypertrophy") y rompa la serialización.
+const LEGACY_PLAN_FOCUS: Record<string, PlanFocus> = {
+  hypertrophy: PlanFocus.MUSCLE_GAIN, // equivalente semántico de muscle_gain
+  sport_specific: PlanFocus.STRENGTH, // rendimiento deportivo → fuerza
+  general: PlanFocus.MAINTENANCE, // fallback del parser anterior
+};
+
+export function normalizePlanFocus(focus: string): PlanFocus {
+  if (Object.values(PlanFocus).includes(focus as PlanFocus)) {
+    return focus as PlanFocus;
+  }
+  return LEGACY_PLAN_FOCUS[focus] ?? PlanFocus.MAINTENANCE;
+}
+
 @Schema({ timestamps: true })
 export class TrainingPlan extends Document {
   // ── Relaciones ───────────────────────────────────────────────────────────

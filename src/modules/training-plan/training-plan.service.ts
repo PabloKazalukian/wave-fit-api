@@ -4,7 +4,11 @@ import { Model, Types } from 'mongoose';
 import { CreateTrainingPlanInput } from './dto/create-training-plan.input';
 import { UpdateTrainingPlanInput } from './dto/update-training-plan.input';
 import { PlanGeneratorService } from './plan-generator/plan-generator.service';
-import { TrainingPlan, PlanStatus } from './schema/training-plan.schema';
+import {
+  TrainingPlan,
+  PlanStatus,
+  normalizePlanFocus,
+} from './schema/training-plan.schema';
 
 @Injectable()
 export class TrainingPlanService {
@@ -30,24 +34,30 @@ export class TrainingPlanService {
       trainingDaysPerWeek: createTrainingPlanInput.trainingDaysPerWeek,
       tags: createTrainingPlanInput.tags ?? [],
     });
+    plan.focus = normalizePlanFocus(plan.focus as string);
     return plan;
   }
 
   async findAll(userId: string) {
-    return this.trainingPlanModel
-      .find({ userId: userId })
+    const plans = await this.trainingPlanModel
+      .find({ userId: new Types.ObjectId(userId) })
       .sort({ createdAt: -1 })
       .exec();
+    plans.forEach((plan) => {
+      plan.focus = normalizePlanFocus(plan.focus as string);
+    });
+    return plans;
   }
 
   async findOne(id: string, userId: string) {
     const plan = await this.trainingPlanModel
       .findOne({
         _id: id,
-        userId: userId,
+        userId: new Types.ObjectId(userId),
       })
       .exec();
     if (!plan) throw new NotFoundException('Training plan not found');
+    plan.focus = normalizePlanFocus(plan.focus as string);
     return plan;
   }
 
@@ -60,13 +70,14 @@ export class TrainingPlanService {
       .findOneAndUpdate(
         {
           _id: new Types.ObjectId(id),
-          userId: userId,
+          userId: new Types.ObjectId(userId),
         },
         { $set: updateTrainingPlanInput },
         { new: true },
       )
       .exec();
     if (!plan) throw new NotFoundException('Training plan not found');
+    plan.focus = normalizePlanFocus(plan.focus as string);
     return plan;
   }
 
@@ -103,18 +114,20 @@ export class TrainingPlanService {
       confirmed: false,
     });
 
+    plan.focus = normalizePlanFocus(plan.focus as string);
     return plan;
   }
 
   async confirm(id: string, userId: string) {
     const plan = await this.trainingPlanModel
       .findOneAndUpdate(
-        { _id: new Types.ObjectId(id), userId },
+        { _id: new Types.ObjectId(id), userId: new Types.ObjectId(userId) },
         { $set: { confirmed: true } },
         { new: true },
       )
       .exec();
     if (!plan) throw new NotFoundException('Training plan not found');
+    plan.focus = normalizePlanFocus(plan.focus as string);
     return plan;
   }
 }

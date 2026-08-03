@@ -61,7 +61,10 @@ export class PlanGeneratorService {
     private readonly exerciseService: ExerciseService,
   ) {}
 
-  async generatePlan(userId: string, comment: string = ''): Promise<GeneratePlanResult> {
+  async generatePlan(
+    userId: string,
+    comment: string = '',
+  ): Promise<GeneratePlanResult> {
     const validation = await this.planValidator.validate(userId);
     if (!validation.valid) {
       throw new BadRequestException({
