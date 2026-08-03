@@ -29,10 +29,7 @@ export class TrainingPlanResolver {
   }
 
   @Query(() => TrainingPlan, { name: 'trainingPlan' })
-  findOne(
-    @Args('id', { type: () => String }) id: string,
-    @Context() context,
-  ) {
+  findOne(@Args('id', { type: () => String }) id: string, @Context() context) {
     const userId = extractUserId(context);
     return this.trainingPlanService.findOne(id, userId);
   }
@@ -61,9 +58,13 @@ export class TrainingPlanResolver {
   }
 
   @Mutation(() => TrainingPlan, { name: 'generatePlan' })
-  async generatePlan(@Context() context) {
+  async generatePlan(
+    @Args('comment', { type: () => String, nullable: true, defaultValue: '' })
+    comment: string,
+    @Context() context,
+  ) {
     const userId = extractUserId(context);
-    return this.trainingPlanService.generate(userId);
+    return this.trainingPlanService.generate(userId, comment);
   }
 
   @Mutation(() => TrainingPlan, { name: 'confirmPlan' })

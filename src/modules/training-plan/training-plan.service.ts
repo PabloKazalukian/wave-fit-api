@@ -81,8 +81,8 @@ export class TrainingPlanService {
     return plan;
   }
 
-  async generate(userId: string) {
-    const result = await this.generator.generatePlan(userId);
+  async generate(userId: string, comment: string = '') {
+    const result = await this.generator.generatePlan(userId, comment);
 
     const startDate = result.weekLog.startDate;
     const endDate = new Date(startDate);

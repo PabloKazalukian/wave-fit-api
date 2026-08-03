@@ -73,7 +73,7 @@ mutation GeneratePlan {
 | `goalId` | `ID` | ID del snapshot de Goal (auditoría) |
 | `title` | `String` | Nombre del plan (generado por la IA) |
 | `description` | `String?` | Descripción opcional |
-| `focus` | `PlanFocus` | `hypertrophy`, `strength`, `endurance`, `fat_loss`, `recomp`, `maintenance`, `sport_specific` |
+| `focus` | `PlanFocus` | `fat_loss`, `muscle_gain`, `strength`, `endurance`, `maintenance`, `recomp` |
 | `status` | `PlanStatus` | `draft` (al generar) |
 | `startDate` | `DateTime` | Fecha de inicio (hoy en UTC) |
 | `endDate` | `DateTime` | Fecha fin (startDate + durationWeeks * 7 días) |

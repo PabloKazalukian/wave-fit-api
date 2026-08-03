@@ -10,46 +10,56 @@ export enum PlanStatus {
   ARCHIVED = 'archived', // histórico visible pero inactivo
 }
 
+// Objetivo principal del plan. Debe coincidir con los valores de
+// PrimaryGoal del goals.schema del perfil de usuario, ya que la IA
+// lo deriva de goal.primary. Ambos conjuntos se mantienen idénticos.
 export enum PlanFocus {
-  HYPERTROPHY = 'hypertrophy',
-  STRENGTH = 'strength',
-  ENDURANCE = 'endurance',
-  FAT_LOSS = 'fat_loss',
-  RECOMP = 'recomp',
-  MAINTENANCE = 'maintenance',
-  SPORT_SPECIFIC = 'sport_specific',
+  FAT_LOSS = 'fat_loss', // Pérdida de grasa / déficit calórico
+  MUSCLE_GAIN = 'muscle_gain', // Hipertrofia / ganancia muscular
+  STRENGTH = 'strength', // Fuerza máxima
+  ENDURANCE = 'endurance', // Resistencia muscular/cardiovascular
+  MAINTENANCE = 'maintenance', // Mantenimiento del estado actual
+  RECOMP = 'recomp', // Recomposición corporal (bajar grasa + ganar músculo)
 }
 
 @Schema({ timestamps: true })
 export class TrainingPlan extends Document {
   // ── Relaciones ───────────────────────────────────────────────────────────
+  // Usuario dueño del plan (clave para el scope de todas las queries)
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
   userId: Types.ObjectId;
 
+  // Perfil de usuario usado para generar el plan (edad, peso, equipo, etc.)
   @Prop({ type: Types.ObjectId, ref: 'UserProfile', required: true })
   userProfileId: Types.ObjectId;
 
-  // El snapshot del perfil del usuario en el momento de generar el plan
+  // Snapshot del objetivo del usuario en el momento de generar el plan (auditoría)
   @Prop({ type: Types.ObjectId, ref: 'Goal', required: true })
   goalId: Types.ObjectId;
 
   // ── Metadata del plan ────────────────────────────────────────────────────
+  // Nombre visible del plan, ej: "Plan Hipertrofia – Junio 2025"
   @Prop({ type: String, required: true, trim: true })
-  title: string; // "Plan Hipertrofia – Junio 2025"
+  title: string;
 
+  // Descripción libre opcional del plan
   @Prop({ type: String, trim: true, default: null })
   description?: string;
 
+  // Objetivo principal (enum PlanFocus, alineado con PrimaryGoal del perfil)
   @Prop({ required: true, enum: PlanFocus })
   focus: PlanFocus;
 
+  // Estado del ciclo de vida: draft → active → completed/abandoned/archived
   @Prop({ enum: PlanStatus, default: PlanStatus.DRAFT, index: true })
   status: PlanStatus;
 
   // ── Fechas ───────────────────────────────────────────────────────────────
+  // Primer día del plan (hoy en UTC al generar)
   @Prop({ type: Date, required: true })
   startDate: Date;
 
+  // Último día del plan (startDate + durationWeeks * 7)
   @Prop({ type: Date, required: true })
   endDate: Date;
 
@@ -71,12 +81,15 @@ export class TrainingPlan extends Document {
   // documentos enormes. Usar populate o lookups según necesidad.
 
   // ── Progreso global ──────────────────────────────────────────────────────
+  // Porcentaje de adherencia (sesiones completadas / planeadas), 0-100
   @Prop({ type: Number, default: 0, min: 0, max: 100 })
   overallAdherencePercent: number;
 
+  // Sesiones de entrenamiento completadas hasta el momento
   @Prop({ type: Number, default: 0 })
   totalSessionsCompleted: number;
 
+  // Sesiones totales programadas en el plan
   @Prop({ type: Number, default: 0 })
   totalSessionsPlanned: number;
 

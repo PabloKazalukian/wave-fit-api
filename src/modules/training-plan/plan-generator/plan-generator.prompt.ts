@@ -12,6 +12,7 @@ export interface ExerciseForAI {
 export function buildPlanPrompts(
   aiContext: Record<string, unknown>,
   exercises: ExerciseForAI[],
+  comment: string = '',
 ): BuiltPrompts {
   const ctx = aiContext as any;
 
@@ -44,11 +45,16 @@ export function buildPlanPrompts(
     '5. Distribuye los grupos musculares según la frecuencia semanal',
     '6. El volumen total debe ser apropiado para el nivel de experiencia',
     '7. Antes de cada sesión incluir 5-10 min de calentamiento y al final 5-10 min de enfriamiento',
+    '8. DISTRIBUCIÓN DE DESCANSOS: No acumules más de 2 días de entrenamiento consecutivos.',
+    '   - Si el usuario entrena 4 días/semana: usa el patrón 2-1-2-2 o 2-1-2-1 (ej: Lun-Mar, Des, Jue-Vie, Des-Dom)',
+    '   - Si el usuario entrena 3 días/semana: distribuye con al menos 1 día de descanso entre sesiones',
+    '   - Si el usuario entrena 5+ días/semana: máximo 2 consecutivos antes de un descanso obligatorio',
+    '   - NUNCA pongas 3 o más días de entrenamiento seguidos',
     '',
     'ESTRUCTURA JSON ESPERADA (SEMANA COMPLETA DE 7 DÍAS):',
     '{',
     '  "title": "string (nombre del plan)",',
-    '  "focus": "hypertrophy|strength|fat_loss|endurance|maintenance|recomp|sport_specific",',
+    '  "focus": "fat_loss|muscle_gain|strength|endurance|maintenance|recomp",',
     '  "durationWeeks": "number",',
     '  "daysPerWeek": "number",',
     '  "days": [',
@@ -170,6 +176,11 @@ ${exerciseList}
 
   userPrompt +=
     '\n\nDevuelve SOLO el objeto JSON, sin explicaciones, sin notas adicionales, sin marcas de código.';
+
+  if (comment && comment.trim().length > 0) {
+    userPrompt +=
+      `\n\n--- PREFERENCIA ADICIONAL DEL USUARIO (considerar si es compatible con las reglas anteriores) ---\n${comment.trim()}`;
+  }
 
   return { systemPrompt, userPrompt };
 }

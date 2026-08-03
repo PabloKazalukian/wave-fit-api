@@ -12,6 +12,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { PlanValidatorService } from '../plan-validator/plan-validator.service';
 import { buildPlanPrompts } from './plan-generator.prompt';
 import { PlanGeneratorParser, ParsedPlan } from './plan-generator.parser';
+import { PlanFocus } from '../schema/training-plan.schema';
 import { ExerciseService } from 'src/modules/routines/templates/exercise/exercise.service';
 import {
   WeekLogDomain,
@@ -42,7 +43,7 @@ export interface GeneratePlanResult {
   };
   metadata: {
     title: string;
-    focus: string;
+    focus: PlanFocus;
     durationWeeks: number;
     daysPerWeek: number;
   };
@@ -60,7 +61,7 @@ export class PlanGeneratorService {
     private readonly exerciseService: ExerciseService,
   ) {}
 
-  async generatePlan(userId: string): Promise<GeneratePlanResult> {
+  async generatePlan(userId: string, comment: string = ''): Promise<GeneratePlanResult> {
     const validation = await this.planValidator.validate(userId);
     if (!validation.valid) {
       throw new BadRequestException({
@@ -91,6 +92,7 @@ export class PlanGeneratorService {
     const { systemPrompt, userPrompt } = buildPlanPrompts(
       aiContext,
       exercisesForAI,
+      comment,
     );
 
     const providerTarget = process.env.PREFERRED_AI_PROVIDER || 'groq';
@@ -119,11 +121,25 @@ export class PlanGeneratorService {
       },
       metadata: {
         title: parsedPlan.title,
-        focus: parsedPlan.focus,
+        focus: this.resolveFocus(parsedPlan.focus, aiContext),
         durationWeeks: parsedPlan.durationWeeks,
         daysPerWeek: parsedPlan.daysPerWeek,
       },
     };
+  }
+
+  private resolveFocus(
+    rawFocus: string,
+    aiContext: Record<string, any>,
+  ): PlanFocus {
+    if (Object.values(PlanFocus).includes(rawFocus as PlanFocus)) {
+      return rawFocus as PlanFocus;
+    }
+    const primaryGoal = aiContext?.goal?.primary as PlanFocus;
+    if (Object.values(PlanFocus).includes(primaryGoal)) {
+      return primaryGoal;
+    }
+    return PlanFocus.MAINTENANCE;
   }
 
   private buildWeekLogFromPlan(
