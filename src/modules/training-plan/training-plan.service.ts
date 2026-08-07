@@ -3,7 +3,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { CreateTrainingPlanInput } from './dto/create-training-plan.input';
 import { UpdateTrainingPlanInput } from './dto/update-training-plan.input';
-import { PlanGeneratorService } from './plan-generator/plan-generator.service';
+import {
+  GeneratePlanResult,
+  PlanGeneratorService,
+} from './plan-generator/plan-generator.service';
 import {
   TrainingPlan,
   PlanStatus,
@@ -108,9 +111,12 @@ export class TrainingPlanService {
   }
 
   async generate(userId: string, comment: string = '') {
-    const result = await this.generator.generatePlan(userId, comment);
+    const result: GeneratePlanResult = await this.generator.generatePlan(
+      userId,
+      comment,
+    );
 
-    const startDate = result.weekLog.startDate;
+    const startDate: Date = result.weekLog.startDate;
     const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + result.metadata.durationWeeks * 7);
 

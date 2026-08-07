@@ -17,7 +17,7 @@ user-profile/
     ├── resourse.schema.ts             ← Equipamiento disponible
     ├── schedule.schema.ts             ← Disponibilidad semanal
     ├── health-constraints.schema.ts   ← Lesiones / limitaciones
-    ├── trainning-performance.schema.ts ← Estilo y preferencias
+    ├── training-performance.schema.ts ← Estilo y preferencias
     └── weight.schema.ts               ← Historial de peso
 ```
 

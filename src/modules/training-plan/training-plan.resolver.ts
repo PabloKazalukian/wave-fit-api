@@ -84,4 +84,13 @@ export class TrainingPlanResolver {
     const userId = extractUserId(context);
     return this.trainingPlanService.confirm(id, userId);
   }
+
+  @Mutation(() => TrainingPlan, { name: 'removePlan' })
+  async removePlan(
+    @Args('id', { type: () => String }) id: string,
+    @Context() context,
+  ) {
+    const userId = extractUserId(context);
+    return this.trainingPlanService.remove(id, userId);
+  }
 }

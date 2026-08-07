@@ -66,6 +66,7 @@ export class PlanGeneratorService {
     comment: string = '',
   ): Promise<GeneratePlanResult> {
     const validation = await this.planValidator.validate(userId);
+
     if (!validation.valid) {
       throw new BadRequestException({
         message: `Faltan datos obligatorios para generar el plan: [${validation.missing.join(', ')}]`,
