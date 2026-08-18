@@ -24,6 +24,7 @@ import { StatsModule } from './modules/stats/stats.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { TrainingPlanModule } from './modules/training-plan/training-plan.module';
 import { AiModule } from './modules/ai/ai.module';
+import { TrainingHistoryModule } from './modules/routines/tracking/training-history/training-history.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { AiModule } from './modules/ai/ai.module';
     StorageModule,
     TrainingPlanModule,
     AiModule,
+    TrainingHistoryModule,
   ],
   controllers: [AppController],
   providers: [
