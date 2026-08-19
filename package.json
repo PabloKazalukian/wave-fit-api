@@ -26,18 +26,21 @@
     "migration:fix-plan-focus": "ts-node -r tsconfig-paths/register src/database/migrations/002-fix-training-plan-focus.migration.ts",
     "migration:fix-plan-user-ids": "ts-node -r tsconfig-paths/register src/database/migrations/003-fix-training-plan-user-id.migration.ts",
     "check:exercise-refs": "ts-node -r tsconfig-paths/register src/database/scripts/check-exercise-references.ts",
-    "fix:exercise-refs": "ts-node -r tsconfig-paths/register src/database/scripts/fix-exercise-references.ts"
+    "fix:exercise-refs": "ts-node -r tsconfig-paths/register src/database/scripts/fix-exercise-references.ts",
+    "generate:service-token": "ts-node -r tsconfig-paths/register scripts/generate-service-token.ts"
   },
   "dependencies": {
     "@apollo/server": "^5.0.0",
     "@as-integrations/express5": "^1.1.2",
     "@aws-sdk/client-s3": "^3.1062.0",
+    "@aws-sdk/client-sqs": "^3.1114.0",
     "@langchain/core": "^1.1.48",
     "@langchain/groq": "^1.2.1",
     "@nestjs/apollo": "^13.2.1",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.3",
     "@nestjs/core": "^11.0.1",
+    "@nestjs/event-emitter": "^3.1.0",
     "@nestjs/graphql": "^13.2.0",
     "@nestjs/jwt": "^11.0.1",
     "@nestjs/mongoose": "^11.0.3",

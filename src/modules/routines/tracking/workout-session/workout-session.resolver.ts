@@ -12,24 +12,36 @@ import {
 import { Types } from 'mongoose';
 import { AuditInterceptor } from 'src/modules/audit-logs/audit-logs.interceptor';
 import { Audit } from 'src/modules/audit-logs/audit-logs.decorator';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Resolver(() => WorkoutSession)
 @UseGuards(GqlAuthGuard)
 @UseInterceptors(AuditInterceptor)
 export class WorkoutSessionResolver {
-  constructor(private readonly workoutSessionService: WorkoutSessionService) {}
+  constructor(
+    private readonly workoutSessionService: WorkoutSessionService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   @Mutation(() => WorkoutSession)
   @Audit('CREATE_WORKOUT_SESSION', 'WeeklyRoutine')
-  createWorkoutSession(
+  async createWorkoutSession(
     @Args('createWorkoutSessionInput')
     createWorkoutSessionInput: CreateWorkoutSessionInput,
     @Context() context,
   ) {
-    return this.workoutSessionService.create(
+    const result = await this.workoutSessionService.create(
       createWorkoutSessionInput,
       context?.req?.user?.id,
     );
+
+    this.eventEmitter.emit('workout-session.saved', {
+      userId: context?.req?.user?.id,
+      triggerType: 'WORKOUT_SESSION',
+      entityId: result._id.toString(),
+    });
+
+    return result;
   }
 
   @Query(() => [WorkoutSession], { name: 'workoutSession' })
@@ -61,7 +73,7 @@ export class WorkoutSessionResolver {
 
   @Mutation(() => WorkoutSession)
   @Audit('UPDATE_WORKOUT_SESSION', 'Tracking')
-  updateWorkoutSession(
+  async updateWorkoutSession(
     @Args('updateWorkoutSessionInput')
     updateWorkoutSessionInput: UpdateWorkoutSessionInput,
     @Context() context,
@@ -70,11 +82,20 @@ export class WorkoutSessionResolver {
     if (!id || !Types.ObjectId.isValid(id)) {
       throw new BadRequestException('Invalid workout session id');
     }
-    return this.workoutSessionService.update(
+
+    const result = await this.workoutSessionService.update(
       id,
       updateWorkoutSessionInput,
       context?.req?.user?.id,
     );
+
+    this.eventEmitter.emit('workout-session.saved', {
+      userId: context?.req?.user?.id,
+      triggerType: 'WORKOUT_SESSION',
+      entityId: id,
+    });
+
+    return result;
   }
 
   @Mutation(() => WorkoutSession)

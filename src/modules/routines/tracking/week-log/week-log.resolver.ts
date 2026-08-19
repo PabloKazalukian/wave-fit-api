@@ -20,12 +20,16 @@ import { GqlAuthGuard } from '../../../../modules/auth/guards/gql-auth.guard';
 import { AuditInterceptor } from 'src/modules/audit-logs/audit-logs.interceptor';
 import { Audit } from 'src/modules/audit-logs/audit-logs.decorator';
 import { extractUserId } from 'src/common/utils/user-id.utils';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Resolver(() => WeekLog)
 @UseGuards(GqlAuthGuard)
 @UseInterceptors(AuditInterceptor)
 export class WeekLogResolver {
-  constructor(private readonly weekLogService: WeekLogService) {}
+  constructor(
+    private readonly weekLogService: WeekLogService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   @Mutation(() => WeekLog)
   async createWeekLog(
@@ -127,7 +131,17 @@ export class WeekLogResolver {
   ) {
     const userId = extractUserId(context);
 
-    return this.weekLogService.updateWeekLog(input, userId);
+    const result = await this.weekLogService.updateWeekLog(input, userId);
+
+    if (input.completed === true && result) {
+      this.eventEmitter.emit('week-log.finalized', {
+        userId,
+        triggerType: 'WEEK_LOG_FINALIZED',
+        entityId: result.id,
+      });
+    }
+
+    return result;
   }
 
   @Mutation(() => WeekLog)

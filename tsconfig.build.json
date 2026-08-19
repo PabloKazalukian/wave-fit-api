@@ -5,5 +5,5 @@
     "tsBuildInfoFile": "./dist/tsconfig.build.tsbuildinfo"
   },
   "extends": "./tsconfig.json",
-  "exclude": ["node_modules", "test", "dist", "documents", "**/*spec.ts"]
+  "exclude": ["node_modules", "test", "dist", "documents", "scripts", "**/*spec.ts"]
 }
