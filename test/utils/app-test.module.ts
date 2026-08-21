@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_FILTER } from '@nestjs/core';
+import { APP_FILTER, APP_PIPE } from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { UserModule } from '../../src/modules/user/user.module';
 import { AuthModule } from '../../src/modules/auth/auth.module';
 import { RoutinePlanModule } from '../../src/modules/routines/templates/routine-plan/routine-plan.module';
@@ -28,6 +30,7 @@ import { GraphQLExceptionFilter } from '../../src/common/filters/gql-exception.f
       envFilePath: '.env',
     }),
     rootMongooseTestModule(),
+    EventEmitterModule.forRoot(),
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: true,
@@ -46,6 +49,10 @@ import { GraphQLExceptionFilter } from '../../src/common/filters/gql-exception.f
     AuditLogsModule,
   ],
   providers: [
+    {
+      provide: APP_PIPE,
+      useClass: ValidationPipe,
+    },
     {
       provide: APP_FILTER,
       useClass: GraphQLExceptionFilter,

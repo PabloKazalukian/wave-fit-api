@@ -130,7 +130,10 @@ export class UserProfileService {
       this.healthModel.findOne({ userId: new Types.ObjectId(userId) }).lean(),
       this.trainingPreferenceService.findTrainingPreference(userId),
       this.resourceModel.findOne({ userId: new Types.ObjectId(userId) }).lean(),
-      this.strengthModel.find({ userId }).sort({ measuredAt: -1 }).lean(),
+      this.strengthModel
+        .find({ userId: new Types.ObjectId(userId) })
+        .sort({ measuredAt: -1 })
+        .lean(),
       this.weightService.findWeightLogs(userId),
     ]);
 

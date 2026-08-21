@@ -5,7 +5,7 @@ export const USER_PROFILE_FIELDS = `
     birthDate
     heightCm
     weightKg
-    distributionDays
+    bodyFatPct
     unitsPreference
     createdAt
     updatedAt

@@ -14,7 +14,7 @@ import {
   createTestUser,
   getTestUserCredentials,
 } from '../../fixtures/user.fixture';
-import { getCookieWithToken } from '../helpers/week-log.helper';
+import { getCookieWithToken, createWeekLog } from '../helpers/week-log.helper';
 import cookieParser from 'cookie-parser';
 
 export const WEEK_LOG_FIELDS = `
@@ -134,6 +134,8 @@ describe('WeekLog Creation (e2e)', () => {
   });
 
   it('should completed the week', async () => {
+    // Se crea la semana propia: cada test debe ser auto-suficiente
+    await createWeekLog(app, authCookie);
     const today = new Date();
     const startOfWeek = new Date(today);
     startOfWeek.setDate(today.getDate() - today.getDay());
@@ -188,6 +190,8 @@ describe('WeekLog Creation (e2e)', () => {
 
   //mismo problema de la query.
   it('should exist a actived week-log , the previus test, completed', async () => {
+    // Se crea la semana propia: cada test debe ser auto-suficiente
+    await createWeekLog(app, authCookie);
     const today = new Date();
     const startOfWeek = new Date(today);
     startOfWeek.setDate(today.getDate() - today.getDay());

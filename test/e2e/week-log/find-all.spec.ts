@@ -225,7 +225,7 @@ describe('WeekLog findAll (e2e)', () => {
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 6);
 
-    await request(app.getHttpServer())
+    const createResponse = await request(app.getHttpServer())
       .post('/graphql')
       .set('Cookie', [authCookie])
       .send({
@@ -238,6 +238,25 @@ describe('WeekLog findAll (e2e)', () => {
             }) {
               id
               userId
+            }
+          }
+        `,
+      });
+
+    // findAll solo devuelve semanas completadas: se completa la creada
+    const createdWeekId = createResponse.body.data.createWeekLog.id;
+    await request(app.getHttpServer())
+      .post('/graphql')
+      .set('Cookie', [authCookie])
+      .send({
+        query: `
+          mutation {
+            updateWeekLog(input: {
+              id: "${createdWeekId}"
+              completed: true
+              active: false
+            }) {
+              id
             }
           }
         `,
@@ -473,7 +492,7 @@ describe('WeekLog findAll (e2e)', () => {
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 6);
 
-    await request(app.getHttpServer())
+    const createResponse = await request(app.getHttpServer())
       .post('/graphql')
       .set('Cookie', [authCookie])
       .send({
@@ -483,6 +502,25 @@ describe('WeekLog findAll (e2e)', () => {
               startDate: "${startOfWeek.toISOString().split('T')[0]}",
               endDate: "${endOfWeek.toISOString().split('T')[0]}",
               timezone: "America/Argentina/Buenos_Aires"
+            }) {
+              id
+            }
+          }
+        `,
+      });
+
+    // findAll solo devuelve semanas completadas: se completa la creada
+    const createdWeekId = createResponse.body.data.createWeekLog.id;
+    await request(app.getHttpServer())
+      .post('/graphql')
+      .set('Cookie', [authCookie])
+      .send({
+        query: `
+          mutation {
+            updateWeekLog(input: {
+              id: "${createdWeekId}"
+              completed: true
+              active: false
             }) {
               id
             }

@@ -21,9 +21,12 @@ export const closeInMongodConnection = async () => {
 
 export const clearDatabase = async (connection?: mongoose.Connection) => {
   const targetConnection = connection || mongoose.connection;
-  const collections = targetConnection.collections;
-  const promises = Object.values(collections).map((collection) =>
-    collection.deleteMany({}),
+  // Los modelos pueden vivir en conexiones distintas a la default
+  // (MongooseCoreModule usa createConnection), por lo que se enumeran
+  // las colecciones desde la base, no desde connection.collections.
+  const collections = await targetConnection.db.listCollections().toArray();
+  const promises = collections.map((collection) =>
+    targetConnection.db.collection(collection.name).deleteMany({}),
   );
   await Promise.all(promises);
 };

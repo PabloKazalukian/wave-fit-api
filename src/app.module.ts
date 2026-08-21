@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_FILTER } from '@nestjs/core';
+import { APP_FILTER, APP_PIPE } from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -65,6 +66,10 @@ import { TrainingHistoryModule } from './modules/routines/tracking/training-hist
   providers: [
     AppService,
     CommonResolver,
+    {
+      provide: APP_PIPE,
+      useClass: ValidationPipe,
+    },
     {
       provide: APP_FILTER,
       useClass: GraphQLExceptionFilter,
