@@ -1,3 +1,14 @@
+import { BadRequestException } from '@nestjs/common';
+import { Types } from 'mongoose';
+
+export function extractUserId(context: any): string {
+  const userId = context?.req?.user?.id;
+  if (!userId || !Types.ObjectId.isValid(userId)) {
+    throw new BadRequestException('Invalid user id');
+  }
+  return userId;
+}
+
 export interface UserContextInput {
   profile?: {
     gender: string;

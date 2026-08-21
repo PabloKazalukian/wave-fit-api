@@ -24,6 +24,12 @@ import {
 import { UserResource, UserResourceSchema } from './schema/resourse.schema';
 import { UserProfileResolver } from './user-profile.resolver';
 import { UserProfileService } from './user-profile.service';
+import { GoalsResolver } from './goals/goals.resolver';
+import { GoalsService } from './goals/goals.service';
+import { TrainingPreferenceResolver } from './training-preference/training-preference.resolver';
+import { TrainingPreferenceService } from './training-preference/training-preference.service';
+import { WeightResolver } from './weight/weight.resolver';
+import { WeightService } from './weight/weight.service';
 
 @Module({
   imports: [
@@ -42,7 +48,16 @@ import { UserProfileService } from './user-profile.service';
       { name: UserWeightLog.name, schema: UserWeightLogSchema },
     ]),
   ],
-  providers: [UserProfileResolver, UserProfileService],
+  providers: [
+    UserProfileResolver,
+    UserProfileService,
+    GoalsResolver,
+    GoalsService,
+    TrainingPreferenceResolver,
+    TrainingPreferenceService,
+    WeightResolver,
+    WeightService,
+  ],
 
   exports: [MongooseModule, UserProfileService],
 })

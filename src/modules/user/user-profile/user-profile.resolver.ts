@@ -4,31 +4,18 @@ import { Types } from 'mongoose';
 import { UserProfileService } from './user-profile.service';
 import { UserProfileContext } from './entities/user-profile-context.entity';
 import { UserProfile } from './entities/user-profile.entity';
-import { Goal } from './entities/goal.entity';
 import { HealthConstraint } from './entities/health-constraint.entity';
 import { Schedule } from './entities/schedule.entity';
-import { TrainingPreference } from './entities/training-preference.entity';
 import { Resource } from './entities/resource.entity';
 import { StrengthMetric } from './entities/strength-metric.entity';
-import { WeightLog } from './entities/weight-log.entity';
 import { CreateUserProfileInput } from './dto/create-user-profile.input';
 import { UpdateUserProfileInput } from './dto/update-user-profile.input';
-import { UpdateGoalsInput } from './dto/update-goals.input';
 import { UpdateHealthConstraintsInput } from './dto/update-health-constraints.input';
 import { UpdateScheduleInput } from './dto/update-schedule.input';
-import { UpdateTrainingPreferenceInput } from './dto/update-training-preference.input';
 import { UpdateResourceInput } from './dto/update-resource.input';
 import { CreateStrengthMetricInput } from './dto/create-strength-metric.input';
-import { CreateWeightLogInput } from './dto/create-weight-log.input';
 import { GqlAuthGuard } from 'src/modules/auth/guards/gql-auth.guard';
-
-function extractUserId(context: any): string {
-  const userId = context?.req?.user?.id;
-  if (!userId || !Types.ObjectId.isValid(userId)) {
-    throw new BadRequestException('Invalid user id');
-  }
-  return userId;
-}
+import { extractUserId } from './user-profile.utils';
 
 @Resolver()
 @UseGuards(GqlAuthGuard)
@@ -99,18 +86,6 @@ export class UserProfileResolver {
     return this.userProfileService.remove(id, extractUserId(context));
   }
 
-  // ── Goals ──
-
-  @Mutation(() => Goal)
-  updateUserGoals(@Args('input') input: UpdateGoalsInput, @Context() context) {
-    return this.userProfileService.updateGoals(extractUserId(context), input);
-  }
-
-  @Query(() => Goal, { nullable: true })
-  userGoals(@Context() context) {
-    return this.userProfileService.findGoals(extractUserId(context));
-  }
-
   // ── Health Constraints ──
 
   @Mutation(() => HealthConstraint)
@@ -147,26 +122,6 @@ export class UserProfileResolver {
   @Query(() => Schedule, { nullable: true })
   userSchedule(@Context() context) {
     return this.userProfileService.findSchedule(extractUserId(context));
-  }
-
-  // ── Training Preference ──
-
-  @Mutation(() => TrainingPreference)
-  updateUserTrainingPreference(
-    @Args('input') input: UpdateTrainingPreferenceInput,
-    @Context() context,
-  ) {
-    return this.userProfileService.updateTrainingPreference(
-      extractUserId(context),
-      input,
-    );
-  }
-
-  @Query(() => TrainingPreference, { nullable: true })
-  userTrainingPreference(@Context() context) {
-    return this.userProfileService.findTrainingPreference(
-      extractUserId(context),
-    );
   }
 
   // ── Resource ──
@@ -214,23 +169,5 @@ export class UserProfileResolver {
   @Query(() => [StrengthMetric])
   userStrengthMetrics(@Context() context) {
     return this.userProfileService.findStrengthMetrics(extractUserId(context));
-  }
-
-  // ── Weight Logs (colección) ──
-
-  @Mutation(() => WeightLog)
-  createWeightLog(
-    @Args('input') input: CreateWeightLogInput,
-    @Context() context,
-  ) {
-    return this.userProfileService.createWeightLog(
-      extractUserId(context),
-      input,
-    );
-  }
-
-  @Query(() => [WeightLog])
-  userWeightLogs(@Context() context) {
-    return this.userProfileService.findWeightLogs(extractUserId(context));
   }
 }

@@ -8,28 +8,23 @@ import { Model, Types } from 'mongoose';
 import { UserProfile, UserProfileDocument } from './schema/user-profile.schema';
 import { CreateUserProfileInput } from './dto/create-user-profile.input';
 import { UpdateUserProfileInput } from './dto/update-user-profile.input';
-import { UpdateGoalsInput } from './dto/update-goals.input';
 import { UpdateHealthConstraintsInput } from './dto/update-health-constraints.input';
 import { UpdateScheduleInput } from './dto/update-schedule.input';
-import { UpdateTrainingPreferenceInput } from './dto/update-training-preference.input';
 import { UpdateResourceInput } from './dto/update-resource.input';
 import { CreateStrengthMetricInput } from './dto/create-strength-metric.input';
-import { CreateWeightLogInput } from './dto/create-weight-log.input';
-import { UserGoal } from './schema/goals.schema';
 import { UserHealthConstraint } from './schema/health-constraints.schema';
 import { UserSchedule } from './schema/schedule.schema';
 import { UserStrengthMetric } from './schema/strength-metrics.schema';
 import { UserResource } from './schema/resourse.schema';
-import { UserTrainingPreference } from './schema/training-preference.schema';
-import { UserWeightLog } from './schema/weight.schema';
+import { GoalsService } from './goals/goals.service';
+import { TrainingPreferenceService } from './training-preference/training-preference.service';
+import { WeightService } from './weight/weight.service';
 
 @Injectable()
 export class UserProfileService {
   constructor(
-    // @InjectModel(UserProfile.name)
-    // private profileModel: Model<UserProfile>,
-    // private userGoals: Model<UserGoal>,
-    @InjectModel(UserGoal.name) private readonly goalModel: Model<UserGoal>,
+    @InjectModel(UserProfile.name)
+    private readonly profileModel: Model<UserProfile>,
     @InjectModel(UserHealthConstraint.name)
     private readonly healthModel: Model<UserHealthConstraint>,
     @InjectModel(UserResource.name)
@@ -38,16 +33,9 @@ export class UserProfileService {
     private readonly scheduleModel: Model<UserSchedule>,
     @InjectModel(UserStrengthMetric.name)
     private readonly strengthModel: Model<UserStrengthMetric>,
-    @InjectModel(UserTrainingPreference.name)
-    private readonly trainingPreferenceModel: Model<UserTrainingPreference>,
-
-    @InjectModel(UserProfile.name)
-    private readonly profileModel: Model<UserProfile>,
-    @InjectModel(UserWeightLog.name)
-    private readonly weightLogModel: Model<UserWeightLog>,
-    // @InjectModel(UserProfileTrainingPreference.name) private readonly trainingPreferenceModel: Model<UserProfileTrainingPreference>,
-    // @InjectModel(WeightLog.name) private readonly weightLogModel: Model<WeightLo>,
-    // ... los demás modelos que requieras
+    private readonly goalsService: GoalsService,
+    private readonly trainingPreferenceService: TrainingPreferenceService,
+    private readonly weightService: WeightService,
   ) {}
 
   async create(
@@ -103,7 +91,7 @@ export class UserProfileService {
     const [profile, activeGoal, schedule, constraints, metrics] =
       await Promise.all([
         this.profileModel.findOne({ userId }).lean(),
-        this.goalModel.findOne({ userId, isActive: true }).lean(),
+        this.goalsService.findActiveGoal(userId),
         this.scheduleModel.findOne({ userId }).lean(),
         this.healthModel.findOne({ userId }).lean(),
         this.strengthModel.findOne({ userId }).lean(),
@@ -118,6 +106,13 @@ export class UserProfileService {
     };
   }
 
+  // ──────────────────────────────────────────────
+  // Agregación cross-domain (composición).
+  // Los datos por dominio los proveen los servicios
+  // especializados (goals, training-preference, weight)
+  // y los modelos aún no migrados.
+  // ──────────────────────────────────────────────
+
   async getFullProfileContext(userId: string) {
     const [
       profile,
@@ -130,26 +125,14 @@ export class UserProfileService {
       weightLogs,
     ] = await Promise.all([
       this.profileModel.findOne({ userId: new Types.ObjectId(userId) }).exec(),
-      this.goalModel
-        .findOne({ userId: new Types.ObjectId(userId), isActive: true })
-        .lean(),
+      this.goalsService.findActiveGoal(userId),
       this.scheduleModel.findOne({ userId: new Types.ObjectId(userId) }).lean(),
       this.healthModel.findOne({ userId: new Types.ObjectId(userId) }).lean(),
-      this.trainingPreferenceModel
-        .findOne({ userId: new Types.ObjectId(userId) })
-        .lean(),
+      this.trainingPreferenceService.findTrainingPreference(userId),
       this.resourceModel.findOne({ userId: new Types.ObjectId(userId) }).lean(),
       this.strengthModel.find({ userId }).sort({ measuredAt: -1 }).lean(),
-      this.weightLogModel.find({ userId }).sort({ loggedAt: -1 }).lean(),
+      this.weightService.findWeightLogs(userId),
     ]);
-    // console.log('[profile]', profile);
-    // console.log('[activeGoal]', activeGoal);
-    // console.log('[schedule]', schedule);
-    // console.log('[constraints]', constraints);
-    // console.log('[trainingPreferences]', trainingPreferences);
-    // console.log('[resources]', resources);
-    // console.log('[strengthMetrics]', strengthMetrics);
-    // console.log('[weightLogs]', weightLogs);
 
     return {
       profile,
@@ -199,10 +182,6 @@ export class UserProfileService {
     return updated;
   }
 
-  async findUserGoalsActive(userId: string) {
-    return this.goalModel.findOne({ isActive: true, userId }).exec();
-  }
-
   async upsert(
     input: CreateUserProfileInput | UpdateUserProfileInput,
     userId: string,
@@ -242,31 +221,8 @@ export class UserProfileService {
   }
 
   // ──────────────────────────────────────────────
-  // Upserts 1:1 (crea si no existe)
+  // Health Constraints (upsert 1:1)
   // ──────────────────────────────────────────────
-
-  async updateGoals(
-    userId: string,
-    input: UpdateGoalsInput,
-  ): Promise<UserGoal> {
-    const objectId = new Types.ObjectId(userId);
-    const exists = await this.goalModel.exists({ userId: objectId }).exec();
-    if (!exists) {
-      await this.goalModel.create({
-        userId: objectId,
-        ...input,
-        isActive: true,
-      });
-    }
-    return this.goalModel
-      .findOneAndUpdate(
-        { userId: objectId },
-        { $set: { ...input, userId: objectId, isActive: true } },
-        { new: true },
-      )
-      .orFail()
-      .exec();
-  }
 
   async updateHealthConstraints(
     userId: string,
@@ -298,6 +254,18 @@ export class UserProfileService {
       .exec();
   }
 
+  async findHealthConstraints(
+    userId: string,
+  ): Promise<UserHealthConstraint | null> {
+    return this.healthModel
+      .findOne({ userId: new Types.ObjectId(userId) })
+      .exec();
+  }
+
+  // ──────────────────────────────────────────────
+  // Schedule (upsert 1:1)
+  // ──────────────────────────────────────────────
+
   async updateSchedule(
     userId: string,
     input: UpdateScheduleInput,
@@ -317,26 +285,15 @@ export class UserProfileService {
       .exec();
   }
 
-  async updateTrainingPreference(
-    userId: string,
-    input: UpdateTrainingPreferenceInput,
-  ): Promise<UserTrainingPreference> {
-    const objectId = new Types.ObjectId(userId);
-    const exists = await this.trainingPreferenceModel
-      .exists({ userId: objectId })
-      .exec();
-    if (!exists) {
-      await this.trainingPreferenceModel.create({ userId: objectId, ...input });
-    }
-    return this.trainingPreferenceModel
-      .findOneAndUpdate(
-        { userId: objectId },
-        { $set: { ...input, userId: objectId } },
-        { new: true },
-      )
-      .orFail()
+  async findSchedule(userId: string): Promise<UserSchedule | null> {
+    return this.scheduleModel
+      .findOne({ userId: new Types.ObjectId(userId) })
       .exec();
   }
+
+  // ──────────────────────────────────────────────
+  // Resource (upsert 1:1)
+  // ──────────────────────────────────────────────
 
   async updateResource(
     userId: string,
@@ -357,38 +314,6 @@ export class UserProfileService {
       .exec();
   }
 
-  // ──────────────────────────────────────────────
-  // Queries 1:1
-  // ──────────────────────────────────────────────
-
-  async findGoals(userId: string): Promise<UserGoal | null> {
-    return this.goalModel
-      .findOne({ userId: new Types.ObjectId(userId) })
-      .exec();
-  }
-
-  async findHealthConstraints(
-    userId: string,
-  ): Promise<UserHealthConstraint | null> {
-    return this.healthModel
-      .findOne({ userId: new Types.ObjectId(userId) })
-      .exec();
-  }
-
-  async findSchedule(userId: string): Promise<UserSchedule | null> {
-    return this.scheduleModel
-      .findOne({ userId: new Types.ObjectId(userId) })
-      .exec();
-  }
-
-  async findTrainingPreference(
-    userId: string,
-  ): Promise<UserTrainingPreference | null> {
-    return this.trainingPreferenceModel
-      .findOne({ userId: new Types.ObjectId(userId) })
-      .exec();
-  }
-
   async findResource(userId: string): Promise<UserResource | null> {
     return this.resourceModel
       .findOne({ userId: new Types.ObjectId(userId) })
@@ -396,7 +321,7 @@ export class UserProfileService {
   }
 
   // ──────────────────────────────────────────────
-  // Colecciones 1:N
+  // Strength Metrics (colección 1:N)
   // ──────────────────────────────────────────────
 
   async createStrengthMetric(
@@ -432,25 +357,6 @@ export class UserProfileService {
     return this.strengthModel
       .find({ userId: new Types.ObjectId(userId) })
       .sort({ measuredAt: -1 })
-      .exec();
-  }
-
-  async createWeightLog(
-    userId: string,
-    input: CreateWeightLogInput,
-  ): Promise<UserWeightLog> {
-    const objectId = new Types.ObjectId(userId);
-    return this.weightLogModel.create({
-      ...input,
-      userId: objectId,
-      loggedAt: input.loggedAt ? new Date(input.loggedAt) : new Date(),
-    });
-  }
-
-  async findWeightLogs(userId: string): Promise<UserWeightLog[]> {
-    return this.weightLogModel
-      .find({ userId: new Types.ObjectId(userId) })
-      .sort({ loggedAt: -1 })
       .exec();
   }
 }
