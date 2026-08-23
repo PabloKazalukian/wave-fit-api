@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/mongoose';
 import {
   BadRequestException,
+  ConflictException,
   NotFoundException,
 } from '@nestjs/common';
 import { Types } from 'mongoose';
@@ -12,6 +13,8 @@ import { AiService } from '../../ai/ai.service';
 import { PlanValidatorService } from '../plan-validator/plan-validator.service';
 import { PlanGeneratorParser } from './plan-generator.parser';
 import { ExerciseService } from '../../routines/templates/exercise/exercise.service';
+import { AuditLogsService } from '../../audit-logs/audit-logs.service';
+import { AI_CAUSE } from '../../ai/ai-error-causes';
 
 describe('PlanGeneratorService', () => {
   let service: PlanGeneratorService;
@@ -38,6 +41,10 @@ describe('PlanGeneratorService', () => {
 
   const exerciseServiceMock = {
     findAll: jest.fn(),
+  };
+
+  const auditLogsServiceMock = {
+    logAsync: jest.fn(),
   };
 
   const validProfileContext = () => ({
@@ -71,7 +78,6 @@ describe('PlanGeneratorService', () => {
           ? []
           : [
               {
-                exerciseId: 'ex-1',
                 name: 'Press Banca',
                 plannedSets: 4,
                 plannedReps: '8-10',
@@ -124,6 +130,7 @@ describe('PlanGeneratorService', () => {
         { provide: AiService, useValue: aiServiceMock },
         { provide: PlanValidatorService, useValue: planValidatorMock },
         { provide: ExerciseService, useValue: exerciseServiceMock },
+        { provide: AuditLogsService, useValue: auditLogsServiceMock },
         PlanGeneratorParser,
       ],
     }).compile();
@@ -190,14 +197,16 @@ describe('PlanGeneratorService', () => {
       // catálogo mapeado al prompt
       expect(exerciseServiceMock.findAll).toHaveBeenCalled();
 
-      // llamada a la IA con el proveedor configurado
+      // llamada a la IA con el proveedor configurado y el catálogo solo con nombres
       expect(aiServiceMock.executePrompt).toHaveBeenCalledWith(
         expect.objectContaining({
           providerName: 'test-provider',
           systemPrompt: expect.stringContaining('formato JSON válido'),
-          userPrompt: expect.stringContaining('- ex-1 | Press Banca | chest'),
+          userPrompt: expect.stringContaining('- Press Banca'),
         }),
       );
+      const promptArgs = aiServiceMock.executePrompt.mock.calls[0][0];
+      expect(promptArgs.userPrompt).not.toContain('ex-1');
 
       // resultado consolidado
       expect(result.goalId).toBe(GOAL_DB_ID.toString());
@@ -233,6 +242,230 @@ describe('PlanGeneratorService', () => {
 
       const callArgs = aiServiceMock.executePrompt.mock.calls[0][0];
       expect(callArgs.userPrompt).toContain('sin peso muerto por lesión');
+    });
+  });
+
+  describe('lock de generación concurrente (in-flight)', () => {
+    let resolveAi!: (value: any) => void;
+    let rejectAi!: (reason?: any) => void;
+
+    const holdAiInFlight = () => {
+      aiServiceMock.executePrompt.mockImplementationOnce(
+        () =>
+          new Promise((res, rej) => {
+            resolveAi = res;
+            rejectAi = rej;
+          }),
+      );
+    };
+
+    // Vacía la cola de microtareas para que la cadena de generación
+    // llegue hasta la llamada a IA suspendida.
+    const flushPromises = () => new Promise((r) => setTimeout(r, 0));
+
+    it('comparte la misma promesa para comentarios idénticos sin segunda llamada a IA', async () => {
+      holdAiInFlight();
+
+      const p1 = service.generatePlan(USER_ID, 'mismo comentario');
+      await flushPromises();
+
+      expect(aiServiceMock.executePrompt).toHaveBeenCalledTimes(1);
+
+      const p2 = service.generatePlan(USER_ID, 'mismo comentario');
+      expect(aiServiceMock.executePrompt).toHaveBeenCalledTimes(1);
+      expect(goalModelMock.create).toHaveBeenCalledTimes(1);
+
+      resolveAi({
+        rawContent: JSON.stringify(buildPlanJson()),
+        modelUsed: 'llama-3.3-70b',
+        promptUsed: 'sys\nusr',
+        tokensUsed: 123,
+      });
+
+      const [r1, r2] = await Promise.all([p1, p2]);
+      expect(r1).toBe(r2);
+    });
+
+    it('rechaza con ConflictException si llega otro comment mientras hay una generación en vuelo', async () => {
+      holdAiInFlight();
+
+      const inFlight = service.generatePlan(USER_ID, 'primer comment');
+      await flushPromises();
+      expect(aiServiceMock.executePrompt).toHaveBeenCalledTimes(1);
+
+      await expect(
+        service.generatePlan(USER_ID, 'otro comment'),
+      ).rejects.toThrow(
+        new ConflictException(
+          'Ya hay una generación de plan en curso para este usuario',
+        ),
+      );
+      expect(aiServiceMock.executePrompt).toHaveBeenCalledTimes(1);
+
+      // liberar la promesa original para no dejar colgado el test
+      rejectAi(new Error('cleanup'));
+      await expect(inFlight).rejects.toThrow('cleanup');
+    });
+
+    it('libera el lock tras un fallo y permite una nueva generación', async () => {
+      holdAiInFlight();
+
+      const firstAttempt = service.generatePlan(USER_ID, 'comment');
+      await flushPromises();
+      rejectAi(new Error('groq caído'));
+
+      await expect(firstAttempt).rejects.toThrow('groq caído');
+
+      stubAiResponse();
+      await expect(
+        service.generatePlan(USER_ID, 'comment'),
+      ).resolves.toBeDefined();
+      expect(aiServiceMock.executePrompt).toHaveBeenCalledTimes(2);
+    });
+
+    it('no interfiere entre usuarios distintos', async () => {
+      holdAiInFlight();
+      service.generatePlan('user-a', 'comment');
+      await flushPromises();
+
+      stubAiResponse();
+      await expect(
+        service.generatePlan('user-b', 'comment'),
+      ).resolves.toBeDefined();
+
+      expect(aiServiceMock.executePrompt).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('resolución de ejercicios por nombre contra el catálogo', () => {
+    const stubAiResponseWithExtraNames = (...extraNames: string[]) => {
+      const planJson = buildPlanJson();
+      planJson.days[0].exercises = [
+        ...planJson.days[0].exercises,
+        ...extraNames.map((name) => ({
+          name,
+          plannedSets: 3,
+          plannedReps: '10',
+        })),
+      ];
+      aiServiceMock.executePrompt.mockResolvedValue({
+        rawContent: JSON.stringify(planJson),
+        modelUsed: 'llama-3.3-70b',
+        promptUsed: 'sys\nusr',
+        tokensUsed: 123,
+      });
+      return planJson;
+    };
+
+    it('rechaza con 400 listando los nombres que no existen en el catálogo', async () => {
+      stubAiResponseWithExtraNames('Ejercicio inventado', 'Otro inventado');
+
+      try {
+        await service.generatePlan(USER_ID);
+        throw new Error('debería haber fallado');
+      } catch (error) {
+        expect(error).toBeInstanceOf(BadRequestException);
+        const response = (error as BadRequestException).getResponse() as any;
+        expect(response.code).toBe(AI_CAUSE.UNKNOWN_EXERCISE_NAME);
+        expect(response.invalidExerciseNames).toEqual([
+          'Ejercicio inventado',
+          'Otro inventado',
+        ]);
+      }
+
+      // no crea el weekLog ni sesiones con ejercicios rotos
+      expect(auditLogsServiceMock.logAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'TRAINING_PLAN_GENERATED',
+          success: false,
+          metadata: expect.objectContaining({
+            cause: AI_CAUSE.UNKNOWN_EXERCISE_NAME,
+          }),
+        }),
+      );
+    });
+
+    it('resuelve el id correcto aunque la IA cambie mayúsculas o acentos', async () => {
+      exerciseServiceMock.findAll.mockResolvedValue([
+        { id: '64f9aabbccddeeff00112233', name: 'Press Banca', category: 'chest' },
+      ]);
+
+      const planJson = buildPlanJson();
+      planJson.days.forEach((day) => {
+        day.exercises.forEach((ex) => {
+          ex.name = 'press banca';
+        });
+      });
+      aiServiceMock.executePrompt.mockResolvedValue({
+        rawContent: JSON.stringify(planJson),
+        modelUsed: 'llama',
+        promptUsed: 'sys\nusr',
+        tokensUsed: 5,
+      });
+
+      const result = await service.generatePlan(USER_ID);
+      result.sessions.forEach((session) => {
+        expect(session.exercises[0].exerciseId).toBe(
+          '64f9aabbccddeeff00112233',
+        );
+      });
+    });
+
+    it('deduplica nombres equivalentes del catálogo y usa el primero', async () => {
+      exerciseServiceMock.findAll.mockResolvedValue([
+        { id: 'ex-1', name: 'Press Banca', category: 'chest' },
+        { id: 'id-a', name: 'Curl Biceps', category: 'arms' },
+        { id: 'id-b', name: 'curl  biceps!', category: 'arms' },
+      ]);
+
+      await service.generatePlan(USER_ID);
+
+      // solo una entrada en el prompt (la del primero)
+      const userPrompt = aiServiceMock.executePrompt.mock.calls[0][0].userPrompt;
+      expect(userPrompt.match(/^- Curl Biceps$/gm)).toHaveLength(1);
+      expect(userPrompt).not.toContain('- curl  biceps!');
+    });
+  });
+
+  describe('audit-log de generación', () => {
+    it('audita el éxito de la generación con metadata del plan', async () => {
+      await service.generatePlan(USER_ID);
+
+      expect(auditLogsServiceMock.logAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'TRAINING_PLAN_GENERATED',
+          entity: 'TrainingPlan',
+          userId: USER_ID,
+          success: true,
+          metadata: expect.objectContaining({
+            title: 'PPL IA',
+            focus: 'muscle_gain',
+            durationWeeks: 8,
+            daysPerWeek: 5,
+            tokensUsed: 123,
+          }),
+        }),
+      );
+    });
+
+    it('audita el fallo cuando la validación previa rechaza', async () => {
+      planValidatorMock.validate.mockResolvedValue({
+        valid: false,
+        missing: ['UserProfile.weightKg'],
+        recommended: [],
+      });
+
+      await expect(service.generatePlan(USER_ID)).rejects.toThrow(
+        BadRequestException,
+      );
+
+      expect(auditLogsServiceMock.logAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'TRAINING_PLAN_GENERATED',
+          success: false,
+          errorMessage: expect.stringContaining('Faltan datos obligatorios'),
+        }),
+      );
     });
   });
 

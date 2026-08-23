@@ -96,12 +96,20 @@ describe('PlanGeneratorParser', () => {
       );
     });
 
-    it('lanza error si un ejercicio de día no-rest no tiene exerciseId', () => {
+    it('lanza error si un ejercicio de día no-rest no tiene name', () => {
       const days = buildPlan().days;
-      const { exerciseId, ...noId } = validExercise;
-      days[0].exercises = [{ ...noId }];
+      const { name, ...noName } = validExercise;
+      days[0].exercises = [{ ...noName }];
       expect(() => parseRaw({ ...buildPlan(), days })).toThrow(
-        'Each exercise must have an "exerciseId"',
+        'Each exercise must have a non-empty "name"',
+      );
+    });
+
+    it('lanza error si el name del ejercicio es solo espacios', () => {
+      const days = buildPlan().days;
+      days[0].exercises = [{ ...validExercise, name: '   ' }];
+      expect(() => parseRaw({ ...buildPlan(), days })).toThrow(
+        'Each exercise must have a non-empty "name"',
       );
     });
 
@@ -133,27 +141,27 @@ describe('PlanGeneratorParser', () => {
     it('mapea aliases sets/reps a plannedSets/plannedReps', () => {
       const days = buildPlan().days;
       days[0].exercises = [
-        { exerciseId: 'ex-1', sets: 3, reps: '12' },
+        { name: 'Press Banca', sets: 3, reps: '12' },
       ];
       const result = parseRaw({ ...buildPlan(), days });
 
       expect(result.days[0].exercises[0]).toMatchObject({
-        exerciseId: 'ex-1',
+        name: 'Press Banca',
         plannedSets: 3,
         plannedReps: '12',
       });
     });
 
-    it('normaliza ejercicios con valores null cuando faltan opcionales', () => {
+    it('deja exerciseId vacío (lo resuelve el service contra la DB)', () => {
       const days = buildPlan().days;
       days[0].exercises = [
-        { exerciseId: 'ex-1', plannedSets: 3, plannedReps: '10' },
+        { name: 'Press Banca', plannedSets: 3, plannedReps: '10' },
       ];
       const result = parseRaw({ ...buildPlan(), days });
 
       expect(result.days[0].exercises[0]).toEqual({
-        exerciseId: 'ex-1',
-        name: '',
+        exerciseId: '',
+        name: 'Press Banca',
         plannedSets: 3,
         plannedReps: '10',
         rpe: null,
@@ -191,7 +199,7 @@ describe('PlanGeneratorParser', () => {
         days: expect.any(Array),
       });
       expect(result.days[0].exercises[0]).toEqual({
-        exerciseId: '64f1aabbccddeeff00112233',
+        exerciseId: '',
         name: 'Press Banca',
         plannedSets: 4,
         plannedReps: '8-10',
@@ -202,8 +210,20 @@ describe('PlanGeneratorParser', () => {
       expect(result.days[6].isRest).toBe(true);
     });
 
-    it('propaga SyntaxError ante JSON malformado', () => {
-      expect(() => parser.parse('{ esto no es json')).toThrow(SyntaxError);
+    it('lanza BadRequestException ante JSON malformado (no SyntaxError crudo)', () => {
+      expect(() => parser.parse('{ esto no es json')).toThrow(
+        new BadRequestException('La IA devolvió una respuesta JSON malformada'),
+      );
+    });
+
+    it('parseWithRawJson retorna el plan y el JSON crudo intacto', () => {
+      const rawPlan = buildPlan();
+      const { plan, rawJson } = parser.parseWithRawJson(
+        JSON.stringify(rawPlan),
+      );
+
+      expect(plan.title).toBe('PPL Hipertrofia');
+      expect(rawJson).toEqual(rawPlan);
     });
   });
 });

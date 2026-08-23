@@ -20,7 +20,7 @@ export class AuditLogsService {
     action: string;
     entity: string;
     entityId?: string;
-    userId: string;
+    userId?: string;
     userEmail?: string;
     success: boolean;
     errorMessage?: string;

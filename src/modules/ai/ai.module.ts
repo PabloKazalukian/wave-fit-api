@@ -1,12 +1,23 @@
 // modules/ai/ai.module.ts
 import { Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
 import { AiService } from './ai.service';
 import { GroqProvider } from './providers/groq.provider';
+import { AiRateLimitService } from './ai-rate-limit.service';
+import { AiUsage, AiUsageSchema } from './schemas/ai-usage.schema';
+import { AuditLogsModule } from '../audit-logs/audit-logs.module';
 // import { OpenAIProvider } from './providers/openai.provider';
 
 @Module({
+  imports: [
+    MongooseModule.forFeature([
+      { name: AiUsage.name, schema: AiUsageSchema },
+    ]),
+    AuditLogsModule,
+  ],
   providers: [
     AiService,
+    AiRateLimitService,
     GroqProvider,
     // OpenAIProvider,
     {
@@ -22,6 +33,7 @@ import { GroqProvider } from './providers/groq.provider';
   ],
   exports: [
     AiService,
+    AiRateLimitService,
     'AI_PROVIDERS', // <-- ¡CRUCIAL! Tienes que exportar el token aquí también
   ],
 })

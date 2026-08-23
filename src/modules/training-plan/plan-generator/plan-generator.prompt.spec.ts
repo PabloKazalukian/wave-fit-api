@@ -1,10 +1,7 @@
-import { buildPlanPrompts, ExerciseForAI } from './plan-generator.prompt';
+import { buildPlanPrompts } from './plan-generator.prompt';
 
 describe('buildPlanPrompts', () => {
-  const exercises: ExerciseForAI[] = [
-    { id: 'ex-1', name: 'Press Banca', category: 'chest' },
-    { id: 'ex-2', name: 'Sentadilla', category: 'legs' },
-  ];
+  const exercises = ['Press Banca', 'Sentadilla'];
 
   it('aplica defaults cuando el contexto viene vacío', () => {
     const { userPrompt } = buildPlanPrompts({}, exercises);
@@ -20,12 +17,12 @@ describe('buildPlanPrompts', () => {
     expect(userPrompt).toContain('Experiencia: intermediate');
   });
 
-  it('incluye los datos del usuario serializados como JSON', () => {
+  it('incluye los datos del usuario serializados como JSON compacto', () => {
     const aiContext = { biometrics: { weightKg: 75 } };
     const { userPrompt } = buildPlanPrompts(aiContext, exercises);
 
     expect(userPrompt).toContain('--- DATOS DEL USUARIO ---');
-    expect(userPrompt).toContain(JSON.stringify(aiContext, null, 2));
+    expect(userPrompt).toContain(JSON.stringify(aiContext));
   });
 
   it('usa los valores del contexto cuando están presentes', () => {
@@ -55,8 +52,9 @@ describe('buildPlanPrompts', () => {
     expect(systemPrompt).toContain('"days" debe contener EXACTAMENTE 7');
     expect(systemPrompt).toContain('NUNCA pongas 3 o más días');
     expect(systemPrompt).toContain(
-      '"exerciseId": "string (ID real del catálogo proporcionado, NO inventar IDs)"',
+      '"name": "string (nombre EXACTO del ejercicio tal como aparece en el catálogo)"',
     );
+    expect(systemPrompt).not.toContain('exerciseId');
   });
 
   describe('consideraciones adicionales condicionales', () => {
@@ -184,12 +182,16 @@ describe('buildPlanPrompts', () => {
     });
   });
 
-  it('incluye el catálogo formateado id | nombre | categoría', () => {
+  it('incluye el catálogo como lista de nombres sin ids ni categorías', () => {
     const { userPrompt } = buildPlanPrompts({}, exercises);
 
     expect(userPrompt).toContain('--- CATÁLOGO DE EJERCICIOS DISPONIBLES ---');
-    expect(userPrompt).toContain('- ex-1 | Press Banca | chest');
-    expect(userPrompt).toContain('- ex-2 | Sentadilla | legs');
+    expect(userPrompt).toContain('- Press Banca');
+    expect(userPrompt).toContain('- Sentadilla');
+    expect(userPrompt).not.toContain('|');
+    expect(userPrompt).toContain(
+      'Copia el nombre EXACTAMENTE como aparece en la lista',
+    );
   });
 
   it('agrega el comentario del usuario solo si no está vacío', () => {

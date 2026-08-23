@@ -1,4 +1,5 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { AI_CAUSE } from 'src/modules/ai/ai-error-causes';
 
 export interface ParsedDayExercise {
   exerciseId: string;
@@ -27,14 +28,35 @@ export interface ParsedPlan {
 
 @Injectable()
 export class PlanGeneratorParser {
+  private readonly logger = new Logger(PlanGeneratorParser.name);
+
   parse(rawResponse: string): ParsedPlan {
+    return this.parseWithRawJson(rawResponse).plan;
+  }
+
+  parseWithRawJson(rawResponse: string): {
+    plan: ParsedPlan;
+    rawJson: Record<string, any>;
+  } {
     const json = this.extractJson(rawResponse);
 
-    const plan = JSON.parse(json);
+    let plan: Record<string, any>;
+    try {
+      plan = JSON.parse(json);
+    } catch (err) {
+      // Log del contenido crudo truncado para diagnóstico post-mortem
+      this.logger.error(
+        `${AI_CAUSE.MALFORMED_JSON}: la IA devolvió JSON inválido. Contenido crudo (primeros 500 chars): ${rawResponse.slice(0, 500)}`,
+      );
+      console.log('[Error de iA]', err);
+      throw new BadRequestException(
+        'La IA devolvió una respuesta JSON malformada',
+      );
+    }
 
     this.validate(plan);
 
-    return this.normalize(plan);
+    return { plan: this.normalize(plan), rawJson: plan };
   }
 
   private extractJson(content: string) {
@@ -45,7 +67,8 @@ export class PlanGeneratorParser {
   }
 
   private validate(plan: any) {
-    if (!plan.days) throw new BadRequestException('AI response missing "days" array');
+    if (!plan.days)
+      throw new BadRequestException('AI response missing "days" array');
     if (!Array.isArray(plan.days))
       throw new BadRequestException('days must be an array');
     if (plan.days.length !== 7)
@@ -58,9 +81,9 @@ export class PlanGeneratorParser {
         throw new BadRequestException('Each day must have a boolean "isRest"');
       if (!day.isRest && Array.isArray(day.exercises)) {
         for (const ex of day.exercises) {
-          if (!ex.exerciseId)
+          if (typeof ex.name !== 'string' || !ex.name.trim())
             throw new BadRequestException(
-              'Each exercise must have an "exerciseId"',
+              'Each exercise must have a non-empty "name"',
             );
         }
       }
@@ -84,8 +107,10 @@ export class PlanGeneratorParser {
       focus: d.focus || null,
       exercises: Array.isArray(d.exercises)
         ? d.exercises.map((e) => ({
-            exerciseId: e.exerciseId,
-            name: e.name || '',
+            // exerciseId se resuelve después en el service, buscando
+            // el name en el catálogo real de la DB.
+            exerciseId: '',
+            name: String(e.name ?? '').trim(),
             plannedSets: Number(e.plannedSets ?? e.sets ?? 0),
             plannedReps: String(e.plannedReps ?? e.reps ?? ''),
             rpe: e.rpe != null ? Number(e.rpe) : null,

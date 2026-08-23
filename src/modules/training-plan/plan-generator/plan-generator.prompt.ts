@@ -3,15 +3,9 @@ export interface BuiltPrompts {
   userPrompt: string;
 }
 
-export interface ExerciseForAI {
-  id: string;
-  name: string;
-  category: string;
-}
-
 export function buildPlanPrompts(
   aiContext: Record<string, unknown>,
-  exercises: ExerciseForAI[],
+  exerciseNames: string[],
   comment: string = '',
 ): BuiltPrompts {
   const ctx = aiContext as any;
@@ -64,8 +58,7 @@ export function buildPlanPrompts(
     '      "focus": "string (opcional, ej: Push, Pull, Piernas)",',
     '      "exercises": [',
     '        {',
-    '          "exerciseId": "string (ID real del catálogo proporcionado, NO inventar IDs)",',
-    '          "name": "string (nombre del ejercicio)",',
+    '          "name": "string (nombre EXACTO del ejercicio tal como aparece en el catálogo)",',
     '          "plannedSets": "number (series planeadas)",',
     '          "plannedReps": "string (ej: 8-10, 12, 5x5)",',
     '          "rpe": "number (opcional, 1-10)",',
@@ -81,8 +74,8 @@ export function buildPlanPrompts(
     '- El array "days" debe contener EXACTAMENTE 7 elementos (una semana completa)',
     '- El order 1 corresponde al primer día de entrenamiento de la semana',
     '- isRest: true → el array exercises debe ser []',
-    '- exerciseId DEBE ser un ID válido del catálogo de ejercicios proporcionado',
-    '- NO inventes IDs que no estén en el catálogo',
+    '- name DEBE ser el nombre EXACTO de un ejercicio del catálogo proporcionado (cópialo sin modificar, sin traducir ni parafrasear)',
+    '- NO inventes nombres ni uses ejercicios fuera del catálogo',
     '- Si el usuario no tiene suficiente equipamiento, adapta los ejercicios a su realidad',
   ].join('\n');
 
@@ -90,7 +83,8 @@ export function buildPlanPrompts(
     `Genera un plan de entrenamiento personalizado para el siguiente usuario:`,
     ``,
     `--- DATOS DEL USUARIO ---`,
-    `${JSON.stringify(aiContext, null, 2)}`,
+    // Compacto (sin indentar) para no quemar presupuesto de tokens
+    `${JSON.stringify(aiContext)}`,
     ``,
     `--- INSTRUCCIONES ESPECÍFICAS ---`,
     `- El plan debe tener ${timelineWeeks} semanas de duración`,
@@ -164,13 +158,11 @@ export function buildPlanPrompts(
       '\n\n--- CONSIDERACIONES ADICIONALES ---\n' + extras.join('\n');
   }
 
-  const exerciseList = exercises
-    .map((e) => `- ${e.id} | ${e.name} | ${e.category}`)
-    .join('\n');
+  const exerciseList = exerciseNames.map((name) => `- ${name}`).join('\n');
 
   userPrompt += `
 \n--- CATÁLOGO DE EJERCICIOS DISPONIBLES ---
-Usa SOLO estos ejercicios. Cada ejercicio tiene: id | nombre | categoría.
+Usa SOLO estos ejercicios. Copia el nombre EXACTAMENTE como aparece en la lista:
 ${exerciseList}
 `;
 
