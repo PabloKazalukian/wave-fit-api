@@ -211,10 +211,9 @@ describe('WorkoutSessionService', () => {
 
       await service.findAllByUser(mockUserId);
 
-      expect(mockSessionModel.find).toHaveBeenCalledWith({
-        userId: mockUserId,
-        deleted: { $ne: true },
-      });
+      const calledWith = mockSessionModel.find.mock.calls[0][0];
+      expect(calledWith.userId.toString()).toBe(mockUserId);
+      expect(calledWith.deleted).toEqual({ $ne: true });
     });
   });
 
@@ -353,12 +352,11 @@ describe('WorkoutSessionService', () => {
         }),
       });
 
+      // El servicio convierte el id a ObjectId antes de buscar; se usa un id
+      // con formato válido pero inexistente para conservar la intención
+      const nonExistentId = new Types.ObjectId().toString();
       await expect(
-        service.update(
-          'non-existent-id',
-          { id: 'non-existent-id' },
-          mockUserId,
-        ),
+        service.update(nonExistentId, { id: nonExistentId }, mockUserId),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -529,7 +527,8 @@ describe('WorkoutSessionService', () => {
 
       let errorThrown = false;
       try {
-        await service.remove('non-existent-id', mockUserId);
+        // id con formato válido pero inexistente
+        await service.remove(new Types.ObjectId().toString(), mockUserId);
       } catch {
         errorThrown = true;
       }

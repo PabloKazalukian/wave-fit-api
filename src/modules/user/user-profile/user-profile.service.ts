@@ -8,34 +8,26 @@ import { Model, Types } from 'mongoose';
 import { UserProfile, UserProfileDocument } from './schema/user-profile.schema';
 import { CreateUserProfileInput } from './dto/create-user-profile.input';
 import { UpdateUserProfileInput } from './dto/update-user-profile.input';
-import { UpdateHealthConstraintsInput } from './dto/update-health-constraints.input';
-import { UpdateScheduleInput } from './dto/update-schedule.input';
-import { UpdateResourceInput } from './dto/update-resource.input';
-import { CreateStrengthMetricInput } from './dto/create-strength-metric.input';
-import { UserHealthConstraint } from './schema/health-constraints.schema';
-import { UserSchedule } from './schema/schedule.schema';
-import { UserStrengthMetric } from './schema/strength-metrics.schema';
-import { UserResource } from './schema/resourse.schema';
 import { GoalsService } from './goals/goals.service';
 import { TrainingPreferenceService } from './training-preference/training-preference.service';
 import { WeightService } from './weight/weight.service';
+import { HealthConstraintsService } from './health-constraints/health-constraints.service';
+import { ScheduleService } from './schedule/schedule.service';
+import { ResourceService } from './resource/resource.service';
+import { StrengthMetricsService } from './strength-metrics/strength-metrics.service';
 
 @Injectable()
 export class UserProfileService {
   constructor(
     @InjectModel(UserProfile.name)
     private readonly profileModel: Model<UserProfile>,
-    @InjectModel(UserHealthConstraint.name)
-    private readonly healthModel: Model<UserHealthConstraint>,
-    @InjectModel(UserResource.name)
-    private readonly resourceModel: Model<UserResource>,
-    @InjectModel(UserSchedule.name)
-    private readonly scheduleModel: Model<UserSchedule>,
-    @InjectModel(UserStrengthMetric.name)
-    private readonly strengthModel: Model<UserStrengthMetric>,
     private readonly goalsService: GoalsService,
     private readonly trainingPreferenceService: TrainingPreferenceService,
     private readonly weightService: WeightService,
+    private readonly healthConstraintsService: HealthConstraintsService,
+    private readonly scheduleService: ScheduleService,
+    private readonly resourceService: ResourceService,
+    private readonly strengthMetricsService: StrengthMetricsService,
   ) {}
 
   async create(
@@ -92,9 +84,9 @@ export class UserProfileService {
       await Promise.all([
         this.profileModel.findOne({ userId }).lean(),
         this.goalsService.findActiveGoal(userId),
-        this.scheduleModel.findOne({ userId }).lean(),
-        this.healthModel.findOne({ userId }).lean(),
-        this.strengthModel.findOne({ userId }).lean(),
+        this.scheduleService.findSchedule(userId),
+        this.healthConstraintsService.findHealthConstraints(userId),
+        this.strengthMetricsService.findStrengthMetrics(userId),
       ]);
 
     return {
@@ -126,14 +118,11 @@ export class UserProfileService {
     ] = await Promise.all([
       this.profileModel.findOne({ userId: new Types.ObjectId(userId) }).exec(),
       this.goalsService.findActiveGoal(userId),
-      this.scheduleModel.findOne({ userId: new Types.ObjectId(userId) }).lean(),
-      this.healthModel.findOne({ userId: new Types.ObjectId(userId) }).lean(),
+      this.scheduleService.findSchedule(userId),
+      this.healthConstraintsService.findHealthConstraints(userId),
       this.trainingPreferenceService.findTrainingPreference(userId),
-      this.resourceModel.findOne({ userId: new Types.ObjectId(userId) }).lean(),
-      this.strengthModel
-        .find({ userId: new Types.ObjectId(userId) })
-        .sort({ measuredAt: -1 })
-        .lean(),
+      this.resourceService.findResource(userId),
+      this.strengthMetricsService.findStrengthMetrics(userId),
       this.weightService.findWeightLogs(userId),
     ]);
 
@@ -221,145 +210,5 @@ export class UserProfileService {
     }
 
     return deleted;
-  }
-
-  // ──────────────────────────────────────────────
-  // Health Constraints (upsert 1:1)
-  // ──────────────────────────────────────────────
-
-  async updateHealthConstraints(
-    userId: string,
-    input: UpdateHealthConstraintsInput,
-  ): Promise<UserHealthConstraint> {
-    const objectId = new Types.ObjectId(userId);
-    const exists = await this.healthModel.exists({ userId: objectId }).exec();
-    if (!exists) {
-      await this.healthModel.create({ userId: objectId });
-    }
-    const updateData: Record<string, unknown> = {};
-    if (input.injuries !== undefined) updateData.injuries = input.injuries;
-    if (input.movementRestrictions !== undefined)
-      updateData.movementRestrictions = input.movementRestrictions;
-    if (input.conditions !== undefined)
-      updateData.conditions = input.conditions;
-    if (input.mobilityLevel !== undefined)
-      updateData.mobilityLevel = input.mobilityLevel;
-    if (input.hasHealthcareSupervision !== undefined)
-      updateData.hasHealthcareSupervision = input.hasHealthcareSupervision;
-
-    return this.healthModel
-      .findOneAndUpdate(
-        { userId: objectId },
-        { $set: { ...updateData, userId: objectId } },
-        { new: true },
-      )
-      .orFail()
-      .exec();
-  }
-
-  async findHealthConstraints(
-    userId: string,
-  ): Promise<UserHealthConstraint | null> {
-    return this.healthModel
-      .findOne({ userId: new Types.ObjectId(userId) })
-      .exec();
-  }
-
-  // ──────────────────────────────────────────────
-  // Schedule (upsert 1:1)
-  // ──────────────────────────────────────────────
-
-  async updateSchedule(
-    userId: string,
-    input: UpdateScheduleInput,
-  ): Promise<UserSchedule> {
-    const objectId = new Types.ObjectId(userId);
-    const exists = await this.scheduleModel.exists({ userId: objectId }).exec();
-    if (!exists) {
-      await this.scheduleModel.create({ userId: objectId, ...input });
-    }
-    return this.scheduleModel
-      .findOneAndUpdate(
-        { userId: objectId },
-        { $set: { ...input, userId: objectId } },
-        { new: true },
-      )
-      .orFail()
-      .exec();
-  }
-
-  async findSchedule(userId: string): Promise<UserSchedule | null> {
-    return this.scheduleModel
-      .findOne({ userId: new Types.ObjectId(userId) })
-      .exec();
-  }
-
-  // ──────────────────────────────────────────────
-  // Resource (upsert 1:1)
-  // ──────────────────────────────────────────────
-
-  async updateResource(
-    userId: string,
-    input: UpdateResourceInput,
-  ): Promise<UserResource> {
-    const objectId = new Types.ObjectId(userId);
-    const exists = await this.resourceModel.exists({ userId: objectId }).exec();
-    if (!exists) {
-      await this.resourceModel.create({ userId: objectId, ...input });
-    }
-    return this.resourceModel
-      .findOneAndUpdate(
-        { userId: objectId },
-        { $set: { ...input, userId: objectId } },
-        { new: true },
-      )
-      .orFail()
-      .exec();
-  }
-
-  async findResource(userId: string): Promise<UserResource | null> {
-    return this.resourceModel
-      .findOne({ userId: new Types.ObjectId(userId) })
-      .exec();
-  }
-
-  // ──────────────────────────────────────────────
-  // Strength Metrics (colección 1:N)
-  // ──────────────────────────────────────────────
-
-  async createStrengthMetric(
-    userId: string,
-    input: CreateStrengthMetricInput,
-  ): Promise<UserStrengthMetric> {
-    const objectId = new Types.ObjectId(userId);
-    return this.strengthModel.create({
-      ...input,
-      userId: objectId,
-      measuredAt: input.measuredAt ? new Date(input.measuredAt) : new Date(),
-      confidenceLevel: input.confidenceLevel ?? 'self_reported',
-    });
-  }
-
-  async removeStrengthMetric(
-    userId: string,
-    metricId: string,
-  ): Promise<UserStrengthMetric> {
-    const deleted = await this.strengthModel
-      .findOneAndDelete({
-        _id: new Types.ObjectId(metricId),
-        userId: new Types.ObjectId(userId),
-      })
-      .exec();
-    if (!deleted) {
-      throw new NotFoundException('Strength metric not found');
-    }
-    return deleted;
-  }
-
-  async findStrengthMetrics(userId: string): Promise<UserStrengthMetric[]> {
-    return this.strengthModel
-      .find({ userId: new Types.ObjectId(userId) })
-      .sort({ measuredAt: -1 })
-      .exec();
   }
 }

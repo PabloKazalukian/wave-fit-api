@@ -26,6 +26,7 @@ describe('ExtraSessionService', () => {
 
     workoutSessionModelMock = {
       findOne: jest.fn(),
+      create: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -48,18 +49,28 @@ describe('ExtraSessionService', () => {
   describe('create', () => {
     const createInput = {
       workoutSessionId: mockWorkoutSessionId,
-      date: new Date().toISOString(),
+      // El servicio exige formato yyyy-MM-dd
+      date: '2024-01-15',
       discipline: 'running',
       duration: 30,
       intensityLevel: 3,
     };
 
-    it('should throw NotFoundException if WorkoutSession does not exist', async () => {
+    it('should auto-create a WorkoutSession if it does not exist', async () => {
       workoutSessionModelMock.findOne.mockResolvedValue(null);
+      workoutSessionModelMock.create.mockResolvedValue({
+        id: mockWorkoutSessionId,
+      });
+      extraSessionModelMock.create.mockResolvedValue({
+        id: mockExtraSessionId,
+      });
 
-      await expect(service.create(createInput, mockUserId)).rejects.toThrow(
-        NotFoundException,
+      await service.create(createInput, mockUserId);
+
+      expect(workoutSessionModelMock.create).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'not_started' }),
       );
+      expect(extraSessionModelMock.create).toHaveBeenCalled();
     });
 
     it('should throw BadRequestException if discipline is invalid', async () => {
@@ -82,7 +93,8 @@ describe('ExtraSessionService', () => {
         expect.objectContaining({
           category: ExtraSessionCategory.CARDIO,
           discipline: 'running',
-          calories: 300, // 600 cal/h -> 300 cal/30m
+          // met 8 x 70kg x 0.5h x intensidad 1.0
+          calories: 280,
         }),
       );
     });
@@ -143,12 +155,14 @@ describe('ExtraSessionService', () => {
         save: jest.fn(),
         discipline: 'running',
         duration: 30, // currently running 30m
+        intensityLevel: 3,
       };
       extraSessionModelMock.findOne.mockResolvedValue(mockSession);
 
       await service.update(mockExtraSessionId, { id: mockExtraSessionId, duration: 60 }, mockUserId);
-      
-      expect(mockSession.calories).toBe(600); // 60m of running = 600 calories
+
+      // met 8 x 70kg x 1h x intensidad 1.0
+      expect(mockSession.calories).toBe(560);
       expect(mockSession.save).toHaveBeenCalled();
     });
 
@@ -157,12 +171,14 @@ describe('ExtraSessionService', () => {
         save: jest.fn(),
         discipline: 'running',
         duration: 30,
+        intensityLevel: 3,
       };
       extraSessionModelMock.findOne.mockResolvedValue(mockSession);
 
-      await service.update(mockExtraSessionId, { id: mockExtraSessionId, duration: 60, calories: 100 }, mockUserId);
-      
-      expect(mockSession.calories).toBe(100);
+      // Dentro de la tolerancia de +/-400 cal del estimado (560 para 60m)
+      await service.update(mockExtraSessionId, { id: mockExtraSessionId, duration: 60, calories: 500 }, mockUserId);
+
+      expect(mockSession.calories).toBe(500);
       expect(mockSession.save).toHaveBeenCalled();
     });
   });

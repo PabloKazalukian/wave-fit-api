@@ -5,6 +5,7 @@ import { CreateWeekLogInput } from './presentation/dto/create-week-log.input';
 import { UpdateWeekLogInput } from './presentation/dto/update-week-log.input';
 import { Types } from 'mongoose';
 import { BadRequestException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AuditInterceptor } from 'src/modules/audit-logs/audit-logs.interceptor';
 
 describe('WeekLogResolver', () => {
@@ -71,6 +72,10 @@ describe('WeekLogResolver', () => {
         {
           provide: WeekLogService,
           useValue: mockWeekLogService,
+        },
+        {
+          provide: EventEmitter2,
+          useValue: { emit: jest.fn() },
         },
       ],
     })
@@ -146,6 +151,8 @@ describe('WeekLogResolver', () => {
       };
 
       mockWeekLogService.create.mockResolvedValue(mockWeekLog);
+      // El resolver refresca el WeekLog recién creado vía findOne
+      mockWeekLogService.findOne.mockResolvedValue(mockWeekLog);
 
       const result = await resolver.createWeekLog(createInput, context as any);
 
@@ -157,6 +164,10 @@ describe('WeekLogResolver', () => {
       const passedUserId = mockWeekLogService.create.mock.calls[0][1];
       expect(passedUserId).toBe(mockUserId);
 
+      expect(service.findOne).toHaveBeenCalledWith(
+        mockWeekLogId,
+        mockUserId,
+      );
       expect(result).toEqual(mockWeekLog);
     });
   });
@@ -171,6 +182,7 @@ describe('WeekLogResolver', () => {
       };
 
       mockWeekLogService.create.mockResolvedValue(mockWeekLog);
+      mockWeekLogService.findOne.mockResolvedValue(mockWeekLog);
 
       const result = await resolver.createWeekLog(
         createInput,
@@ -187,13 +199,18 @@ describe('WeekLogResolver', () => {
       const passedUserId = createMock.mock.calls[0][1];
       expect(passedUserId).toBe(validUserId);
 
+      expect(service.findOne).toHaveBeenCalledWith(
+        mockWeekLogId,
+        validUserId,
+      );
       expect(result).toBe(mockWeekLog);
     });
 
     it('should create a week log for authenticated user2', async () => {
-      const result = { _id: 'weekLogId' };
+      const result = { id: 'weekLogId' };
 
       jest.spyOn(service, 'create').mockResolvedValue(result as any);
+      jest.spyOn(service, 'findOne').mockResolvedValue(result as any);
 
       const response = await resolver.createWeekLog(
         validInputtoCreate,
@@ -204,16 +221,19 @@ describe('WeekLogResolver', () => {
         validInputtoCreate,
         expect.any(String),
       );
+      // El resolver devuelve el WeekLog refrescado vía findOne
       expect(response).toBe(result);
     });
 
     it('should validate CreateWeekLogInput with required fields', async () => {
       const validContext = mockContext(validUserId);
 
-      mockWeekLogService.create.mockResolvedValue({
+      const createdWeekLog = {
         ...mockWeekLog,
         ...validInputtoCreate,
-      });
+      };
+      mockWeekLogService.create.mockResolvedValue(createdWeekLog);
+      mockWeekLogService.findOne.mockResolvedValue(createdWeekLog);
 
       const result = await resolver.createWeekLog(
         validInputtoCreate,
@@ -271,7 +291,11 @@ describe('WeekLogResolver', () => {
 
       const result = await resolver.findAll(mockContext(validUserId), 5, 5);
 
-      expect(service.findAllByUser).toHaveBeenCalledWith(validUserId);
+      expect(service.findAllByUser).toHaveBeenCalledWith(
+        validUserId,
+        5,
+        5,
+      );
       expect(result).toEqual(mockWeekLogs);
       expect(result?.length).toBe(2);
     });
@@ -332,16 +356,17 @@ describe('WeekLogResolver', () => {
       const result = await resolver.findActiveWeekLog(mockContext(validUserId));
 
       expect(service.findActiveWeekLog).toHaveBeenCalledWith(validUserId);
-      expect(result).toEqual(activeWeekLog);
-      expect(result?.hasActiveWeek).toBe(false);
+      // El resolver envuelve la semana en ActiveWeekLogResponse
+      expect(result.hasActiveWeek).toBe(true);
+      expect(result.week).toEqual(activeWeekLog);
     });
 
-    it('should return null if no active week log exists', async () => {
+    it('should return hasActiveWeek false if no active week log exists', async () => {
       mockWeekLogService.findActiveWeekLog.mockResolvedValue(null);
 
       const result = await resolver.findActiveWeekLog(mockContext(validUserId));
 
-      expect(result).toBeNull();
+      expect(result).toEqual({ hasActiveWeek: false });
     });
 
     it('should require authentication', async () => {
@@ -523,7 +548,7 @@ describe('WeekLogResolver', () => {
       const mockContexts = {
         req: {
           user: {
-            id: mockContext(validUserId),
+            id: validUserId,
             email: 'test@example.com',
           },
         },
@@ -532,7 +557,7 @@ describe('WeekLogResolver', () => {
       // Simular la extracción del usuario desde el contexto de GraphQL
       const userId = mockContexts.req.user.id;
 
-      expect(userId).toBe(mockContext(validUserId));
+      expect(userId).toBe(validUserId);
       expect(mockContexts.req.user.email).toBe('test@example.com');
     });
 
@@ -541,7 +566,7 @@ describe('WeekLogResolver', () => {
         req: {},
       };
 
-      expect(mockContexts.req).toBeUndefined();
+      expect(mockContexts.req.user).toBeUndefined();
     });
   });
 
@@ -555,6 +580,7 @@ describe('WeekLogResolver', () => {
       };
 
       mockWeekLogService.create.mockResolvedValue(mockWeekLog);
+      mockWeekLogService.findOne.mockResolvedValue(mockWeekLog);
 
       const result = await resolver.createWeekLog(
         validInput,
@@ -595,7 +621,7 @@ describe('WeekLogResolver', () => {
 
   describe('Error Handling', () => {
     it('should handle database errors gracefully', async () => {
-      mockWeekLogService.findAll.mockRejectedValue(
+      mockWeekLogService.findAllByUser.mockRejectedValue(
         new Error('Database connection failed'),
       );
 

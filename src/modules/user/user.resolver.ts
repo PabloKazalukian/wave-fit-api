@@ -73,8 +73,6 @@ export class UserResolver {
   ) {
     const userId = context.req.user._id.toString();
 
-    console.log(base64Image);
-
     return this.userService.uploadAvatar(base64Image, userId);
   }
 }

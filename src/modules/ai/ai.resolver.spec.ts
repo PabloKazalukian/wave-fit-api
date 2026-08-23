@@ -5,9 +5,22 @@ import { AiService } from './ai.service';
 describe('AiResolver', () => {
   let resolver: AiResolver;
 
+  const aiServiceMock = {
+    getAvailableProviders: jest.fn(),
+    generatePlan: jest.fn(),
+  };
+
   beforeEach(async () => {
+    jest.clearAllMocks();
+
     const module: TestingModule = await Test.createTestingModule({
-      providers: [AiResolver, AiService],
+      providers: [
+        AiResolver,
+        {
+          provide: AiService,
+          useValue: aiServiceMock,
+        },
+      ],
     }).compile();
 
     resolver = module.get<AiResolver>(AiResolver);

@@ -12,8 +12,15 @@ import { RoutineDayService } from '../../templates/routine-day/routine-day.servi
 import {
   CreateWeekLogUseCase,
   FindAllWeekLogsByUserUseCase,
+  FindOneWeekLogUseCase,
+  FindActiveWeekLogUseCase,
   UpdateDayUseCase,
   UpdateWeekLogUseCase,
+  UpdateDayWorkoutStatusUseCase,
+  RemoveWeekLogUseCase,
+  RemoveWorkoutSessionUseCase,
+  RemoveExtraSessionUseCase,
+  AssignRoutineDayUseCase,
 } from './application/use-cases';
 import { WorkoutSessionService } from '../workout-session/workout-session.service';
 import { WEEK_LOG_REPOSITORY } from './domain/interfaces/repositories/week-log.repository.interface';
@@ -54,8 +61,15 @@ describe('WeekLogService', () => {
 
   const mockCreateWeekLogUseCase = { execute: jest.fn() };
   const mockFindAllWeekLogsByUserUseCase = { execute: jest.fn() };
+  const mockFindOneWeekLogUseCase = { execute: jest.fn() };
+  const mockFindActiveWeekLogUseCase = { execute: jest.fn() };
   const mockUpdateDayUseCase = { execute: jest.fn() };
   const mockUpdateWeekLogUseCase = { execute: jest.fn() };
+  const mockUpdateDayWorkoutStatusUseCase = { execute: jest.fn() };
+  const mockRemoveWeekLogUseCase = { execute: jest.fn() };
+  const mockRemoveWorkoutSessionUseCase = { execute: jest.fn() };
+  const mockRemoveExtraSessionUseCase = { execute: jest.fn() };
+  const mockAssignRoutineDayUseCase = { execute: jest.fn() };
   const mockWorkoutSessionService = { remove: jest.fn() };
 
   const mockRepository = {
@@ -109,12 +123,40 @@ describe('WeekLogService', () => {
           useValue: mockFindAllWeekLogsByUserUseCase,
         },
         {
+          provide: FindOneWeekLogUseCase,
+          useValue: mockFindOneWeekLogUseCase,
+        },
+        {
+          provide: FindActiveWeekLogUseCase,
+          useValue: mockFindActiveWeekLogUseCase,
+        },
+        {
           provide: UpdateDayUseCase,
           useValue: mockUpdateDayUseCase,
         },
         {
           provide: UpdateWeekLogUseCase,
           useValue: mockUpdateWeekLogUseCase,
+        },
+        {
+          provide: UpdateDayWorkoutStatusUseCase,
+          useValue: mockUpdateDayWorkoutStatusUseCase,
+        },
+        {
+          provide: RemoveWeekLogUseCase,
+          useValue: mockRemoveWeekLogUseCase,
+        },
+        {
+          provide: RemoveWorkoutSessionUseCase,
+          useValue: mockRemoveWorkoutSessionUseCase,
+        },
+        {
+          provide: RemoveExtraSessionUseCase,
+          useValue: mockRemoveExtraSessionUseCase,
+        },
+        {
+          provide: AssignRoutineDayUseCase,
+          useValue: mockAssignRoutineDayUseCase,
         },
         {
           provide: WorkoutSessionService,
@@ -276,40 +318,22 @@ describe('WeekLogService', () => {
 
   describe('findOne', () => {
     it('should return a week log by id for the authenticated user', async () => {
-      const mockPopulateQuery = {
-        populate: jest.fn().mockReturnThis(),
-        exec: jest.fn().mockResolvedValue({
-          toObject: () => ({
-            _id: mockWeekLogId,
-            userId: mockUserId,
-            startDate: new Date('2024-01-01'),
-            endDate: new Date('2024-01-07'),
-            days: [],
-            planId: mockPlanId,
-            notes: 'Test week',
-          }),
-        }),
-      };
-      mockWeekLogModel.findOne.mockReturnValue(mockPopulateQuery);
+      mockFindOneWeekLogUseCase.execute.mockResolvedValue(mockWeekLog);
 
       const result = await service.findOne(
         mockWeekLogId.toString(),
         mockUserId,
       );
 
-      expect(mockWeekLogModel.findOne).toHaveBeenCalledWith({
-        _id: mockWeekLogId.toString(),
-        userId: mockUserId,
-      });
+      expect(mockFindOneWeekLogUseCase.execute).toHaveBeenCalledWith(
+        mockWeekLogId.toString(),
+        mockUserId,
+      );
       expect(result).toBeDefined();
     });
 
     it('should throw NotFoundException if week log does not exist', async () => {
-      const mockPopulateQuery = {
-        populate: jest.fn().mockReturnThis(),
-        exec: jest.fn().mockResolvedValue(null),
-      };
-      mockWeekLogModel.findOne.mockReturnValue(mockPopulateQuery);
+      mockFindOneWeekLogUseCase.execute.mockResolvedValue(null);
 
       await expect(
         service.findOne(mockWeekLogId.toHexString(), mockUserId),
@@ -319,65 +343,31 @@ describe('WeekLogService', () => {
 
   describe('findActiveWeekLog', () => {
     it('should return the active week log for the authenticated user', async () => {
-      const mockPopulateQuery = {
-        populate: jest.fn().mockReturnThis(),
-        exec: jest.fn().mockResolvedValue({
-          toObject: () => ({
-            _id: mockWeekLogId,
-            userId: mockUserId,
-            active: true,
-            startDate: new Date('2024-01-01'),
-            endDate: new Date('2024-01-07'),
-            days: [],
-            planId: mockPlanId,
-            notes: 'Test week',
-          }),
-        }),
-      };
-      mockWeekLogModel.findOne.mockReturnValue(mockPopulateQuery);
+      mockFindActiveWeekLogUseCase.execute.mockResolvedValue(mockWeekLog);
 
       const result = await service.findActiveWeekLog(mockUserId);
 
-      expect(mockWeekLogModel.findOne).toHaveBeenCalledWith({
-        userId: mockUserId,
-        active: true,
-      });
+      expect(mockFindActiveWeekLogUseCase.execute).toHaveBeenCalledWith(
+        mockUserId,
+      );
       expect(result).toBeDefined();
     });
 
     it('should return null if no active week log exists', async () => {
-      const mockPopulateQuery = {
-        populate: jest.fn().mockReturnThis(),
-        exec: jest.fn().mockResolvedValue(null),
-      };
-      mockWeekLogModel.findOne.mockReturnValue(mockPopulateQuery);
+      mockFindActiveWeekLogUseCase.execute.mockResolvedValue(null);
 
       const result = await service.findActiveWeekLog(mockUserId);
 
       expect(result).toBeNull();
     });
 
-    it('should return the most recent active week log if multiple exist', async () => {
-      const mockPopulateQuery = {
-        populate: jest.fn().mockReturnThis(),
-        exec: jest.fn().mockResolvedValue({
-          toObject: () => ({
-            _id: mockWeekLogId,
-            userId: mockUserId,
-            active: true,
-            startDate: new Date('2024-01-08'),
-            endDate: new Date('2024-01-14'),
-            days: [],
-            planId: mockPlanId,
-            notes: 'Test week',
-          }),
-        }),
-      };
-      mockWeekLogModel.findOne.mockReturnValue(mockPopulateQuery);
+    it('should delegate the active week log lookup to the use case', async () => {
+      const mostRecent = { ...mockWeekLog, startDate: new Date('2024-01-08') };
+      mockFindActiveWeekLogUseCase.execute.mockResolvedValue(mostRecent);
 
       const result = await service.findActiveWeekLog(mockUserId);
 
-      expect(result).toBeDefined();
+      expect(result).toEqual(mostRecent);
     });
   });
 });

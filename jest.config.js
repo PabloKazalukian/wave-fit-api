@@ -14,7 +14,7 @@ module.exports = {
   moduleNameMapper: {
     '^src/(.*)$': '<rootDir>/$1',
   },
-  collectCoverageFrom: ['**/*.(t|j)s'],
+  collectCoverageFrom: ['**/*.(t|j)s', '!**/*.spec.ts'],
   coverageDirectory: '../coverage',
   testPathIgnorePatterns: ['/node_modules/', '/dist/'],
 };

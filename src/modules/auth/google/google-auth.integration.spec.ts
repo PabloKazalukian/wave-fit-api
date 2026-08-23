@@ -5,6 +5,7 @@ import { UserService } from '../../user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException } from '@nestjs/common';
 import { GoogleTokenStrategy } from './google-token.strategy';
+import { StorageService } from '../../storage/storage.service';
 
 describe('GoogleAuth Integration', () => {
   let resolver: GoogleResolver;
@@ -40,6 +41,10 @@ describe('GoogleAuth Integration', () => {
               .fn()
               .mockResolvedValue({ id_token: 'mock_id_token' }),
             getUserInfo: jest.fn().mockResolvedValue(mockGoogleInfo),
+            getAvatarGoogle: jest.fn().mockResolvedValue({
+              buffer: Buffer.from('avatar'),
+              contentType: 'image/png',
+            }),
           },
         },
         {
@@ -47,12 +52,21 @@ describe('GoogleAuth Integration', () => {
           useValue: {
             findByEmail: jest.fn(),
             createGoogleUser: jest.fn().mockResolvedValue(mockUser),
+            updateAvatar: jest.fn().mockResolvedValue(mockUser),
           },
         },
         {
           provide: JwtService,
           useValue: {
             sign: jest.fn().mockReturnValue('mock_jwt_token'),
+          },
+        },
+        {
+          provide: StorageService,
+          useValue: {
+            uploadFile: jest
+              .fn()
+              .mockResolvedValue('http://cdn.example.com/avatar.png'),
           },
         },
       ],

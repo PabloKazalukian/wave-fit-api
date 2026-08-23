@@ -7,6 +7,7 @@ import { Types } from 'mongoose';
 import { BadRequestException } from '@nestjs/common';
 import { StatusWorkoutSessionEnum } from './schema/workout-session.schema';
 import { Reflector } from '@nestjs/core';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AuditLogsService } from '../../../audit-logs/audit-logs.service';
 
 describe('WorkoutSessionResolver', () => {
@@ -20,6 +21,7 @@ describe('WorkoutSessionResolver', () => {
 
   const mockSession = {
     id: mockSessionId,
+    _id: mockSessionId,
     userId: mockUserId,
     weekLogId: mockWeekLogId,
     date: new Date('2024-01-15'),
@@ -69,6 +71,10 @@ describe('WorkoutSessionResolver', () => {
         {
           provide: Reflector,
           useValue: mockReflector,
+        },
+        {
+          provide: EventEmitter2,
+          useValue: { emit: jest.fn() },
         },
       ],
     }).compile();

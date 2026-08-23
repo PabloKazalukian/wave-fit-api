@@ -7,6 +7,14 @@ export { TrainingPreferenceService } from './training-preference/training-prefer
 export { TrainingPreferenceResolver } from './training-preference/training-preference.resolver';
 export { WeightService } from './weight/weight.service';
 export { WeightResolver } from './weight/weight.resolver';
+export { HealthConstraintsService } from './health-constraints/health-constraints.service';
+export { HealthConstraintsResolver } from './health-constraints/health-constraints.resolver';
+export { ScheduleService } from './schedule/schedule.service';
+export { ScheduleResolver } from './schedule/schedule.resolver';
+export { ResourceService } from './resource/resource.service';
+export { ResourceResolver } from './resource/resource.resolver';
+export { StrengthMetricsService } from './strength-metrics/strength-metrics.service';
+export { StrengthMetricsResolver } from './strength-metrics/strength-metrics.resolver';
 
 // Entities
 export { UserProfileContext } from './entities/user-profile-context.entity';
@@ -23,11 +31,11 @@ export { WeightLog } from './entities/weight-log.entity';
 export { CreateUserProfileInput } from './dto/create-user-profile.input';
 export { UpdateUserProfileInput } from './dto/update-user-profile.input';
 export { UpdateGoalsInput } from './goals/dto/update-goals.input';
-export { UpdateHealthConstraintsInput } from './dto/update-health-constraints.input';
-export { UpdateScheduleInput } from './dto/update-schedule.input';
+export { UpdateHealthConstraintsInput } from './health-constraints/dto/update-health-constraints.input';
+export { UpdateScheduleInput } from './schedule/dto/update-schedule.input';
 export { UpdateTrainingPreferenceInput } from './training-preference/dto/update-training-preference.input';
-export { UpdateResourceInput } from './dto/update-resource.input';
-export { CreateStrengthMetricInput } from './dto/create-strength-metric.input';
+export { UpdateResourceInput } from './resource/dto/update-resource.input';
+export { CreateStrengthMetricInput } from './strength-metrics/dto/create-strength-metric.input';
 export { CreateWeightLogInput } from './weight/dto/create-weight-log.input';
 
 // Schemas (para MongooseModule.forFeature)

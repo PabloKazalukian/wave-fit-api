@@ -13,6 +13,10 @@ import { UserWeightLog } from './schema/weight.schema';
 import { GoalsService } from './goals/goals.service';
 import { TrainingPreferenceService } from './training-preference/training-preference.service';
 import { WeightService } from './weight/weight.service';
+import { HealthConstraintsService } from './health-constraints/health-constraints.service';
+import { ScheduleService } from './schedule/schedule.service';
+import { ResourceService } from './resource/resource.service';
+import { StrengthMetricsService } from './strength-metrics/strength-metrics.service';
 
 const createMockModel = () => ({
   create: jest.fn(),
@@ -37,6 +41,10 @@ describe('UserProfileResolver', () => {
         GoalsService,
         TrainingPreferenceService,
         WeightService,
+        HealthConstraintsService,
+        ScheduleService,
+        ResourceService,
+        StrengthMetricsService,
         ...[
           UserProfile,
           UserHealthConstraint,

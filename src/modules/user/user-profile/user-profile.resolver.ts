@@ -4,16 +4,8 @@ import { Types } from 'mongoose';
 import { UserProfileService } from './user-profile.service';
 import { UserProfileContext } from './entities/user-profile-context.entity';
 import { UserProfile } from './entities/user-profile.entity';
-import { HealthConstraint } from './entities/health-constraint.entity';
-import { Schedule } from './entities/schedule.entity';
-import { Resource } from './entities/resource.entity';
-import { StrengthMetric } from './entities/strength-metric.entity';
 import { CreateUserProfileInput } from './dto/create-user-profile.input';
 import { UpdateUserProfileInput } from './dto/update-user-profile.input';
-import { UpdateHealthConstraintsInput } from './dto/update-health-constraints.input';
-import { UpdateScheduleInput } from './dto/update-schedule.input';
-import { UpdateResourceInput } from './dto/update-resource.input';
-import { CreateStrengthMetricInput } from './dto/create-strength-metric.input';
 import { GqlAuthGuard } from 'src/modules/auth/guards/gql-auth.guard';
 import { extractUserId } from './user-profile.utils';
 
@@ -84,90 +76,5 @@ export class UserProfileResolver {
     @Context() context,
   ) {
     return this.userProfileService.remove(id, extractUserId(context));
-  }
-
-  // ── Health Constraints ──
-
-  @Mutation(() => HealthConstraint)
-  updateUserHealthConstraints(
-    @Args('input') input: UpdateHealthConstraintsInput,
-    @Context() context,
-  ) {
-    return this.userProfileService.updateHealthConstraints(
-      extractUserId(context),
-      input,
-    );
-  }
-
-  @Query(() => HealthConstraint, { nullable: true })
-  userHealthConstraints(@Context() context) {
-    return this.userProfileService.findHealthConstraints(
-      extractUserId(context),
-    );
-  }
-
-  // ── Schedule ──
-
-  @Mutation(() => Schedule)
-  updateUserSchedule(
-    @Args('input') input: UpdateScheduleInput,
-    @Context() context,
-  ) {
-    return this.userProfileService.updateSchedule(
-      extractUserId(context),
-      input,
-    );
-  }
-
-  @Query(() => Schedule, { nullable: true })
-  userSchedule(@Context() context) {
-    return this.userProfileService.findSchedule(extractUserId(context));
-  }
-
-  // ── Resource ──
-
-  @Mutation(() => Resource)
-  updateUserResource(
-    @Args('input') input: UpdateResourceInput,
-    @Context() context,
-  ) {
-    return this.userProfileService.updateResource(
-      extractUserId(context),
-      input,
-    );
-  }
-
-  @Query(() => Resource, { nullable: true })
-  userResource(@Context() context) {
-    return this.userProfileService.findResource(extractUserId(context));
-  }
-
-  // ── Strength Metrics (colección) ──
-
-  @Mutation(() => StrengthMetric)
-  createUserStrengthMetric(
-    @Args('input') input: CreateStrengthMetricInput,
-    @Context() context,
-  ) {
-    return this.userProfileService.createStrengthMetric(
-      extractUserId(context),
-      input,
-    );
-  }
-
-  @Mutation(() => StrengthMetric)
-  removeUserStrengthMetric(
-    @Args('id', { type: () => String }) id: string,
-    @Context() context,
-  ) {
-    return this.userProfileService.removeStrengthMetric(
-      extractUserId(context),
-      id,
-    );
-  }
-
-  @Query(() => [StrengthMetric])
-  userStrengthMetrics(@Context() context) {
-    return this.userProfileService.findStrengthMetrics(extractUserId(context));
   }
 }

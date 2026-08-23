@@ -30,6 +30,14 @@ import { TrainingPreferenceResolver } from './training-preference/training-prefe
 import { TrainingPreferenceService } from './training-preference/training-preference.service';
 import { WeightResolver } from './weight/weight.resolver';
 import { WeightService } from './weight/weight.service';
+import { HealthConstraintsResolver } from './health-constraints/health-constraints.resolver';
+import { HealthConstraintsService } from './health-constraints/health-constraints.service';
+import { ScheduleResolver } from './schedule/schedule.resolver';
+import { ScheduleService } from './schedule/schedule.service';
+import { ResourceResolver } from './resource/resource.resolver';
+import { ResourceService } from './resource/resource.service';
+import { StrengthMetricsResolver } from './strength-metrics/strength-metrics.resolver';
+import { StrengthMetricsService } from './strength-metrics/strength-metrics.service';
 
 @Module({
   imports: [
@@ -57,6 +65,14 @@ import { WeightService } from './weight/weight.service';
     TrainingPreferenceService,
     WeightResolver,
     WeightService,
+    HealthConstraintsResolver,
+    HealthConstraintsService,
+    ScheduleResolver,
+    ScheduleService,
+    ResourceResolver,
+    ResourceService,
+    StrengthMetricsResolver,
+    StrengthMetricsService,
   ],
 
   exports: [MongooseModule, UserProfileService],
