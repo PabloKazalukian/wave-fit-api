@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Reflector } from '@nestjs/core';
+import { Types } from 'mongoose';
 import { RoutinePlanResolver } from './routine-plan.resolver';
 import { RoutinePlanService } from './routine-plan.service';
 import { RoutineDayService } from '../routine-day/routine-day.service';
@@ -13,8 +14,15 @@ describe('RoutinePlanResolver', () => {
     findAll: jest.fn(),
     findOne: jest.fn(),
     findByTitle: jest.fn(),
+    findByIds: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
+    getFavoriteRoutineIds: jest.fn(),
+    markFavorites: jest.fn(),
+  };
+
+  const context = {
+    req: { user: { id: new Types.ObjectId().toString() } },
   };
 
   const routineDayServiceMock = {
@@ -139,20 +147,40 @@ describe('RoutinePlanResolver', () => {
   });
 
   describe('queries y mutations', () => {
-    it('routines delega en findAll', () => {
-      const plans = [{ id: 'plan-1' }];
-      routinePlanServiceMock.findAll.mockReturnValue(plans);
+    it('routines enriquece con isFavorite usando el userId del contexto', async () => {
+      const plans = [{ id: 'plan-1' }, { id: 'plan-2' }];
+      const favorites = new Set(['plan-2']);
+      const enriched = [
+        { id: 'plan-1', isFavorite: false },
+        { id: 'plan-2', isFavorite: true },
+      ];
+      routinePlanServiceMock.findAll.mockResolvedValue(plans);
+      routinePlanServiceMock.getFavoriteRoutineIds.mockResolvedValue(favorites);
+      routinePlanServiceMock.markFavorites.mockReturnValue(enriched);
 
-      expect(resolver.routines()).toBe(plans);
-      expect(routinePlanServiceMock.findAll).toHaveBeenCalled();
+      const result = await resolver.routines(context);
+
+      expect(routinePlanServiceMock.getFavoriteRoutineIds).toHaveBeenCalledWith(
+        context.req.user.id,
+      );
+      expect(routinePlanServiceMock.markFavorites).toHaveBeenCalledWith(
+        plans,
+        favorites,
+      );
+      expect(result).toEqual(enriched);
     });
 
-    it('findOne delega en service con el id recibido', () => {
-      const plan = { id: 'plan-1' };
-      routinePlanServiceMock.findOne.mockReturnValue(plan);
+    it('findOne enriquece el plan con isFavorite', async () => {
+      const favorites = new Set(['plan-1']);
+      const enriched = [{ id: 'plan-1', isFavorite: true }];
+      routinePlanServiceMock.findOne.mockResolvedValue({ id: 'plan-1' });
+      routinePlanServiceMock.getFavoriteRoutineIds.mockResolvedValue(favorites);
+      routinePlanServiceMock.markFavorites.mockReturnValue(enriched);
 
-      expect(resolver.findOne('plan-1')).toBe(plan);
+      const result = await resolver.findOne('plan-1', context);
+
       expect(routinePlanServiceMock.findOne).toHaveBeenCalledWith('plan-1');
+      expect(result).toEqual(enriched[0]);
     });
 
     it('createRoutinePlan delega en create', () => {

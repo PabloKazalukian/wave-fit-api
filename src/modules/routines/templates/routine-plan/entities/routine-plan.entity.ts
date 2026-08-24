@@ -15,6 +15,9 @@ export class RoutinePlan {
   @Field({ nullable: true })
   weekly_distribution?: string;
 
+  @Field({ defaultValue: false })
+  isFavorite?: boolean;
+
   @Field(() => [RoutineDay], { nullable: 'itemsAndList' })
   routineDays?: RoutineDay[];
 

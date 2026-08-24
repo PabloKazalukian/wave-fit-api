@@ -24,6 +24,28 @@ export class TrainingPreferenceResolver {
     );
   }
 
+  @Mutation(() => TrainingPreference)
+  toggleFavoriteExercise(
+    @Args('exerciseId', { type: () => String }) exerciseId: string,
+    @Context() context,
+  ) {
+    return this.trainingPreferenceService.toggleFavoriteExercise(
+      extractUserId(context),
+      exerciseId,
+    );
+  }
+
+  @Mutation(() => TrainingPreference)
+  toggleFavoriteRoutine(
+    @Args('routineId', { type: () => String }) routineId: string,
+    @Context() context,
+  ) {
+    return this.trainingPreferenceService.toggleFavoriteRoutine(
+      extractUserId(context),
+      routineId,
+    );
+  }
+
   @Query(() => TrainingPreference, { nullable: true })
   userTrainingPreference(@Context() context) {
     return this.trainingPreferenceService.findTrainingPreference(

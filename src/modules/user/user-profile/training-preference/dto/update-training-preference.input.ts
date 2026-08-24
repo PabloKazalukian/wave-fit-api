@@ -5,6 +5,7 @@ import {
   IsArray,
   IsIn,
   ArrayMinSize,
+  IsMongoId,
 } from 'class-validator';
 
 const TRAINING_STYLE_VALUES = [
@@ -39,8 +40,14 @@ export class UpdateTrainingPreferenceInput {
   @Field(() => [String], { nullable: true })
   @IsOptional()
   @IsArray()
-  @IsString({ each: true })
+  @IsMongoId({ each: true })
   favoriteExercises?: string[];
+
+  @Field(() => [String], { nullable: true })
+  @IsOptional()
+  @IsArray()
+  @IsMongoId({ each: true })
+  favoriteRoutines?: string[];
 
   @Field({ nullable: true })
   @IsOptional()

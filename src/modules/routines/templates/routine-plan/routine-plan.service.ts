@@ -3,15 +3,21 @@ import { CreateRoutinePlanInput } from './dto/create-routine-plan.input';
 import { UpdateRoutinePlanInput } from './dto/update-routine-plan.input';
 import { InjectModel } from '@nestjs/mongoose';
 import { RoutinePlan as RoutinePlanSchema } from './schema/routine-plan.schema';
+import {
+  UserTrainingPreference,
+} from 'src/modules/user/user-profile/schema/training-preference.schema';
 import { RoutinePlan } from './entities/routine-plan.entity';
 import { Model, Types } from 'mongoose';
 import { serializeMongo } from 'src/common/utils/mongo.utils';
+import { markItemsAsFavorites } from 'src/common/utils/favorites.utils';
 
 @Injectable()
 export class RoutinePlanService {
   constructor(
     @InjectModel(RoutinePlanSchema.name)
     private routinePlanModel: Model<RoutinePlanSchema>,
+    @InjectModel(UserTrainingPreference.name)
+    private readonly trainingPreferenceModel: Model<UserTrainingPreference>,
   ) {}
 
   async create(input: CreateRoutinePlanInput): Promise<RoutinePlan> {
@@ -92,5 +98,30 @@ export class RoutinePlanService {
   async remove(id: string): Promise<boolean> {
     const result = await this.routinePlanModel.findByIdAndDelete(id).exec();
     return !!result;
+  }
+
+  async findByIds(ids: string[]): Promise<RoutinePlan[]> {
+    const docs = await this.routinePlanModel
+      .find({ _id: { $in: ids } })
+      .lean()
+      .exec();
+    return serializeMongo<RoutinePlan[]>(docs);
+  }
+
+  async getFavoriteRoutineIds(userId: string): Promise<Set<string>> {
+    const preference = await this.trainingPreferenceModel
+      .findOne({ userId: new Types.ObjectId(userId) }, { favoriteRoutines: 1 })
+      .lean()
+      .exec();
+    return new Set(
+      (preference?.favoriteRoutines ?? []).map((id) => String(id)),
+    );
+  }
+
+  markFavorites<T extends { id: string }>(
+    plans: T[],
+    favoriteIds: Set<string>,
+  ): T[] {
+    return markItemsAsFavorites(plans, favoriteIds);
   }
 }

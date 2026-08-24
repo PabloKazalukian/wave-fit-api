@@ -54,8 +54,18 @@ export class UserTrainingPreference extends Document {
   dislikedExercises: string[];
 
   // Ejercicios favoritos que la IA prioriza si son compatibles con el objetivo
-  @Prop({ type: [String], default: [] })
-  favoriteExercises: string[];
+  @Prop({
+    type: [{ type: Types.ObjectId, ref: 'Exercise' }],
+    default: [],
+  })
+  favoriteExercises: Types.ObjectId[];
+
+  // Rutinas favoritas del usuario (referencias a RoutinePlan)
+  @Prop({
+    type: [{ type: Types.ObjectId, ref: 'RoutinePlan' }],
+    default: [],
+  })
+  favoriteRoutines: Types.ObjectId[];
 
   @Prop({
     type: String,

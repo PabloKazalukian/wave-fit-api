@@ -1,8 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
+import { Types } from 'mongoose';
 import { ExerciseService } from './exercise.service';
 import { getModelToken } from '@nestjs/mongoose';
 import { Exercise } from './schema/exercise.schema';
+import { UserTrainingPreference } from 'src/modules/user/user-profile/schema/training-preference.schema';
 
 describe('ExerciseService', () => {
   let service: ExerciseService;
@@ -14,6 +16,10 @@ describe('ExerciseService', () => {
     findById: jest.fn(),
     findByIdAndUpdate: jest.fn(),
     findByIdAndDelete: jest.fn(),
+  };
+
+  const trainingPreferenceModelMock = {
+    findOne: jest.fn(),
   };
 
   const leanQuery = (resolveValue: any) => ({
@@ -36,6 +42,10 @@ describe('ExerciseService', () => {
         {
           provide: getModelToken(Exercise.name),
           useValue: exerciseModelMock,
+        },
+        {
+          provide: getModelToken(UserTrainingPreference.name),
+          useValue: trainingPreferenceModelMock,
         },
       ],
     }).compile();
@@ -228,6 +238,59 @@ describe('ExerciseService', () => {
       });
 
       expect(await service.remove('ghost')).toBe(false);
+    });
+  });
+
+  describe('favoritos', () => {
+    const userId = new Types.ObjectId().toString();
+
+    it('getFavoriteExerciseIds retorna un Set con los ids del usuario', async () => {
+      trainingPreferenceModelMock.findOne.mockReturnValue({
+        lean: () => ({
+          exec: jest.fn().mockResolvedValue({
+            favoriteExercises: ['fav-1', 'fav-2'],
+          }),
+        }),
+      });
+
+      const result = await service.getFavoriteExerciseIds(userId);
+
+      expect(result).toBeInstanceOf(Set);
+      expect(result.has('fav-1')).toBe(true);
+      expect(result.has('fav-2')).toBe(true);
+      expect(result.size).toBe(2);
+    });
+
+    it('getFavoriteExerciseIds retorna Set vacío si no hay preferencia', async () => {
+      trainingPreferenceModelMock.findOne.mockReturnValue({
+        lean: () => ({
+          exec: jest.fn().mockResolvedValue(null),
+        }),
+      });
+
+      const result = await service.getFavoriteExerciseIds(userId);
+
+      expect(result.size).toBe(0);
+    });
+
+    it('markFavorites marca los ejercicios incluidos en el Set', () => {
+      const exercises = [
+        { id: 'ex-1', name: 'A' },
+        { id: 'ex-2', name: 'B' },
+      ];
+      const favorites = new Set(['ex-2']);
+
+      const result = service.markFavorites(exercises, favorites);
+
+      expect(result[0].isFavorite).toBe(false);
+      expect(result[1].isFavorite).toBe(true);
+    });
+
+    it('markFavorites no muta el array original', () => {
+      const exercises = [{ id: 'ex-1', name: 'A' }];
+      service.markFavorites(exercises, new Set(['ex-1']));
+
+      expect(exercises[0].isFavorite).toBeUndefined();
     });
   });
 });

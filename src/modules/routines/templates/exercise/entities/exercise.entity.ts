@@ -36,6 +36,9 @@ export class Exercise {
   @Field({ defaultValue: false })
   usesWeight: boolean;
 
+  @Field({ defaultValue: false })
+  isFavorite?: boolean;
+
   @Field()
   normalizedName: string;
 }

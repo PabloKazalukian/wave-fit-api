@@ -3,12 +3,16 @@ import { CreateExerciseInput } from './dto/create-exercise.input';
 import { UpdateExerciseInput } from './dto/update-exercise.input';
 import { Exercise as ExerciseSchema } from './schema/exercise.schema';
 import { Exercise } from './entities/exercise.entity';
+import {
+  UserTrainingPreference,
+} from 'src/modules/user/user-profile/schema/training-preference.schema';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import {
   serializeMongo,
   serializeMongoArray,
 } from 'src/common/utils/mongo.utils';
+import { markItemsAsFavorites } from 'src/common/utils/favorites.utils';
 import { normalizeString, isSimilar } from 'src/common/utils/string.utils';
 
 @Injectable()
@@ -16,6 +20,8 @@ export class ExerciseService {
   constructor(
     @InjectModel(ExerciseSchema.name)
     private ExerciseModel: Model<ExerciseSchema>,
+    @InjectModel(UserTrainingPreference.name)
+    private readonly trainingPreferenceModel: Model<UserTrainingPreference>,
   ) {}
   async create(createExerciseInput: CreateExerciseInput): Promise<Exercise> {
     const { name } = createExerciseInput;
@@ -126,5 +132,22 @@ export class ExerciseService {
   async remove(id: string): Promise<boolean> {
     const result = await this.ExerciseModel.findByIdAndDelete(id).exec();
     return !!result;
+  }
+
+  async getFavoriteExerciseIds(userId: string): Promise<Set<string>> {
+    const preference = await this.trainingPreferenceModel
+      .findOne({ userId: new Types.ObjectId(userId) }, { favoriteExercises: 1 })
+      .lean()
+      .exec();
+    return new Set(
+      (preference?.favoriteExercises ?? []).map((id) => String(id)),
+    );
+  }
+
+  markFavorites<T extends { id: string }>(
+    exercises: T[],
+    favoriteIds: Set<string>,
+  ): T[] {
+    return markItemsAsFavorites(exercises, favoriteIds);
   }
 }

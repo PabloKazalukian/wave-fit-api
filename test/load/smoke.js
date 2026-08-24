@@ -13,21 +13,57 @@ export const options = {
 
 const BASE_URL = 'http://localhost:3000/graphql';
 
-export default function () {
-  // 1. Health check
+// Login una vez antes de las VUs; devuelve la cookie "token=..."
+export function setup() {
+  const res = http.post(BASE_URL, JSON.stringify({
+    query: `
+      mutation Login($identifier: String!, $password: String!) {
+        login(identifier: $identifier, password: $password)
+      }
+    `,
+    variables: {
+      identifier: __ENV.USER_EMAIL,
+      password: __ENV.USER_PASSWORD,
+    },
+  }), {
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+  check(res, {
+    'Login OK': (r) =>
+      r.status === 200 && JSON.parse(r.body)?.data?.login === true,
+  });
+
+  const setCookie = res.headers['set-cookie'] || res.headers['Set-Cookie'] || '';
+  const match = setCookie.match(/token=([^;]+)/);
+  if (!match) {
+    throw new Error(
+      'No se recibió la cookie token. Definí USER_EMAIL y USER_PASSWORD con un usuario válido.',
+    );
+  }
+  return `token=${match[1]}`;
+}
+
+export default function (tokenCookie) {
+  const authHeaders = {
+    'Content-Type': 'application/json',
+    Cookie: tokenCookie,
+  };
+
+  // 1. Health check (público)
   const healthRes = http.post(BASE_URL, JSON.stringify({
     query: `query { __typename }`,
   }), {
     headers: { 'Content-Type': 'application/json' },
   });
-  
+
   check(healthRes, {
     'GraphQL está up': (r) => r.status === 200,
   });
 
   sleep(1);
 
-  // 2. Query de ejercicios (datos seedeados)
+  // 2. Query de ejercicios (protegida)
   const exercisesRes = http.post(BASE_URL, JSON.stringify({
     query: `
       query GetExercises {
@@ -39,7 +75,7 @@ export default function () {
       }
     `,
   }), {
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders,
   });
 
   check(exercisesRes, {
@@ -49,7 +85,7 @@ export default function () {
 
   sleep(1);
 
-  // 3. Query del routine plan seedeado
+  // 3. Query del routine plan seedeado (protegida)
   const planRes = http.post(BASE_URL, JSON.stringify({
     query: `
       query GetPlans {
@@ -60,7 +96,7 @@ export default function () {
       }
     `,
   }), {
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders,
   });
 
   check(planRes, {
@@ -69,5 +105,4 @@ export default function () {
   });
 
   sleep(1);
-  
 }

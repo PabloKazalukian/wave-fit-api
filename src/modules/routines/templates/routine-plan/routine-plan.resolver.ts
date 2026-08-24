@@ -20,6 +20,8 @@ import { AuditInterceptor } from 'src/modules/audit-logs/audit-logs.interceptor'
 import { UseGuards, UseInterceptors } from '@nestjs/common';
 import { Audit } from 'src/modules/audit-logs/audit-logs.decorator';
 import { GqlAuthGuard } from 'src/modules/auth/guards/gql-auth.guard';
+import { Context } from '@nestjs/graphql';
+import { extractUserId } from 'src/modules/user/user-profile/user-profile.utils';
 
 @Resolver(() => RoutinePlan)
 @UseInterceptors(AuditInterceptor)
@@ -86,13 +88,26 @@ export class RoutinePlanResolver {
   }
 
   @Query(() => [RoutinePlan], { name: 'routinePlans' })
-  routines() {
-    return this.routinePlanService.findAll();
+  @UseGuards(GqlAuthGuard)
+  async routines(@Context() context) {
+    const [plans, favoriteIds] = await Promise.all([
+      this.routinePlanService.findAll(),
+      this.routinePlanService.getFavoriteRoutineIds(extractUserId(context)),
+    ]);
+    return this.routinePlanService.markFavorites(plans, favoriteIds);
   }
 
   @Query(() => RoutinePlan, { name: 'routinePlan' })
-  findOne(@Args('id', { type: () => String }) id: string) {
-    return this.routinePlanService.findOne(id);
+  @UseGuards(GqlAuthGuard)
+  async findOne(
+    @Args('id', { type: () => String }) id: string,
+    @Context() context,
+  ) {
+    const plan = await this.routinePlanService.findOne(id);
+    const favoriteIds = await this.routinePlanService.getFavoriteRoutineIds(
+      extractUserId(context),
+    );
+    return this.routinePlanService.markFavorites([plan], favoriteIds)[0];
   }
 
   @Mutation(() => RoutinePlan)

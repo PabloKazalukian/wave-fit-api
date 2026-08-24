@@ -14,8 +14,11 @@ export class TrainingPreference {
   @Field(() => [String])
   dislikedExercises: string[];
 
-  @Field(() => [String])
+  @Field(() => [ID])
   favoriteExercises: string[];
+
+  @Field(() => [ID])
+  favoriteRoutines: string[];
 
   @Field()
   cardioPreference: string;

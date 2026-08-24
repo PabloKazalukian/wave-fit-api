@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { Types } from 'mongoose';
 import { ExerciseResolver } from './exercise.resolver';
 import { ExerciseService } from './exercise.service';
 
@@ -12,6 +13,12 @@ describe('ExerciseResolver', () => {
     findByIds: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
+    getFavoriteExerciseIds: jest.fn(),
+    markFavorites: jest.fn(),
+  };
+
+  const context = {
+    req: { user: { id: new Types.ObjectId().toString() } },
   };
 
   beforeEach(async () => {
@@ -42,18 +49,52 @@ describe('ExerciseResolver', () => {
     expect(exerciseServiceMock.create).toHaveBeenCalledWith(input);
   });
 
-  it('exercises delega en findAll', () => {
-    const list = [{ id: 'ex-1' }];
-    exerciseServiceMock.findAll.mockReturnValue(list);
+  it('exercises enriquece con isFavorite usando el userId del contexto', async () => {
+    const list = [{ id: 'ex-1' }, { id: 'ex-2' }];
+    const favorites = new Set(['ex-2']);
+    const enriched = [
+      { id: 'ex-1', isFavorite: false },
+      { id: 'ex-2', isFavorite: true },
+    ];
+    exerciseServiceMock.findAll.mockResolvedValue(list);
+    exerciseServiceMock.getFavoriteExerciseIds.mockResolvedValue(favorites);
+    exerciseServiceMock.markFavorites.mockReturnValue(enriched);
 
-    expect(resolver.exercises()).toBe(list);
+    const result = await resolver.exercises(context);
+
+    expect(exerciseServiceMock.getFavoriteExerciseIds).toHaveBeenCalledWith(
+      context.req.user.id,
+    );
+    expect(exerciseServiceMock.markFavorites).toHaveBeenCalledWith(
+      list,
+      favorites,
+    );
+    expect(result).toEqual(enriched);
   });
 
-  it('findOne delega con el id recibido', () => {
-    exerciseServiceMock.findOne.mockReturnValue({ id: 'ex-1' });
+  it('findOne enriquece el ejercicio con isFavorite', async () => {
+    const favoriteIds = new Set(['ex-1']);
+    const enriched = [{ id: 'ex-1', isFavorite: true }];
+    exerciseServiceMock.findOne.mockResolvedValue({ id: 'ex-1' });
+    exerciseServiceMock.getFavoriteExerciseIds.mockResolvedValue(favoriteIds);
+    exerciseServiceMock.markFavorites.mockReturnValue(enriched);
 
-    expect(resolver.findOne('ex-1')).toEqual({ id: 'ex-1' });
+    const result = await resolver.findOne('ex-1', context);
+
     expect(exerciseServiceMock.findOne).toHaveBeenCalledWith('ex-1');
+    expect(exerciseServiceMock.getFavoriteExerciseIds).toHaveBeenCalledWith(
+      context.req.user.id,
+    );
+    expect(result).toEqual(enriched[0]);
+  });
+
+  it('findOne retorna null si el ejercicio no existe', async () => {
+    exerciseServiceMock.findOne.mockResolvedValue(null);
+
+    const result = await resolver.findOne('missing', context);
+
+    expect(result).toBeNull();
+    expect(exerciseServiceMock.getFavoriteExerciseIds).not.toHaveBeenCalled();
   });
 
   it('updateExercise delega con id e input', () => {
