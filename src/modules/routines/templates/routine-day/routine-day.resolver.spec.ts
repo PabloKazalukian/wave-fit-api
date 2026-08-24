@@ -5,11 +5,17 @@ import { RoutineDayService } from './routine-day.service';
 describe('RoutineDayResolver', () => {
   let resolver: RoutineDayResolver;
 
+  const USER_ID = '64f0000000000000000000a1';
+  const context = { req: { user: { id: USER_ID } } };
+
   const routineDayServiceMock = {
     create: jest.fn(),
     findAll: jest.fn(),
     findOne: jest.fn(),
     findByCategory: jest.fn(),
+    findByIds: jest.fn(),
+    getFavoriteRoutineDayIds: jest.fn(),
+    markFavorites: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
     createFromWorkout: jest.fn(),
@@ -58,26 +64,79 @@ describe('RoutineDayResolver', () => {
     expect(routineDayServiceMock.create).toHaveBeenCalledWith(input);
   });
 
-  it('findAll delega en findAll', () => {
-    const list = [{ id: 'rd-1' }];
-    routineDayServiceMock.findAll.mockReturnValue(list);
+  describe('consultas con enriquecimiento de favoritos', () => {
+    it('findAll obtiene días y favoritos en paralelo y marca', async () => {
+      const days = [{ id: 'rd-1' }, { id: 'rd-2' }];
+      const marked = [{ id: 'rd-1', isFavorite: true }];
+      routineDayServiceMock.findAll.mockResolvedValue(days);
+      routineDayServiceMock.getFavoriteRoutineDayIds.mockResolvedValue(
+        new Set(['rd-1']),
+      );
+      routineDayServiceMock.markFavorites.mockReturnValue(marked);
 
-    expect(resolver.findAll()).toBe(list);
-  });
+      const result = await resolver.findAll(context);
 
-  it('findOne delega con el id recibido', () => {
-    routineDayServiceMock.findOne.mockReturnValue({ id: 'rd-1' });
+      expect(result).toBe(marked);
+      expect(routineDayServiceMock.getFavoriteRoutineDayIds).toHaveBeenCalledWith(
+        USER_ID,
+      );
+      expect(routineDayServiceMock.markFavorites).toHaveBeenCalledWith(
+        days,
+        new Set(['rd-1']),
+      );
+    });
 
-    expect(resolver.findOne('rd-1')).toEqual({ id: 'rd-1' });
-    expect(routineDayServiceMock.findOne).toHaveBeenCalledWith('rd-1');
-  });
+    it('findOne retorna null si el día no existe sin consultar favoritos', async () => {
+      routineDayServiceMock.findOne.mockResolvedValue(null);
 
-  it('routineByCategory extrae category del input', () => {
-    routineDayServiceMock.findByCategory.mockReturnValue([]);
+      const result = await resolver.findOne('missing', context);
 
-    resolver.routineByCategory({ category: 'push' } as any);
+      expect(result).toBeNull();
+      expect(
+        routineDayServiceMock.getFavoriteRoutineDayIds,
+      ).not.toHaveBeenCalled();
+    });
 
-    expect(routineDayServiceMock.findByCategory).toHaveBeenCalledWith('push');
+    it('findOne marca el día con los favoritos del usuario', async () => {
+      const day = { id: 'rd-1' };
+      const marked = { id: 'rd-1', isFavorite: true };
+      routineDayServiceMock.findOne.mockResolvedValue(day);
+      routineDayServiceMock.getFavoriteRoutineDayIds.mockResolvedValue(
+        new Set(['rd-1']),
+      );
+      routineDayServiceMock.markFavorites.mockReturnValue([marked]);
+
+      const result = await resolver.findOne('rd-1', context);
+
+      expect(result).toEqual(marked);
+      expect(routineDayServiceMock.findOne).toHaveBeenCalledWith('rd-1');
+      expect(routineDayServiceMock.markFavorites).toHaveBeenCalledWith(
+        [day],
+        new Set(['rd-1']),
+      );
+    });
+
+    it('routineByCategory extrae category y marca favoritos', async () => {
+      const days = [{ id: 'rd-9' }];
+      const marked = [{ id: 'rd-9', isFavorite: false }];
+      routineDayServiceMock.findByCategory.mockResolvedValue(days);
+      routineDayServiceMock.getFavoriteRoutineDayIds.mockResolvedValue(
+        new Set<string>(),
+      );
+      routineDayServiceMock.markFavorites.mockReturnValue(marked);
+
+      const result = await resolver.routineByCategory(
+        { category: 'push' } as any,
+        context,
+      );
+
+      expect(result).toBe(marked);
+      expect(routineDayServiceMock.findByCategory).toHaveBeenCalledWith('push');
+      expect(routineDayServiceMock.markFavorites).toHaveBeenCalledWith(
+        days,
+        new Set(),
+      );
+    });
   });
 
   it('updateRoutineDay delega con id e input', () => {

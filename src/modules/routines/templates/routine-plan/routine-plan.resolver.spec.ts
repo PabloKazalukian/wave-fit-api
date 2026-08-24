@@ -27,6 +27,8 @@ describe('RoutinePlanResolver', () => {
 
   const routineDayServiceMock = {
     findByIds: jest.fn(),
+    getFavoriteRoutineDayIds: jest.fn(),
+    markFavorites: jest.fn(),
   };
 
   const mockAuditLogsService = {
@@ -143,6 +145,33 @@ describe('RoutinePlanResolver', () => {
       expect(result).toEqual([
         { id: 'rest', title: 'Descanso', exercises: [] },
       ]);
+    });
+
+    it('marca los días anidados con favoritos cuando hay usuario en el contexto', async () => {
+      const days = [routineDay('day-a', 'Push'), routineDay('day-b', 'Pull')];
+      const marked = [
+        { ...days[0], isFavorite: false },
+        { ...days[1], isFavorite: true },
+      ];
+      routineDayServiceMock.findByIds.mockResolvedValue(days);
+      routineDayServiceMock.getFavoriteRoutineDayIds.mockResolvedValue(
+        new Set(['day-b']),
+      );
+      routineDayServiceMock.markFavorites.mockReturnValue(marked);
+
+      const result = await resolver.resolveRoutineDays(
+        { week: [planDay('day-a', 1), planDay('day-b', 2)] } as any,
+        context,
+      );
+
+      expect(result).toBe(marked);
+      expect(routineDayServiceMock.getFavoriteRoutineDayIds).toHaveBeenCalledWith(
+        String(context.req.user.id),
+      );
+      expect(routineDayServiceMock.markFavorites).toHaveBeenCalledWith(
+        expect.any(Array),
+        new Set(['day-b']),
+      );
     });
   });
 

@@ -14,6 +14,7 @@ import { GoalsService } from './goals/goals.service';
 import { TrainingPreferenceService } from './training-preference/training-preference.service';
 import { ExerciseService } from 'src/modules/routines/templates/exercise/exercise.service';
 import { RoutinePlanService } from 'src/modules/routines/templates/routine-plan/routine-plan.service';
+import { RoutineDayService } from 'src/modules/routines/templates/routine-day/routine-day.service';
 import { WeightService } from './weight/weight.service';
 import { HealthConstraintsService } from './health-constraints/health-constraints.service';
 import { ScheduleService } from './schedule/schedule.service';
@@ -66,6 +67,10 @@ describe('UserProfileResolver', () => {
         },
         {
           provide: RoutinePlanService,
+          useValue: { findOne: jest.fn(), findByIds: jest.fn() },
+        },
+        {
+          provide: RoutineDayService,
           useValue: { findOne: jest.fn(), findByIds: jest.fn() },
         },
       ],

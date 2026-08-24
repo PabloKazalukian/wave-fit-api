@@ -23,6 +23,7 @@ import {
 } from 'src/modules/routines/tracking/workout-session/schema/workout-session.schema';
 import { ExerciseModule } from 'src/modules/routines/templates/exercise/exercise.module';
 import { RoutinePlanModule } from 'src/modules/routines/templates/routine-plan/routine-plan.module';
+import { RoutineDayModule } from 'src/modules/routines/templates/routine-day/routine-day.module';
 import { UserResource, UserResourceSchema } from './schema/resourse.schema';
 import { UserProfileResolver } from './user-profile.resolver';
 import { UserProfileService } from './user-profile.service';
@@ -59,6 +60,7 @@ import { StrengthMetricsService } from './strength-metrics/strength-metrics.serv
     ]),
     ExerciseModule,
     RoutinePlanModule,
+    RoutineDayModule,
   ],
   providers: [
     UserProfileResolver,

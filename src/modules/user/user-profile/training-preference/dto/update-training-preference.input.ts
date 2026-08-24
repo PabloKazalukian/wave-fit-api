@@ -49,6 +49,12 @@ export class UpdateTrainingPreferenceInput {
   @IsMongoId({ each: true })
   favoriteRoutines?: string[];
 
+  @Field(() => [String], { nullable: true })
+  @IsOptional()
+  @IsArray()
+  @IsMongoId({ each: true })
+  favoriteRoutineDays?: string[];
+
   @Field({ nullable: true })
   @IsOptional()
   @IsString()

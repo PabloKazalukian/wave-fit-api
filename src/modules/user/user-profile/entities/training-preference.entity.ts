@@ -20,6 +20,9 @@ export class TrainingPreference {
   @Field(() => [ID])
   favoriteRoutines: string[];
 
+  @Field(() => [ID])
+  favoriteRoutineDays: string[];
+
   @Field()
   cardioPreference: string;
 

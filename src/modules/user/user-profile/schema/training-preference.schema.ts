@@ -67,6 +67,13 @@ export class UserTrainingPreference extends Document {
   })
   favoriteRoutines: Types.ObjectId[];
 
+  // Días de rutina favoritos (referencias a RoutineDay)
+  @Prop({
+    type: [{ type: Types.ObjectId, ref: 'RoutineDay' }],
+    default: [],
+  })
+  favoriteRoutineDays: Types.ObjectId[];
+
   @Prop({
     type: String,
     enum: CardioPreference,

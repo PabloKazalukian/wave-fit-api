@@ -3,6 +3,7 @@ import { RoutineDayService } from './routine-day.service';
 import { getModelToken } from '@nestjs/mongoose';
 import { RoutineDay } from './schema/routine-day.schema';
 import { ExerciseService } from '../exercise/exercise.service';
+import { UserTrainingPreference } from 'src/modules/user/user-profile/schema/training-preference.schema';
 
 describe('RoutineDayService', () => {
   let service: RoutineDayService;
@@ -13,6 +14,10 @@ describe('RoutineDayService', () => {
     findById: jest.fn(),
     findByIdAndUpdate: jest.fn(),
     findByIdAndDelete: jest.fn(),
+  };
+
+  const trainingPreferenceModelMock = {
+    findOne: jest.fn(),
   };
 
   const exerciseServiceMock = {
@@ -37,6 +42,10 @@ describe('RoutineDayService', () => {
         {
           provide: getModelToken(RoutineDay.name),
           useValue: routineDayModelMock,
+        },
+        {
+          provide: getModelToken(UserTrainingPreference.name),
+          useValue: trainingPreferenceModelMock,
         },
         { provide: ExerciseService, useValue: exerciseServiceMock },
       ],
@@ -110,6 +119,53 @@ describe('RoutineDayService', () => {
       expect(routineDayModelMock.find).toHaveBeenCalledWith({
         _id: { $in: ['rd-1', 'rd-2'] },
       });
+    });
+  });
+
+  describe('favoritos', () => {
+    const USER_ID = '64f0000000000000000000a1';
+    const RD1 = '64f0000000000000000000b1';
+    const RD2 = '64f0000000000000000000b2';
+
+    const prefQuery = (pref: any) => ({
+      lean: jest.fn().mockReturnThis(),
+      exec: jest.fn().mockResolvedValue(pref),
+    });
+
+    it('getFavoriteRoutineDayIds retorna el Set con los ids guardados', async () => {
+      trainingPreferenceModelMock.findOne.mockReturnValue(
+        prefQuery({ favoriteRoutineDays: [RD1, RD2] }),
+      );
+
+      const result = await service.getFavoriteRoutineDayIds(USER_ID);
+
+      expect(result).toEqual(new Set([RD1, RD2]));
+      expect(trainingPreferenceModelMock.findOne).toHaveBeenCalledWith(
+        { userId: expect.anything() },
+        { favoriteRoutineDays: 1 },
+      );
+    });
+
+    it('getFavoriteRoutineDayIds retorna Set vacío sin preferencias', async () => {
+      trainingPreferenceModelMock.findOne.mockReturnValue(prefQuery(null));
+
+      const result = await service.getFavoriteRoutineDayIds(USER_ID);
+
+      expect(result.size).toBe(0);
+    });
+
+    it('markFavorites marca solo los días favoritos', () => {
+      const days = [
+        { id: RD1, title: 'Push' },
+        { id: RD2, title: 'Pull' },
+      ];
+
+      const result = service.markFavorites(days, new Set([RD2]));
+
+      expect(result).toEqual([
+        { id: RD1, title: 'Push', isFavorite: false },
+        { id: RD2, title: 'Pull', isFavorite: true },
+      ]);
     });
   });
 

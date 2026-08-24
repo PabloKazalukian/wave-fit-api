@@ -9,8 +9,12 @@ import { UserTrainingPreference } from '../schema/training-preference.schema';
 import { UpdateTrainingPreferenceInput } from './dto/update-training-preference.input';
 import { ExerciseService } from 'src/modules/routines/templates/exercise/exercise.service';
 import { RoutinePlanService } from 'src/modules/routines/templates/routine-plan/routine-plan.service';
+import { RoutineDayService } from 'src/modules/routines/templates/routine-day/routine-day.service';
 
-type FavoriteField = 'favoriteExercises' | 'favoriteRoutines';
+type FavoriteField =
+  | 'favoriteExercises'
+  | 'favoriteRoutines'
+  | 'favoriteRoutineDays';
 
 @Injectable()
 export class TrainingPreferenceService {
@@ -19,6 +23,7 @@ export class TrainingPreferenceService {
     private readonly trainingPreferenceModel: Model<UserTrainingPreference>,
     private readonly exerciseService: ExerciseService,
     private readonly routinePlanService: RoutinePlanService,
+    private readonly routineDayService: RoutineDayService,
   ) {}
 
   async findTrainingPreference(
@@ -40,6 +45,9 @@ export class TrainingPreferenceService {
     const favoriteRoutineObjectIds = await this.validateFavoriteRoutines(
       input.favoriteRoutines,
     );
+    const favoriteRoutineDayObjectIds = await this.validateFavoriteRoutineDays(
+      input.favoriteRoutineDays,
+    );
 
     const exists = await this.trainingPreferenceModel
       .exists({ userId: objectId })
@@ -54,6 +62,9 @@ export class TrainingPreferenceService {
     }
     if (input.favoriteRoutines) {
       setData.favoriteRoutines = favoriteRoutineObjectIds;
+    }
+    if (input.favoriteRoutineDays) {
+      setData.favoriteRoutineDays = favoriteRoutineDayObjectIds;
     }
 
     return this.trainingPreferenceModel
@@ -80,6 +91,20 @@ export class TrainingPreferenceService {
   ): Promise<UserTrainingPreference> {
     return this.toggleInFavorites(userId, routineId, 'favoriteRoutines', async () => {
       await this.routinePlanService.findOne(routineId);
+    });
+  }
+
+  async toggleFavoriteRoutineDay(
+    userId: string,
+    routineDayId: string,
+  ): Promise<UserTrainingPreference> {
+    return this.toggleInFavorites(userId, routineDayId, 'favoriteRoutineDays', async () => {
+      const day = await this.routineDayService.findOne(routineDayId);
+      if (!day) {
+        throw new NotFoundException(
+          `RoutineDay with id ${routineDayId} not found`,
+        );
+      }
     });
   }
 
@@ -133,6 +158,17 @@ export class TrainingPreferenceService {
       'rutinas',
       'ROUTINE',
       (validated) => this.routinePlanService.findByIds(validated),
+    );
+  }
+
+  private async validateFavoriteRoutineDays(
+    ids?: string[],
+  ): Promise<Types.ObjectId[]> {
+    return this.validateFavorites(
+      ids,
+      'días de rutina',
+      'ROUTINE_DAY',
+      (validated) => this.routineDayService.findByIds(validated),
     );
   }
 

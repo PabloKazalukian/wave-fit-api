@@ -2,17 +2,25 @@ import { Injectable } from '@nestjs/common';
 import { CreateRoutineDayInput } from './dto/create-routine-day.input';
 import { UpdateRoutineDayInput } from './dto/update-routine-day.input';
 import { InjectModel } from '@nestjs/mongoose';
-import { RoutineDay as RoutineDaySchema } from './schema/routine-day.schema';
+import {
+  RoutineDay as RoutineDaySchema,
+} from './schema/routine-day.schema';
 import { RoutineDay } from './entities/routine-day.entity';
 import { Model, Types } from 'mongoose';
 import { serializeMongo } from 'src/common/utils/mongo.utils';
 import { ExerciseService } from '../exercise/exercise.service';
+import {
+  UserTrainingPreference,
+} from 'src/modules/user/user-profile/schema/training-preference.schema';
+import { markItemsAsFavorites } from 'src/common/utils/favorites.utils';
 
 @Injectable()
 export class RoutineDayService {
   constructor(
     @InjectModel(RoutineDaySchema.name)
     private routineDayModel: Model<RoutineDaySchema>,
+    @InjectModel(UserTrainingPreference.name)
+    private readonly userTrainingPreferenceModel: Model<UserTrainingPreference>,
     private readonly exerciseService: ExerciseService,
   ) {}
 
@@ -71,6 +79,25 @@ export class RoutineDayService {
       .lean()
       .exec();
     return serializeMongo<RoutineDay[]>(docs);
+  }
+
+  async getFavoriteRoutineDayIds(userId: string): Promise<Set<string>> {
+    const pref = await this.userTrainingPreferenceModel
+      .findOne({ userId: new Types.ObjectId(userId) }, { favoriteRoutineDays: 1 })
+      .lean()
+      .exec();
+    return new Set(
+      ((pref?.favoriteRoutineDays as unknown as string[]) ?? []).map((id) =>
+        String(id),
+      ),
+    );
+  }
+
+  markFavorites<T extends { id: string }>(
+    days: T[],
+    favoriteIds: Set<string>,
+  ): T[] {
+    return markItemsAsFavorites(days, favoriteIds);
   }
 
   async update(

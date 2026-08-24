@@ -46,6 +46,17 @@ export class TrainingPreferenceResolver {
     );
   }
 
+  @Mutation(() => TrainingPreference)
+  toggleFavoriteRoutineDay(
+    @Args('routineDayId', { type: () => String }) routineDayId: string,
+    @Context() context,
+  ) {
+    return this.trainingPreferenceService.toggleFavoriteRoutineDay(
+      extractUserId(context),
+      routineDayId,
+    );
+  }
+
   @Query(() => TrainingPreference, { nullable: true })
   userTrainingPreference(@Context() context) {
     return this.trainingPreferenceService.findTrainingPreference(

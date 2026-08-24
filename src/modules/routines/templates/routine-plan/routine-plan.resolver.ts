@@ -42,7 +42,10 @@ export class RoutinePlanResolver {
   }
 
   @ResolveField(() => [RoutineDay], { name: 'routineDays' })
-  async resolveRoutineDays(@Parent() plan: RoutinePlan): Promise<RoutineDay[]> {
+  async resolveRoutineDays(
+    @Parent() plan: RoutinePlan,
+    @Context() context?,
+  ): Promise<RoutineDay[]> {
     if (!plan.week || plan.week.length === 0) {
       return [];
     }
@@ -77,7 +80,19 @@ export class RoutinePlanResolver {
       }
     }
 
-    return result;
+    const userId = this.getOptionalUserId(context);
+    if (!userId) {
+      return result;
+    }
+
+    const favoriteIds =
+      await this.routineDayService.getFavoriteRoutineDayIds(userId);
+    return this.routineDayService.markFavorites(result, favoriteIds);
+  }
+
+  private getOptionalUserId(context?: any): string | null {
+    const id = context?.req?.user?.id;
+    return typeof id === 'string' && id.length > 0 ? id : null;
   }
   private createRestDay(): any {
     return {

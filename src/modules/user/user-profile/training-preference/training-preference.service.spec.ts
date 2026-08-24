@@ -9,6 +9,7 @@ import { TrainingPreferenceService } from './training-preference.service';
 import { UserTrainingPreference } from '../schema/training-preference.schema';
 import { ExerciseService } from 'src/modules/routines/templates/exercise/exercise.service';
 import { RoutinePlanService } from 'src/modules/routines/templates/routine-plan/routine-plan.service';
+import { RoutineDayService } from 'src/modules/routines/templates/routine-day/routine-day.service';
 
 describe('TrainingPreferenceService', () => {
   let service: TrainingPreferenceService;
@@ -32,9 +33,15 @@ describe('TrainingPreferenceService', () => {
     findByIds: jest.fn(),
   };
 
+  const routineDayServiceMock = {
+    findOne: jest.fn(),
+    findByIds: jest.fn(),
+  };
+
   const USER_ID = new Types.ObjectId().toString();
   const EXERCISE_ID = new Types.ObjectId().toString();
   const ROUTINE_ID = new Types.ObjectId().toString();
+  const ROUTINE_DAY_ID = new Types.ObjectId().toString();
 
   // Soporta las cadenas usadas por el service: .exec(), .orFail().exec()
   const resolveWith = (value: any) => ({
@@ -60,6 +67,10 @@ describe('TrainingPreferenceService', () => {
         {
           provide: RoutinePlanService,
           useValue: routinePlanServiceMock,
+        },
+        {
+          provide: RoutineDayService,
+          useValue: routineDayServiceMock,
         },
       ],
     }).compile();
@@ -166,6 +177,41 @@ describe('TrainingPreferenceService', () => {
       await expect(
         service.updateTrainingPreference(USER_ID, input),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('convierte favoriteRoutineDays a ObjectIds cuando vienen', async () => {
+      const input = {
+        preferredStyles: ['hypertrophy'],
+        favoriteRoutineDays: [ROUTINE_DAY_ID],
+      } as any;
+      routineDayServiceMock.findByIds.mockResolvedValue([
+        { id: ROUTINE_DAY_ID },
+      ]);
+      mockModel.exists.mockReturnValue(resolveWith(null));
+      mockModel.create.mockResolvedValue(input);
+      mockModel.findOneAndUpdate.mockReturnValue(
+        resolveWith({ userId: USER_ID, ...input }),
+      );
+
+      await service.updateTrainingPreference(USER_ID, input);
+
+      const setData = mockModel.findOneAndUpdate.mock.calls[0][1].$set;
+      expect(setData.favoriteRoutineDays[0]).toBeInstanceOf(Types.ObjectId);
+    });
+
+    it('rechaza favoriteRoutineDays que no existen', async () => {
+      const input = {
+        preferredStyles: ['hypertrophy'],
+        favoriteRoutineDays: [ROUTINE_DAY_ID],
+      } as any;
+      routineDayServiceMock.findByIds.mockResolvedValue([]);
+
+      await expect(
+        service.updateTrainingPreference(USER_ID, input),
+      ).rejects.toThrow(BadRequestException);
+      expect(routineDayServiceMock.findByIds).toHaveBeenCalledWith([
+        ROUTINE_DAY_ID,
+      ]);
     });
   });
 
@@ -289,6 +335,69 @@ describe('TrainingPreferenceService', () => {
 
       await expect(
         service.toggleFavoriteRoutine(USER_ID, ROUTINE_ID),
+      ).rejects.toThrow(NotFoundException);
+      expect(mockModel.findOneAndUpdate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('toggleFavoriteRoutineDay', () => {
+    it('agrega el día con $addToSet si no era favorito', async () => {
+      routineDayServiceMock.findOne.mockResolvedValue({ id: ROUTINE_DAY_ID });
+      mockModel.findOne.mockReturnValue(
+        resolveWith({ userId: USER_ID, favoriteRoutineDays: [] }),
+      );
+      const updated = {
+        userId: USER_ID,
+        favoriteRoutineDays: [ROUTINE_DAY_ID],
+      };
+      mockModel.findOneAndUpdate.mockReturnValue(resolveWith(updated));
+
+      const result = await service.toggleFavoriteRoutineDay(
+        USER_ID,
+        ROUTINE_DAY_ID,
+      );
+
+      const [, update, options] =
+        mockModel.findOneAndUpdate.mock.calls[0] as any[];
+      expect(update.$addToSet.favoriteRoutineDays).toBeInstanceOf(
+        Types.ObjectId,
+      );
+      expect(options.upsert).toBe(true);
+      expect(String(result.favoriteRoutineDays[0])).toBe(ROUTINE_DAY_ID);
+    });
+
+    it('quita el día con $pull si ya era favorito', async () => {
+      routineDayServiceMock.findOne.mockResolvedValue({ id: ROUTINE_DAY_ID });
+      mockModel.findOne.mockReturnValue(
+        resolveWith({ userId: USER_ID, favoriteRoutineDays: [ROUTINE_DAY_ID] }),
+      );
+      mockModel.findOneAndUpdate.mockReturnValue(
+        resolveWith({ userId: USER_ID, favoriteRoutineDays: [] }),
+      );
+
+      const result = await service.toggleFavoriteRoutineDay(
+        USER_ID,
+        ROUTINE_DAY_ID,
+      );
+
+      const [, update] = mockModel.findOneAndUpdate.mock.calls[0] as any[];
+      expect(update.$pull.favoriteRoutineDays).toBeInstanceOf(Types.ObjectId);
+      expect(result.favoriteRoutineDays).toHaveLength(0);
+    });
+
+    it('lanza BadRequest si el id tiene formato inválido', async () => {
+      await expect(
+        service.toggleFavoriteRoutineDay(USER_ID, 'no-es-un-id'),
+      ).rejects.toThrow(BadRequestException);
+      expect(routineDayServiceMock.findOne).not.toHaveBeenCalled();
+      expect(mockModel.findOneAndUpdate).not.toHaveBeenCalled();
+    });
+
+    it('lanza NotFound si el día no existe en el catálogo', async () => {
+      routineDayServiceMock.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.toggleFavoriteRoutineDay(USER_ID, ROUTINE_DAY_ID),
       ).rejects.toThrow(NotFoundException);
       expect(mockModel.findOneAndUpdate).not.toHaveBeenCalled();
     });

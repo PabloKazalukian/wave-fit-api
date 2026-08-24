@@ -6,6 +6,7 @@ import { TrainingPreferenceService } from './training-preference.service';
 import { UserTrainingPreference } from '../schema/training-preference.schema';
 import { ExerciseService } from 'src/modules/routines/templates/exercise/exercise.service';
 import { RoutinePlanService } from 'src/modules/routines/templates/routine-plan/routine-plan.service';
+import { RoutineDayService } from 'src/modules/routines/templates/routine-day/routine-day.service';
 
 describe('TrainingPreferenceResolver', () => {
   let resolver: TrainingPreferenceResolver;
@@ -51,6 +52,10 @@ describe('TrainingPreferenceResolver', () => {
         {
           provide: RoutinePlanService,
           useValue: routinePlanServiceMock,
+        },
+        {
+          provide: RoutineDayService,
+          useValue: { findOne: jest.fn(), findByIds: jest.fn() },
         },
       ],
     }).compile();
@@ -102,6 +107,19 @@ describe('TrainingPreferenceResolver', () => {
     expect(service.toggleFavoriteRoutine).toHaveBeenCalledWith(
       USER_ID,
       'routine-1',
+    );
+  });
+
+  it('toggleFavoriteRoutineDay delega con userId y routineDayId', () => {
+    jest
+      .spyOn(service, 'toggleFavoriteRoutineDay')
+      .mockResolvedValue({ userId: USER_ID } as any);
+
+    resolver.toggleFavoriteRoutineDay('routine-day-1', context);
+
+    expect(service.toggleFavoriteRoutineDay).toHaveBeenCalledWith(
+      USER_ID,
+      'routine-day-1',
     );
   });
 });

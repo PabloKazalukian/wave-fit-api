@@ -6,7 +6,9 @@ import {
   Parent,
   ResolveField,
   ID,
+  Context,
 } from '@nestjs/graphql';
+import { UseGuards } from '@nestjs/common';
 import { RoutineDayService } from './routine-day.service';
 import { RoutineDay, RoutineDayExercise } from './entities/routine-day.entity';
 import { CreateRoutineDayInput } from './dto/create-routine-day.input';
@@ -15,6 +17,8 @@ import {
   UpdateRoutineDayInput,
 } from './dto/update-routine-day.input';
 import { Audit } from 'src/modules/audit-logs/audit-logs.decorator';
+import { GqlAuthGuard } from 'src/modules/auth/guards/gql-auth.guard';
+import { extractUserId } from 'src/modules/user/user-profile/user-profile.utils';
 
 @Resolver(() => RoutineDay)
 export class RoutineDayResolver {
@@ -32,19 +36,41 @@ export class RoutineDayResolver {
   }
 
   @Query(() => [RoutineDay], { name: 'routineDays' })
-  findAll() {
-    return this.routineDayService.findAll();
+  @UseGuards(GqlAuthGuard)
+  async findAll(@Context() context) {
+    const [days, favoriteIds] = await Promise.all([
+      this.routineDayService.findAll(),
+      this.routineDayService.getFavoriteRoutineDayIds(extractUserId(context)),
+    ]);
+    return this.routineDayService.markFavorites(days, favoriteIds);
   }
 
-  @Query(() => RoutineDay, { name: 'routineDay' })
+  @Query(() => RoutineDay, { name: 'routineDay', nullable: true })
   @Audit('FINDBY_ID_ROUTINE_DAY', 'routineDay' + 'id')
-  findOne(@Args('id', { type: () => String }) id: string) {
-    return this.routineDayService.findOne(id);
+  @UseGuards(GqlAuthGuard)
+  async findOne(
+    @Args('id', { type: () => String }) id: string,
+    @Context() context,
+  ) {
+    const day = await this.routineDayService.findOne(id);
+    if (!day) return null;
+    const favoriteIds = await this.routineDayService.getFavoriteRoutineDayIds(
+      extractUserId(context),
+    );
+    return this.routineDayService.markFavorites([day], favoriteIds)[0];
   }
 
   @Query(() => [RoutineDay], { name: 'routinesByCategory' })
-  routineByCategory(@Args('input') input: findByCategoryInput) {
-    return this.routineDayService.findByCategory(input.category);
+  @UseGuards(GqlAuthGuard)
+  async routineByCategory(
+    @Args('input') input: findByCategoryInput,
+    @Context() context,
+  ) {
+    const [days, favoriteIds] = await Promise.all([
+      this.routineDayService.findByCategory(input.category),
+      this.routineDayService.getFavoriteRoutineDayIds(extractUserId(context)),
+    ]);
+    return this.routineDayService.markFavorites(days, favoriteIds);
   }
 
   @Mutation(() => RoutineDay)

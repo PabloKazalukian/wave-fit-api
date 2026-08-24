@@ -26,6 +26,10 @@ export class RoutineDay {
   // Referencia al plan al que pertenece
   @Field({ nullable: true })
   planId?: string;
+
+  // Marcado por servidor según preferencias del usuario autenticado
+  @Field({ defaultValue: false })
+  isFavorite?: boolean;
 }
 
 @ObjectType()
