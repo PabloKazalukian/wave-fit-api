@@ -15,6 +15,14 @@ import {
 
 @Injectable()
 export class TrainingPlanService {
+  /**
+   * Lock en memoria por userId+comment: garantiza idempotencia end-to-end
+   * (un único documento persistido) ante requests duplicados concurrentes.
+   * El lock interno de PlanGeneratorService deduplica la llamada a la IA,
+   * pero sin esta capa cada request crearía su propio TrainingPlan.
+   */
+  private readonly generating = new Map<string, Promise<TrainingPlan>>();
+
   constructor(
     @InjectModel(TrainingPlan.name)
     private readonly trainingPlanModel: Model<TrainingPlan>,
@@ -111,6 +119,25 @@ export class TrainingPlanService {
   }
 
   async generate(userId: string, comment: string = '') {
+    const key = `${userId}::${comment}`;
+    const current = this.generating.get(key);
+    if (current) return current;
+
+    const promise = this.doGenerate(userId, comment).finally(() => {
+      if (this.generating.get(key) === promise) {
+        this.generating.delete(key);
+      }
+    });
+    // Registro sincrónico antes del primer await: cierra la brecha
+    // check-then-act entre dos requests que llegan en el mismo tick.
+    this.generating.set(key, promise);
+    return promise;
+  }
+
+  private async doGenerate(
+    userId: string,
+    comment: string = '',
+  ): Promise<TrainingPlan> {
     const result: GeneratePlanResult = await this.generator.generatePlan(
       userId,
       comment,

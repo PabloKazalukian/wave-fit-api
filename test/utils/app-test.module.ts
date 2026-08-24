@@ -15,6 +15,7 @@ import { WeekLogModule } from '../../src/modules/routines/tracking/week-log/week
 import { ExtraSessionModule } from '../../src/modules/routines/tracking/extra-session/extra-session.module';
 import { GoogleModule } from '../../src/modules/auth/google/google.module';
 import { AuditLogsModule } from '../../src/modules/audit-logs/audit-logs.module';
+import { TrainingPlanModule } from '../../src/modules/training-plan/training-plan.module';
 import { rootMongooseTestModule } from './db-handler';
 import { GraphQLExceptionFilter } from '../../src/common/filters/gql-exception.filter';
 
@@ -47,6 +48,7 @@ import { GraphQLExceptionFilter } from '../../src/common/filters/gql-exception.f
     ExtraSessionModule,
     GoogleModule,
     AuditLogsModule,
+    TrainingPlanModule,
   ],
   providers: [
     {
