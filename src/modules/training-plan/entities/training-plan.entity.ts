@@ -1,9 +1,14 @@
 import { ObjectType, Field, ID, Int, Float, GraphQLISODateTime, registerEnumType } from '@nestjs/graphql';
-import { PlanStatus, PlanFocus } from '../schema/training-plan.schema';
+import {
+  PlanStatus,
+  PlanFocus,
+  PlanConfirmationAction,
+} from '../schema/training-plan.schema';
 import { AiSnapshotEntity } from './ai-snapshot.entity';
 
 registerEnumType(PlanStatus, { name: 'PlanStatus' });
 registerEnumType(PlanFocus, { name: 'PlanFocus' });
+registerEnumType(PlanConfirmationAction, { name: 'PlanConfirmationAction' });
 
 @ObjectType()
 export class TrainingPlan {
@@ -66,6 +71,18 @@ export class TrainingPlan {
 
   @Field()
   confirmed: boolean;
+
+  // Acción elegida al confirmar (null mientras el plan esté pendiente)
+  @Field(() => PlanConfirmationAction, { nullable: true })
+  confirmedAction?: PlanConfirmationAction | null;
+
+  // WeekLog creado al confirmar con create_week_log
+  @Field(() => ID, { nullable: true })
+  resultingWeekLogId?: string | null;
+
+  // RoutinePlan creado al confirmar con create_routine_plan
+  @Field(() => ID, { nullable: true })
+  resultingRoutinePlanId?: string | null;
 
   @Field(() => GraphQLISODateTime)
   createdAt: Date;

@@ -165,17 +165,4 @@ export class TrainingPlanService {
     plan.focus = normalizePlanFocus(plan.focus as string);
     return plan;
   }
-
-  async confirm(id: string, userId: string) {
-    const plan = await this.trainingPlanModel
-      .findOneAndUpdate(
-        { _id: new Types.ObjectId(id), userId: new Types.ObjectId(userId) },
-        { $set: { confirmed: true } },
-        { new: true },
-      )
-      .exec();
-    if (!plan) throw new NotFoundException('Training plan not found');
-    plan.focus = normalizePlanFocus(plan.focus as string);
-    return plan;
-  }
 }

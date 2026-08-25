@@ -77,4 +77,16 @@ export class UserProfileResolver {
   ) {
     return this.userProfileService.remove(id, extractUserId(context));
   }
+
+  /**
+   * Borra TODOS los datos de user-profile del usuario autenticado
+   * (perfil, objetivos, preferencias, salud, agenda, recursos,
+   * métricas de fuerza y registros de peso). Idempotente.
+   */
+  @Mutation(() => Boolean, { name: 'removeMyProfileData' })
+  removeMyProfileData(@Context() context) {
+    return this.userProfileService.removeAllProfileData(
+      extractUserId(context),
+    );
+  }
 }

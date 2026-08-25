@@ -47,6 +47,11 @@ import { ExtraSessionModule } from '../extra-session/extra-session.module';
       useClass: WeekLogRepository,
     },
   ],
-  exports: [WeekLogService],
+  exports: [
+    WeekLogService,
+    // Permite a otros módulos (ej. confirmación de TrainingPlan) persistir
+    // semanas vía la interfaz hexagonal sin depender de Mongoose.
+    WEEK_LOG_REPOSITORY,
+  ],
 })
 export class WeekLogModule {}

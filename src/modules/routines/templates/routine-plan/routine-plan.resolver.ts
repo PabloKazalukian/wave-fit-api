@@ -105,9 +105,10 @@ export class RoutinePlanResolver {
   @Query(() => [RoutinePlan], { name: 'routinePlans' })
   @UseGuards(GqlAuthGuard)
   async routines(@Context() context) {
+    const userId = extractUserId(context);
     const [plans, favoriteIds] = await Promise.all([
-      this.routinePlanService.findAll(),
-      this.routinePlanService.getFavoriteRoutineIds(extractUserId(context)),
+      this.routinePlanService.findAll(userId),
+      this.routinePlanService.getFavoriteRoutineIds(userId),
     ]);
     return this.routinePlanService.markFavorites(plans, favoriteIds);
   }
@@ -118,9 +119,10 @@ export class RoutinePlanResolver {
     @Args('id', { type: () => String }) id: string,
     @Context() context,
   ) {
-    const plan = await this.routinePlanService.findOne(id);
+    const userId = extractUserId(context);
+    const plan = await this.routinePlanService.findOne(id, userId);
     const favoriteIds = await this.routinePlanService.getFavoriteRoutineIds(
-      extractUserId(context),
+      userId,
     );
     return this.routinePlanService.markFavorites([plan], favoriteIds)[0];
   }

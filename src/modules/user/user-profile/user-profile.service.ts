@@ -211,4 +211,28 @@ export class UserProfileService {
 
     return deleted;
   }
+
+  /**
+   * Elimina TODOS los datos de perfil de un usuario: perfil base, objetivos,
+   * preferencias de entrenamiento, restricciones de salud, agenda, recursos,
+   * métricas de fuerza y registros de peso.
+   * Operación idempotente: devuelve true aunque el usuario no tuviera datos.
+   */
+  async removeAllProfileData(userId: string): Promise<boolean> {
+    await Promise.all([
+      this.goalsService.removeGoal(userId),
+      this.trainingPreferenceService.removeTrainingPreference(userId),
+      this.weightService.removeWeightLogs(userId),
+      this.healthConstraintsService.removeHealthConstraints(userId),
+      this.scheduleService.removeSchedule(userId),
+      this.resourceService.removeResource(userId),
+      this.strengthMetricsService.removeStrengthMetrics(userId),
+    ]);
+
+    await this.profileModel
+      .deleteMany({ userId: new Types.ObjectId(userId) })
+      .exec();
+
+    return true;
+  }
 }

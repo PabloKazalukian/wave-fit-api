@@ -15,6 +15,7 @@ import { PlanGeneratorParser } from './plan-generator.parser';
 import { ExerciseService } from '../../routines/templates/exercise/exercise.service';
 import { AuditLogsService } from '../../audit-logs/audit-logs.service';
 import { AI_CAUSE } from '../../ai/ai-error-causes';
+import { PlanMaterializerService } from '../plan-materializer/plan-materializer.service';
 
 describe('PlanGeneratorService', () => {
   let service: PlanGeneratorService;
@@ -125,6 +126,8 @@ describe('PlanGeneratorService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PlanGeneratorService,
+        // real: solo depende del ExerciseService mockeado
+        PlanMaterializerService,
         { provide: UserProfileService, useValue: userProfileServiceMock },
         { provide: getModelToken(Goal.name), useValue: goalModelMock },
         { provide: AiService, useValue: aiServiceMock },

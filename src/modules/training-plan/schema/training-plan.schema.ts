@@ -13,13 +13,19 @@ export enum PlanStatus {
 // Objetivo principal del plan. Debe coincidir con los valores de
 // PrimaryGoal del goals.schema del perfil de usuario, ya que la IA
 // lo deriva de goal.primary. Ambos conjuntos se mantienen idénticos.
-export enum PlanFocus {
-  FAT_LOSS = 'fat_loss', // Pérdida de grasa / déficit calórico
+export enum PlanFocus {  FAT_LOSS = 'fat_loss', // Pérdida de grasa / déficit calórico
   MUSCLE_GAIN = 'muscle_gain', // Hipertrofia / ganancia muscular
   STRENGTH = 'strength', // Fuerza máxima
   ENDURANCE = 'endurance', // Resistencia muscular/cardiovascular
   MAINTENANCE = 'maintenance', // Mantenimiento del estado actual
   RECOMP = 'recomp', // Recomposición corporal (bajar grasa + ganar músculo)
+}
+
+// Acción elegida por el usuario al confirmar el plan generado con IA.
+export enum PlanConfirmationAction {
+  CREATE_WEEK_LOG = 'create_week_log', // crea WeekLog (my-week) + sesiones
+  CREATE_ROUTINE_PLAN = 'create_routine_plan', // crea RoutinePlan template (sin pesos)
+  ADAPT_ACTIVE_WEEK = 'adapt_active_week', // reservado: adaptar semana activa en curso
 }
 
 // Mapeo de valores legacy (enum anterior) o desconocidos a valores válidos.
@@ -126,6 +132,18 @@ export class TrainingPlan extends Document {
   // true = plan confirmado por el usuario, listo para activar/tracking
   @Prop({ type: Boolean, default: false })
   confirmed: boolean;
+
+  // Acción elegida al confirmar (null mientras esté pendiente)
+  @Prop({ type: String, enum: PlanConfirmationAction, default: null })
+  confirmedAction?: PlanConfirmationAction | null;
+
+  // WeekLog creado al confirmar con create_week_log (null si no aplica)
+  @Prop({ type: Types.ObjectId, ref: 'WeekLog', default: null })
+  resultingWeekLogId?: Types.ObjectId | null;
+
+  // RoutinePlan creado al confirmar con create_routine_plan (null si no aplica)
+  @Prop({ type: Types.ObjectId, ref: 'RoutinePlan', default: null })
+  resultingRoutinePlanId?: Types.ObjectId | null;
 
   // ── Timestamps (declarados explícitamente para tipado TS con timestamps: true) ──
   @Prop({ type: Date })

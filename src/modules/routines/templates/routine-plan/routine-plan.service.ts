@@ -34,17 +34,42 @@ export class RoutinePlanService {
     return serializeMongo<RoutinePlan>(plan);
   }
 
-  async findAll(): Promise<RoutinePlan[]> {
-    const docs = await this.routinePlanModel.find().lean().exec();
+  /**
+   * Devuelve los planes visibles para un usuario: los globales (sin owner,
+   * ej. seed) + los propios. Los planes creados por otros usuarios
+   * (incluidos los generados con IA) nunca se exponen a terceros.
+   */
+  async findAll(userId?: string): Promise<RoutinePlan[]> {
+    const filter = userId
+      ? {
+          $or: [
+            { createdBy: null },
+            { createdBy: new Types.ObjectId(userId) },
+          ],
+        }
+      : {};
+    const docs = await this.routinePlanModel.find(filter).lean().exec();
     return serializeMongo<RoutinePlan[]>(docs);
   }
 
-  async findOne(id: string): Promise<RoutinePlan> {
+  /**
+   * Busca un plan por id. Si se recibe userId, solo devuelve planes
+   * globales o propios (un plan ajeno responde 404).
+   */
+  async findOne(id: string, userId?: string): Promise<RoutinePlan> {
     if (!Types.ObjectId.isValid(id)) {
       throw new NotFoundException(`ID "${id}" no es válido`);
     }
 
-    const plan = await this.routinePlanModel.findById(id).lean().exec();
+    const filter: Record<string, any> = { _id: id };
+    if (userId) {
+      filter.$or = [
+        { createdBy: null },
+        { createdBy: new Types.ObjectId(userId) },
+      ];
+    }
+
+    const plan = await this.routinePlanModel.findOne(filter).lean().exec();
 
     if (!plan) {
       throw new NotFoundException(`Plan con ID "${id}" no encontrado`);

@@ -261,32 +261,4 @@ describe('TrainingPlanService', () => {
       );
     });
   });
-
-  describe('confirm', () => {
-    it('marca el plan como confirmado', async () => {
-      const plan = makePlan({ confirmed: true });
-      trainingPlanModelMock.findOneAndUpdate.mockReturnValue(
-        buildQueryMock(plan),
-      );
-
-      const result = await service.confirm(PLAN_ID, USER_ID);
-
-      expect(trainingPlanModelMock.findOneAndUpdate).toHaveBeenCalledWith(
-        expect.anything(),
-        { $set: { confirmed: true } },
-        { new: true },
-      );
-      expect(result.confirmed).toBe(true);
-    });
-
-    it('lanza NotFoundException si el plan no existe', async () => {
-      trainingPlanModelMock.findOneAndUpdate.mockReturnValue(
-        buildQueryMock(null),
-      );
-
-      await expect(service.confirm(MISSING_ID, USER_ID)).rejects.toThrow(
-        NotFoundException,
-      );
-    });
-  });
 });

@@ -48,4 +48,11 @@ export class HealthConstraintsService {
       .findOne({ userId: new Types.ObjectId(userId) })
       .exec();
   }
+
+  async removeHealthConstraints(userId: string): Promise<boolean> {
+    const result = await this.healthModel
+      .deleteMany({ userId: new Types.ObjectId(userId) })
+      .exec();
+    return result.deletedCount > 0;
+  }
 }

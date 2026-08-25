@@ -75,6 +75,7 @@ export function buildPlanPrompts(
     '- El order 1 corresponde al primer día de entrenamiento de la semana',
     '- isRest: true → el array exercises debe ser []',
     '- name DEBE ser el nombre EXACTO de un ejercicio del catálogo proporcionado (cópialo sin modificar, sin traducir ni parafrasear)',
+    '- NO agregues al nombre equipamiento, plurales ni detalles que no estén textualmente en el nombre del catálogo',
     '- NO inventes nombres ni uses ejercicios fuera del catálogo',
     '- Si el usuario no tiene suficiente equipamiento, adapta los ejercicios a su realidad',
   ].join('\n');

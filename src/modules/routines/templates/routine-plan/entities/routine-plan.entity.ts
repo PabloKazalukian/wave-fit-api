@@ -24,6 +24,13 @@ export class RoutinePlan {
   @Field({ nullable: true })
   createdBy?: string;
 
+  // true = plan generado con IA (el front muestra "Plan generado con IA")
+  @Field({ defaultValue: false })
+  isAiGenerated?: boolean;
+
+  @Field(() => ID, { nullable: true })
+  generatedFromPlanId?: string;
+
   // Propiedad interna para el resolver, no expuesta en GraphQL directamente
   week?: {
     day?: string;

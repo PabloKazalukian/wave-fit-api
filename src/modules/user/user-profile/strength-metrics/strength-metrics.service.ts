@@ -46,4 +46,11 @@ export class StrengthMetricsService {
       .sort({ measuredAt: -1 })
       .exec();
   }
+
+  async removeStrengthMetrics(userId: string): Promise<boolean> {
+    const result = await this.strengthModel
+      .deleteMany({ userId: new Types.ObjectId(userId) })
+      .exec();
+    return result.deletedCount > 0;
+  }
 }

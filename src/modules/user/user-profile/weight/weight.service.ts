@@ -29,4 +29,11 @@ export class WeightService {
       .sort({ loggedAt: -1 })
       .exec();
   }
+
+  async removeWeightLogs(userId: string): Promise<boolean> {
+    const result = await this.weightLogModel
+      .deleteMany({ userId: new Types.ObjectId(userId) })
+      .exec();
+    return result.deletedCount > 0;
+  }
 }

@@ -1,4 +1,11 @@
-import { isSimilar, normalizeString } from './string.utils';
+import {
+  containsOppositeKeywords,
+  foldTokens,
+  isSimilar,
+  normalizeString,
+  singularizeToken,
+  tokenSet,
+} from './string.utils';
 
 describe('normalizeString', () => {
   it('convierte a minúsculas', () => {
@@ -80,5 +87,99 @@ describe('isSimilar', () => {
 
   it('es insensible a mayúsculas y acentos en ambas entradas', () => {
     expect(isSimilar('EXTENSIÓN', 'extension')).toBe(true);
+  });
+});
+
+describe('singularizeToken', () => {
+  it('singulariza plurales terminados en s', () => {
+    expect(singularizeToken('mancuernas')).toBe('mancuerna');
+    expect(singularizeToken('zancadas')).toBe('zancada');
+    expect(singularizeToken('flexiones')).toBe('flexion');
+  });
+
+  it('colapsa plurales largos terminados en es', () => {
+    expect(singularizeToken('elevaciones')).toBe('elevacion');
+    expect(singularizeToken('aperturas')).toBe('apertura');
+  });
+
+  it('deja intactos tokens cortos y sin s final', () => {
+    expect(singularizeToken('remo')).toBe('remo');
+    expect(singularizeToken('abd')).toBe('abd');
+    expect(singularizeToken('sentadilla')).toBe('sentadilla');
+  });
+
+  it('aplica reglas imperfectas pero consistentes (press → pres)', () => {
+    // No es lingüísticamente correcto: alcanza con que ambos lados de una
+    // comparación colapsen igual.
+    expect(singularizeToken('press')).toBe('pres');
+  });
+});
+
+describe('foldTokens', () => {
+  it('normaliza, singulariza y tokeniza', () => {
+    expect(foldTokens('Remo con Mancuernas')).toEqual([
+      'remo',
+      'con',
+      'mancuerna',
+    ]);
+  });
+
+  it('hace colapsar singular y plural del mismo nombre', () => {
+    expect(foldTokens('Remo con mancuerna')).toEqual(
+      foldTokens('Remo con Mancuernas'),
+    );
+  });
+
+  it('elimina acentos antes de singularizar', () => {
+    expect(foldTokens('Sentadilla Búlgaras')).toEqual([
+      'sentadilla',
+      'bulgara',
+    ]);
+  });
+
+  it('retorna array vacío para strings falsy o sin tokens', () => {
+    expect(foldTokens('')).toEqual([]);
+    expect(foldTokens(null as unknown as string)).toEqual([]);
+    expect(foldTokens(undefined as unknown as string)).toEqual([]);
+  });
+});
+
+describe('tokenSet', () => {
+  it('deduplica tokens y no depende del orden', () => {
+    expect(tokenSet('press press press')).toEqual(new Set(['pres']));
+    expect(tokenSet('curl de bíceps')).toEqual(new Set(['curl', 'de', 'bicep']));
+  });
+
+  it('permite comparar variantes del mismo nombre como iguales', () => {
+    expect(tokenSet('Sentadilla Búlgaras')).toEqual(
+      tokenSet('sentadilla bulgara'),
+    );
+    expect(tokenSet('Aperturas con Mancuernas')).toEqual(
+      tokenSet('apertura con mancuerna'),
+    );
+  });
+});
+
+describe('containsOppositeKeywords', () => {
+  it('detecta opuestos de equipamiento: barra/mancuerna', () => {
+    expect(containsOppositeKeywords('Remo con Barra', 'Remo con Mancuerna')).toBe(
+      true,
+    );
+  });
+
+  it('detecta opuestos de movimiento: pull/push', () => {
+    expect(containsOppositeKeywords('Pull Up', 'Push Up')).toBe(true);
+  });
+
+  it('detecta opuestos con mayúsculas y acentos', () => {
+    expect(containsOppositeKeywords('Press Inclinado', 'DECLINADO')).toBe(true);
+  });
+
+  it('retorna false cuando no hay palabras opuestas', () => {
+    expect(containsOppositeKeywords('Press Banca', 'Press Militar')).toBe(false);
+  });
+
+  it('retorna false cuando la opuesta aparece solo en un string', () => {
+    expect(containsOppositeKeywords('Press Maquina', 'Pres Maquina')).toBe(false);
   });
 });

@@ -199,7 +199,7 @@ describe('RoutinePlanResolver', () => {
       expect(result).toEqual(enriched);
     });
 
-    it('findOne enriquece el plan con isFavorite', async () => {
+    it('findOne enriquece el plan con isFavorite y scopea por usuario', async () => {
       const favorites = new Set(['plan-1']);
       const enriched = [{ id: 'plan-1', isFavorite: true }];
       routinePlanServiceMock.findOne.mockResolvedValue({ id: 'plan-1' });
@@ -208,7 +208,10 @@ describe('RoutinePlanResolver', () => {
 
       const result = await resolver.findOne('plan-1', context);
 
-      expect(routinePlanServiceMock.findOne).toHaveBeenCalledWith('plan-1');
+      expect(routinePlanServiceMock.findOne).toHaveBeenCalledWith(
+        'plan-1',
+        context.req.user.id,
+      );
       expect(result).toEqual(enriched[0]);
     });
 

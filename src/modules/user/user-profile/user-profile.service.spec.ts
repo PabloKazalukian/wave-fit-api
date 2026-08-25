@@ -28,8 +28,9 @@ const createMockModel = () => ({
   findOneAndDelete: jest.fn(),
   findByIdAndUpdate: jest.fn(),
   findByIdAndDelete: jest.fn(),
+  deleteMany: jest.fn().mockReturnThis(),
   exists: jest.fn(),
-  exec: jest.fn(),
+  exec: jest.fn().mockResolvedValue({ deletedCount: 0 }),
 });
 
 describe('UserProfileService', () => {
@@ -79,5 +80,53 @@ describe('UserProfileService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  describe('removeAllProfileData', () => {
+    it('borra los datos de todos los dominios del perfil y el perfil base', async () => {
+      const goals = jest.spyOn(
+        (service as any).goalsService,
+        'removeGoal',
+      );
+      const preferences = jest.spyOn(
+        (service as any).trainingPreferenceService,
+        'removeTrainingPreference',
+      );
+      const weights = jest.spyOn(
+        (service as any).weightService,
+        'removeWeightLogs',
+      );
+      const health = jest.spyOn(
+        (service as any).healthConstraintsService,
+        'removeHealthConstraints',
+      );
+      const schedule = jest.spyOn(
+        (service as any).scheduleService,
+        'removeSchedule',
+      );
+      const resources = jest.spyOn(
+        (service as any).resourceService,
+        'removeResource',
+      );
+      const metrics = jest.spyOn(
+        (service as any).strengthMetricsService,
+        'removeStrengthMetrics',
+      );
+
+      await expect(service.removeAllProfileData('507f1f77bcf86cd799439011')).resolves.toBe(true);
+
+      expect(goals).toHaveBeenCalledWith('507f1f77bcf86cd799439011');
+      expect(preferences).toHaveBeenCalledWith('507f1f77bcf86cd799439011');
+      expect(weights).toHaveBeenCalledWith('507f1f77bcf86cd799439011');
+      expect(health).toHaveBeenCalledWith('507f1f77bcf86cd799439011');
+      expect(schedule).toHaveBeenCalledWith('507f1f77bcf86cd799439011');
+      expect(resources).toHaveBeenCalledWith('507f1f77bcf86cd799439011');
+      expect(metrics).toHaveBeenCalledWith('507f1f77bcf86cd799439011');
+    });
+
+    it('es idempotente: devuelve true aunque no hubiera datos que borrar', async () => {
+      // mocks por defecto: deleteMany → deletedCount 0 → remove* devuelven false
+      await expect(service.removeAllProfileData('507f1f77bcf86cd799439011')).resolves.toBe(true);
+    });
   });
 });

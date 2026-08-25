@@ -35,4 +35,11 @@ export class ScheduleService {
       .findOne({ userId: new Types.ObjectId(userId) })
       .exec();
   }
+
+  async removeSchedule(userId: string): Promise<boolean> {
+    const result = await this.scheduleModel
+      .deleteMany({ userId: new Types.ObjectId(userId) })
+      .exec();
+    return result.deletedCount > 0;
+  }
 }

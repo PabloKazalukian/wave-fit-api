@@ -41,4 +41,11 @@ export class GoalsService {
       .orFail()
       .exec();
   }
+
+  async removeGoal(userId: string): Promise<boolean> {
+    const result = await this.goalModel
+      .deleteMany({ userId: new Types.ObjectId(userId) })
+      .exec();
+    return result.deletedCount > 0;
+  }
 }

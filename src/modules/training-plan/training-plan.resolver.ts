@@ -5,6 +5,9 @@ import {
   TrainingPlan,
   TrainingPlanPage,
 } from './entities/training-plan.entity';
+import { PlanConfirmationAction } from './schema/training-plan.schema';
+import { ConfirmPlanOutput } from './plan-confirmation/entities/confirm-plan.output.entity';
+import { ConfirmPlanService } from './plan-confirmation/confirm-plan.service';
 import { CreateTrainingPlanInput } from './dto/create-training-plan.input';
 import { UpdateTrainingPlanInput } from './dto/update-training-plan.input';
 import { extractUserId } from 'src/common/utils/user-id.utils';
@@ -13,7 +16,10 @@ import { GqlAuthGuard } from 'src/modules/auth/guards/gql-auth.guard';
 @Resolver(() => TrainingPlan)
 @UseGuards(GqlAuthGuard)
 export class TrainingPlanResolver {
-  constructor(private readonly trainingPlanService: TrainingPlanService) {}
+  constructor(
+    private readonly trainingPlanService: TrainingPlanService,
+    private readonly confirmPlanService: ConfirmPlanService,
+  ) {}
 
   @Mutation(() => TrainingPlan)
   createTrainingPlan(
@@ -76,13 +82,21 @@ export class TrainingPlanResolver {
     return this.trainingPlanService.generate(userId, comment);
   }
 
-  @Mutation(() => TrainingPlan, { name: 'confirmPlan' })
+  /**
+   * Confirma un plan generado con IA ejecutando la acción elegida:
+   * - CREATE_WEEK_LOG → crea la semana de tracking (solo si no hay semana activa)
+   * - CREATE_ROUTINE_PLAN → crea el template RoutinePlan (sin pesos)
+   * - ADAPT_ACTIVE_WEEK → reservado
+   */
+  @Mutation(() => ConfirmPlanOutput, { name: 'confirmPlan' })
   async confirmPlan(
     @Args('id', { type: () => String }) id: string,
+    @Args('action', { type: () => PlanConfirmationAction })
+    action: PlanConfirmationAction,
     @Context() context,
   ) {
     const userId = extractUserId(context);
-    return this.trainingPlanService.confirm(id, userId);
+    return this.confirmPlanService.confirm(userId, id, action);
   }
 
   @Mutation(() => TrainingPlan, { name: 'removePlan' })

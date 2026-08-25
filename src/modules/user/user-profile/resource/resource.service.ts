@@ -35,4 +35,11 @@ export class ResourceService {
       .findOne({ userId: new Types.ObjectId(userId) })
       .exec();
   }
+
+  async removeResource(userId: string): Promise<boolean> {
+    const result = await this.resourceModel
+      .deleteMany({ userId: new Types.ObjectId(userId) })
+      .exec();
+    return result.deletedCount > 0;
+  }
 }

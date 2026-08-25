@@ -82,4 +82,16 @@ describe('UserProfileResolver', () => {
   it('should be defined', () => {
     expect(resolver).toBeDefined();
   });
+
+  describe('removeMyProfileData', () => {
+    it('delega en removeAllProfileData con el userId del contexto', async () => {
+      const spy = jest
+        .spyOn((resolver as any).userProfileService, 'removeAllProfileData')
+        .mockResolvedValue(true);
+      const context = { req: { user: { id: '507f1f77bcf86cd799439011' } } };
+
+      await expect(resolver.removeMyProfileData(context)).resolves.toBe(true);
+      expect(spy).toHaveBeenCalledWith('507f1f77bcf86cd799439011');
+    });
+  });
 });

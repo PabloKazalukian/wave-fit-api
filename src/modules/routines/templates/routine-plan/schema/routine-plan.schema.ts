@@ -37,6 +37,14 @@ export class RoutinePlan extends Document {
   @Prop({ required: false })
   weekly_distribution?: string;
 
+  // true = plan generado a partir de un TrainingPlan de IA (privado del creador)
+  @Prop({ type: Boolean, default: false, index: true })
+  isAiGenerated: boolean;
+
+  // TrainingPlan que originó el plan (trazabilidad, null si fue creado a mano)
+  @Prop({ type: Types.ObjectId, ref: 'TrainingPlan', default: null })
+  generatedFromPlanId?: Types.ObjectId | null;
+
   @Prop({ type: Types.ObjectId, ref: 'User', required: false })
   createdBy?: Types.ObjectId;
 }
@@ -44,3 +52,4 @@ export class RoutinePlan extends Document {
 export const RoutinePlanSchema = SchemaFactory.createForClass(RoutinePlan);
 
 RoutinePlanSchema.index({ 'week.day': 1 });
+RoutinePlanSchema.index({ createdBy: 1, createdAt: -1 });

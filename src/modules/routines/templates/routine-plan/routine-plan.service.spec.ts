@@ -61,6 +61,75 @@ describe('RoutinePlanService', () => {
     });
   });
 
+  describe('scoping por usuario (privacidad de planes)', () => {
+    const userId = new Types.ObjectId().toString();
+
+    const stubFind = (resolveValue: any) => {
+      routinePlanModelMock.find.mockReturnValue({
+        lean: () => ({
+          exec: jest.fn().mockResolvedValue(resolveValue),
+        }),
+      });
+    };
+
+    it('findAll sin userId consulta todos (comportamiento interno)', async () => {
+      stubFind([]);
+
+      await service.findAll();
+
+      expect(routinePlanModelMock.find).toHaveBeenCalledWith({});
+    });
+
+    it('findAll con userId filtra globales + propios', async () => {
+      stubFind([]);
+
+      await service.findAll(userId);
+
+      const filter = routinePlanModelMock.find.mock.calls[0][0];
+      expect(filter.$or).toEqual([
+        { createdBy: null },
+        { createdBy: new Types.ObjectId(userId) },
+      ]);
+    });
+
+    it('findOne con userId aplica el mismo filtro para planes ajenos', async () => {
+      stubFindOne(null);
+      const foreignId = new Types.ObjectId().toString();
+
+      await expect(service.findOne(foreignId, userId)).rejects.toThrow(
+        'no encontrado',
+      );
+
+      const [filter] = routinePlanModelMock.findOne.mock.calls[0];
+      expect(filter._id).toBe(foreignId);
+      expect(filter.$or).toEqual([
+        { createdBy: null },
+        { createdBy: new Types.ObjectId(userId) },
+      ]);
+    });
+
+    it('findOne sin userId no restringe (uso interno)', async () => {
+      stubFindOne({ _id: new Types.ObjectId().toString(), name: 'PPL' });
+      const planId = new Types.ObjectId().toString();
+
+      const result = await service.findOne(planId);
+
+      const [filter] = routinePlanModelMock.findOne.mock.calls[0];
+      expect(filter).not.toHaveProperty('$or');
+      expect(filter._id).toBe(planId);
+      expect(result.id).toBeDefined();
+    });
+
+    // helper local
+    function stubFindOne(resolveValue: any) {
+      routinePlanModelMock.findOne.mockReturnValue({
+        lean: () => ({
+          exec: jest.fn().mockResolvedValue(resolveValue),
+        }),
+      });
+    }
+  });
+
   describe('favoritos', () => {
     const userId = new Types.ObjectId().toString();
 

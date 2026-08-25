@@ -97,33 +97,55 @@ mutation GeneratePlan {
 
 ---
 
-### `confirmPlan(id: String)`
+### `confirmPlan(id, action)`
 
-Confirma un plan generado previamente, cambiando `confirmed` de `false` a `true`. Recibe el ID del TrainingPlan; el userId se obtiene del JWT.
+Confirma un plan generado previamente ejecutando la **acción elegida** por el usuario. Recibe el ID del TrainingPlan y una acción (`PlanConfirmationAction`); el userId se obtiene del JWT (cookie).
 
-**Qué hace:**
+| Acción | Qué hace |
+|--------|----------|
+| `CREATE_WEEK_LOG` | Crea el **WeekLog** (my-week) + WorkoutSessions desde el snapshot IA. Solo permitido si el usuario **no tiene semana activa** (`ConflictException` si existe). `WeekLog.planId = null`. |
+| `CREATE_ROUTINE_PLAN` | Crea el template **RoutinePlan** + 7 `RoutineDay` (sin pesos), con `isAiGenerated: true`, `createdBy = userId` y `generatedFromPlanId`. Privado del creador. |
+| `ADAPT_ACTIVE_WEEK` | Reservado (stub): lanza `NotImplementedException`. |
 
-1. Busca el `TrainingPlan` por `_id` y `userId` (scope por usuario).
-2. Si no existe, lanza `NotFoundException`.
-3. Setea `confirmed: true`.
-4. Devuelve el `TrainingPlan` actualizado.
+**Qué hace en común:**
+
+1. Busca el plan por `_id` y `userId` (scope por usuario).
+2. Rechaza doble confirmación de forma atómica (`confirmed: false` en la condición del update).
+3. Re-resuelve los nombres de ejercicios contra el catálogo vigente al confirmar (`PlanMaterializerService`).
+4. Marca `confirmed: true`, `status: ACTIVE`, guarda `confirmedAction` y el id del artefacto creado (`resultingWeekLogId` / `resultingRoutinePlanId`).
+5. Audita `TRAINING_PLAN_CONFIRMED`.
+6. Devuelve `ConfirmPlanOutput { trainingPlan, weekLog?, routinePlan? }`.
 
 **Flujo del cliente:**
 
 ```
-generatePlan → TrainingPlan (confirmed: false) → confirmPlan(id) → TrainingPlan (confirmed: true)
+generatePlan → TrainingPlan (confirmed:false) → usuario revisa → confirmPlan(id, action)
 ```
 
 **GraphQL:**
 
 ```graphql
-mutation ConfirmPlan($id: String!) {
-  confirmPlan(id: $id) {
-    id
-    title
-    confirmed
-    status
-    updatedAt
+mutation ConfirmPlan($id: String!, $action: PlanConfirmationAction!) {
+  confirmPlan(id: $id, action: $action) {
+    trainingPlan {
+      id
+      confirmed
+      confirmedAction
+      resultingWeekLogId
+      resultingRoutinePlanId
+    }
+    weekLog {
+      id
+      startDate
+      days { order isRest workoutSessionId }
+    }
+    routinePlan {
+      id
+      name
+      isAiGenerated
+      generatedFromPlanId
+      routineDays { id title exercises { exercise { id name } } }
+    }
   }
 }
 ```
@@ -131,6 +153,12 @@ mutation ConfirmPlan($id: String!) {
 **Errores posibles:**
 
 - `404 Not Found` — TrainingPlan no encontrado (ID inválido o no pertenece al usuario)
+- `409 Conflict` — El plan ya fue confirmado
+- `409 Conflict` — Acción `CREATE_WEEK_LOG` con semana activa existente
+- `501 Not Implemented` — Acción `ADAPT_ACTIVE_WEEK`
+- `400 Bad Request` — Snapshot sin ejercicios para crear rutina
+
+> **Nota:** los planes IA se materializan contra el catálogo al momento de confirmar. Si un ejercicio fue renombrado/eliminado del catálogo después de generar el plan, la confirmación fallará con `AI_UNKNOWN_EXERCISE_NAME`.
 
 ---
 
