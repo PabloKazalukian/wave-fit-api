@@ -293,8 +293,12 @@ export class PlanMaterializerService {
 
   /**
    * Resuelve el exerciseId de cada ejercicio del plan contra el catálogo
-   * usando la resolución por capas. Muta el plan in-place y falla con 400
-   * solo si quedan nombres genuinamente irresolubles.
+   * usando la resolución por capas. Muta el plan in-place.
+   *
+   * Los nombres genuinamente irresolubles se DESCARTAN con advertencia y la
+   * generación continúa con lo válido (un ejercicio inventado por la IA no
+   * debe tirar todo el plan). Solo falla con 400 si NINGÚN ejercicio del
+   * plan resolvió contra el catálogo (plan inservible).
    */
   private resolveExercisesByName(
     userId: string,
@@ -304,9 +308,12 @@ export class PlanMaterializerService {
     const invalidNames = new Set<string>();
     const fuzzyMatches: string[] = [];
     let resolvedCount = 0;
+    let totalCount = 0;
 
     for (const day of plan.days) {
       if (day.isRest) continue;
+      totalCount += day.exercises.length;
+      const kept: typeof day.exercises = [];
       for (const ex of day.exercises) {
         const match = this.resolveSingle(ex.name, ctx);
         if (!match) {
@@ -315,12 +322,18 @@ export class PlanMaterializerService {
         }
         ex.exerciseId = String(match.entry.id);
         ex.name = match.entry.name;
+        kept.push(ex);
         resolvedCount++;
         if (match.strategy !== 'exact') {
           fuzzyMatches.push(
             `"${ex.name}" → "${match.entry.name}" [${match.strategy}]`,
           );
         }
+      }
+      day.exercises = kept;
+      // Invariante isRest ⇔ día sin ejercicios (tras descartar desconocidos)
+      if (kept.length === 0) {
+        day.isRest = true;
       }
     }
 
@@ -339,14 +352,23 @@ export class PlanMaterializerService {
       const near = this.nearestCatalogNames(name, ctx, 3);
       return near.length > 0 ? `${name} (¿quiso decir: ${near.join(' | ')}?)` : name;
     });
-    this.logger.error(
-      `${AI_CAUSE.UNKNOWN_EXERCISE_NAME}: la IA devolvió ${list.length} nombres fuera del catálogo: [${details.join(', ')}]`,
+
+    // Plan inservible: había ejercicios y ninguno resolvió contra el catálogo.
+    if (totalCount > 0 && resolvedCount === 0) {
+      this.logger.error(
+        `${AI_CAUSE.UNKNOWN_EXERCISE_NAME}: la IA devolvió ${list.length} nombres fuera del catálogo y ninguno resolvió: [${details.join(', ')}]`,
+      );
+      throw new BadRequestException({
+        message: `Ningún ejercicio devuelto por la IA existe en el catálogo: [${details.join(', ')}]`,
+        code: AI_CAUSE.UNKNOWN_EXERCISE_NAME,
+        invalidExerciseNames: list,
+      });
+    }
+
+    // Descarte parcial: continúa con los ejercicios válidos.
+    this.logger.warn(
+      `[materializeWeekLog] Ejercicios descartados por ausentes en catálogo userId=${userId}: ${details.join(', ')}`,
     );
-    throw new BadRequestException({
-      message: `La IA devolvió ejercicios que no existen en el catálogo: [${details.join(', ')}]`,
-      code: AI_CAUSE.UNKNOWN_EXERCISE_NAME,
-      invalidExerciseNames: list,
-    });
   }
 
   private buildWeekLogFromPlan(

@@ -188,8 +188,39 @@ describe('PlanMaterializerService — resolución difusa de ejercicios', () => {
   });
 
   describe('nombres genuinamente desconocidos', () => {
-    it('lanza 400 con código y lista solo de los irresolubles', async () => {
+    it('descarta solo los irresolubles y continúa con los válidos', async () => {
       const plan = buildPlan('Ejercicio inventado', 'Remo con Mancuernas');
+
+      await service.resolveAgainstCatalog(USER_ID, plan);
+
+      // El válido resolvió difuso y quedó como único ejercicio del día
+      expect(plan.days[0].exercises).toHaveLength(1);
+      expect(plan.days[0].exercises[0].exerciseId).toBe('id-remo-mancuerna');
+      expect(plan.days[0].exercises[0].name).toBe('Remo con mancuerna');
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Ejercicios descartados'),
+      );
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Ejercicio inventado'),
+      );
+    });
+
+    it('convierte a descanso un día cuyos ejercicios fueron todos descartados', async () => {
+      const plan = buildPlan('Ejercicio inventado');
+      plan.days[2] = buildTrainingDay(3, ['Curl Martillos']);
+
+      await service.resolveAgainstCatalog(USER_ID, plan);
+
+      expect(plan.days[0].isRest).toBe(true);
+      expect(plan.days[0].exercises).toHaveLength(0);
+      // El día con ejercicios válidos se mantiene intacto
+      expect(plan.days[2].isRest).toBe(false);
+      expect(plan.days[2].exercises[0].exerciseId).toBe('id-curl-martillo');
+    });
+
+    it('lanza 400 si TODOS los ejercicios del plan son irresolubles (plan inservible)', async () => {
+      const plan = buildPlan('Ejercicio inventado');
+      plan.days[1] = buildTrainingDay(2, ['Ejercicio inventado']);
 
       try {
         await service.resolveAgainstCatalog(USER_ID, plan);
@@ -198,21 +229,6 @@ describe('PlanMaterializerService — resolución difusa de ejercicios', () => {
         expect(error).toBeInstanceOf(BadRequestException);
         const response = (error as BadRequestException).getResponse() as any;
         expect(response.code).toBe(AI_CAUSE.UNKNOWN_EXERCISE_NAME);
-        // "Remo con Mancuernas" se resolvió difuso; solo falla el inventado
-        expect(response.invalidExerciseNames).toEqual(['Ejercicio inventado']);
-        expect(response.message).toContain('Ejercicio inventado');
-      }
-    });
-
-    it('reporta una sola vez un nombre desconocido repetido en varios días', async () => {
-      const plan = buildPlan('Ejercicio inventado');
-      plan.days[1] = buildTrainingDay(2, ['Ejercicio inventado']);
-
-      try {
-        await service.resolveAgainstCatalog(USER_ID, plan);
-        throw new Error('debería haber fallado');
-      } catch (error) {
-        const response = (error as BadRequestException).getResponse() as any;
         expect(response.invalidExerciseNames).toEqual([
           'Ejercicio inventado',
         ]);

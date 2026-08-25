@@ -14,7 +14,6 @@ import { PlanValidatorService } from '../plan-validator/plan-validator.service';
 import { PlanGeneratorParser } from './plan-generator.parser';
 import { ExerciseService } from '../../routines/templates/exercise/exercise.service';
 import { AuditLogsService } from '../../audit-logs/audit-logs.service';
-import { AI_CAUSE } from '../../ai/ai-error-causes';
 import { PlanMaterializerService } from '../plan-materializer/plan-materializer.service';
 
 describe('PlanGeneratorService', () => {
@@ -360,30 +359,23 @@ describe('PlanGeneratorService', () => {
       return planJson;
     };
 
-    it('rechaza con 400 listando los nombres que no existen en el catálogo', async () => {
+    it('descarta los nombres que no existen en el catálogo y genera con los válidos', async () => {
       stubAiResponseWithExtraNames('Ejercicio inventado', 'Otro inventado');
 
-      try {
-        await service.generatePlan(USER_ID);
-        throw new Error('debería haber fallado');
-      } catch (error) {
-        expect(error).toBeInstanceOf(BadRequestException);
-        const response = (error as BadRequestException).getResponse() as any;
-        expect(response.code).toBe(AI_CAUSE.UNKNOWN_EXERCISE_NAME);
-        expect(response.invalidExerciseNames).toEqual([
-          'Ejercicio inventado',
-          'Otro inventado',
-        ]);
-      }
+      const result = await service.generatePlan(USER_ID);
 
-      // no crea el weekLog ni sesiones con ejercicios rotos
+      // Los inventados se descartan; cada sesión conserva solo "Press Banca"
+      expect(result.sessions.length).toBeGreaterThan(0);
+      result.sessions.forEach((session) => {
+        expect(session.exercises).toHaveLength(1);
+        expect(session.exercises[0].exerciseId).toBe('ex-1');
+      });
+
+      // La generación se audita como exitosa pese al descarte
       expect(auditLogsServiceMock.logAsync).toHaveBeenCalledWith(
         expect.objectContaining({
           action: 'TRAINING_PLAN_GENERATED',
-          success: false,
-          metadata: expect.objectContaining({
-            cause: AI_CAUSE.UNKNOWN_EXERCISE_NAME,
-          }),
+          success: true,
         }),
       );
     });

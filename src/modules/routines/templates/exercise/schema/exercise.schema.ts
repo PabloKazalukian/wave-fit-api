@@ -27,4 +27,6 @@ export class Exercise extends Document {
 export const ExerciseSchema = SchemaFactory.createForClass(Exercise);
 
 ExerciseSchema.index({ category: 1 });
-ExerciseSchema.index({ normalizedName: 1 });
+// Índice único anti-duplicados ("Remo con Mancuerna" x2, etc.).
+// sparse: tolera documentos legacy sin normalizedName (los backfill del seed).
+ExerciseSchema.index({ normalizedName: 1 }, { unique: true, sparse: true });

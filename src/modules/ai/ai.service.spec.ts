@@ -474,6 +474,101 @@ describe('AiService', () => {
       expect((service as any).sleep).toHaveBeenCalledWith(7000);
     });
 
+    it('lee el Retry-After del header raíz de groq-sdk (error.headers)', async () => {
+      invokeMock
+        .mockRejectedValueOnce(
+          Object.assign(new Error('http 429'), {
+            status: 429,
+            headers: { 'retry-after': '5' },
+          }),
+        )
+        .mockResolvedValueOnce({ content: 'ok' });
+
+      await service.executePrompt({
+        providerName: 'groq',
+        systemPrompt: 's',
+        userPrompt: 'u',
+      });
+
+      expect((service as any).sleep).toHaveBeenCalledWith(5000);
+    });
+
+    it('parsea el hint "try again in Xs" del message cuando no hay header', async () => {
+      invokeMock
+        .mockRejectedValueOnce(
+          Object.assign(
+            new Error(
+              '429 {"error":{"message":"Rate limit reached... Please try again in 3.8775s. Need more tokens?"}}',
+            ),
+            { status: 429 },
+          ),
+        )
+        .mockResolvedValueOnce({ content: 'ok' });
+
+      await service.executePrompt({
+        providerName: 'groq',
+        systemPrompt: 's',
+        userPrompt: 'u',
+      });
+
+      expect(invokeMock).toHaveBeenCalledTimes(2);
+      expect((service as any).sleep).toHaveBeenCalledWith(3877.5);
+    });
+
+    it('parsea el hint "try again in Xms" del message', async () => {
+      invokeMock
+        .mockRejectedValueOnce(
+          Object.assign(
+            new Error('429 ... Please try again in 652.5ms. ...'),
+            { status: 429 },
+          ),
+        )
+        .mockResolvedValueOnce({ content: 'ok' });
+
+      await service.executePrompt({
+        providerName: 'groq',
+        systemPrompt: 's',
+        userPrompt: 'u',
+      });
+
+      expect(invokeMock).toHaveBeenCalledTimes(2);
+      expect((service as any).sleep).toHaveBeenCalledWith(652.5);
+    });
+
+    it('prioriza el header sobre el hint del message', async () => {
+      invokeMock
+        .mockRejectedValueOnce(
+          Object.assign(new Error('http 429 Please try again in 9s.'), {
+            status: 429,
+            headers: { 'retry-after': '2' },
+          }),
+        )
+        .mockResolvedValueOnce({ content: 'ok' });
+
+      await service.executePrompt({
+        providerName: 'groq',
+        systemPrompt: 's',
+        userPrompt: 'u',
+      });
+
+      expect((service as any).sleep).toHaveBeenCalledWith(2000);
+    });
+
+    it('usa backoff por defecto si el 429 no trae ni header ni hint', async () => {
+      invokeMock
+        .mockRejectedValueOnce(httpError(429))
+        .mockResolvedValueOnce({ content: 'ok' });
+
+      await service.executePrompt({
+        providerName: 'groq',
+        systemPrompt: 's',
+        userPrompt: 'u',
+      });
+
+      expect(invokeMock).toHaveBeenCalledTimes(2);
+      expect((service as any).sleep).toHaveBeenCalledWith(1000);
+    });
+
     it('abandona si el Retry-After excede el presupuesto restante', async () => {
       process.env.AI_TOTAL_BUDGET_MS = '500';
       invokeMock.mockRejectedValue(

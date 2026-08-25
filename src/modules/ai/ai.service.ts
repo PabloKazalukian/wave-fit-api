@@ -297,16 +297,31 @@ export class AiService {
   }
 
   private extractRetryAfterMs(error: unknown): number | null {
-    const headers = (error as any)?.response?.headers;
+    const headers =
+      (error as any)?.response?.headers ?? (error as any)?.headers;
     const raw = headers?.['retry-after'] ?? headers?.get?.('retry-after');
-    if (typeof raw !== 'string' && typeof raw !== 'number') return null;
+    if (typeof raw === 'string' || typeof raw === 'number') {
+      const value = String(raw).trim();
+      if (value) {
+        if (/^\d+$/.test(value)) return Number(value) * 1000;
 
-    const value = String(raw).trim();
-    if (!value) return null;
-    if (/^\d+$/.test(value)) return Number(value) * 1000;
+        const dateMs = Date.parse(value);
+        if (!Number.isNaN(dateMs)) return Math.max(0, dateMs - Date.now());
+      }
+    }
 
-    const dateMs = Date.parse(value);
-    return Number.isNaN(dateMs) ? null : Math.max(0, dateMs - Date.now());
+    // Groq suele omitir el header y solo insinúa la espera en el message:
+    // "Please try again in 3.8775s" / "Please try again in 652.5ms"
+    const message = error instanceof Error ? error.message : String(error);
+    const match = /try again in\s*([\d.]+)\s*(ms|s|seconds?)\b/i.exec(message);
+    if (match) {
+      const amount = Number(match[1]);
+      if (!Number.isNaN(amount) && amount >= 0) {
+        return match[2].toLowerCase() === 'ms' ? amount : amount * 1000;
+      }
+    }
+
+    return null;
   }
 
   private sleep(ms: number): Promise<void> {

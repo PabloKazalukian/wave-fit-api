@@ -27,6 +27,7 @@
     "migration:fix-ids": "ts-node -r tsconfig-paths/register src/database/migrations/001-fix-string-ids.migration.ts",
     "migration:fix-plan-focus": "ts-node -r tsconfig-paths/register src/database/migrations/002-fix-training-plan-focus.migration.ts",
     "migration:fix-plan-user-ids": "ts-node -r tsconfig-paths/register src/database/migrations/003-fix-training-plan-user-id.migration.ts",
+    "migration:dedupe-exercises": "ts-node -r tsconfig-paths/register src/database/migrations/004-dedupe-exercises.migration.ts",
     "check:exercise-refs": "ts-node -r tsconfig-paths/register src/database/scripts/check-exercise-references.ts",
     "check:similar-exercises": "ts-node -r tsconfig-paths/register src/database/scripts/find-similar-exercises.ts",
     "fix:exercise-refs": "ts-node -r tsconfig-paths/register src/database/scripts/fix-exercise-references.ts",

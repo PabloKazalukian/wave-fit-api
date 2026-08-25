@@ -67,13 +67,20 @@ export class SeedService implements OnApplicationBootstrap {
       // 1️⃣ Exercises
       const exerciseCount = await this.exerciseModel.countDocuments();
       if (exerciseCount === 0) {
-        const exercisesToSave = SEEDED_EXERCISES.map((ex) => ({
-          ...ex,
-          normalizedName: normalizeString(ex.name),
-        }));
+        // Dedup por nombre normalizado: el dataset puede traer variantes
+        // de mayúsculas/plural y el índice único de normalizedName las rechazaría.
+        const seenNames = new Set<string>();
+        const exercisesToSave = SEEDED_EXERCISES.flatMap((ex) => {
+          const normalizedName = normalizeString(ex.name);
+          if (!normalizedName || seenNames.has(normalizedName)) return [];
+          seenNames.add(normalizedName);
+          return [{ ...ex, normalizedName }];
+        });
         const savedExercises =
           await this.exerciseModel.insertMany(exercisesToSave);
-        this.logger.log(`✅ ${savedExercises.length} ejercicios insertados`);
+        this.logger.log(
+          `✅ ${savedExercises.length} ejercicios insertados (${SEEDED_EXERCISES.length - savedExercises.length} duplicados omitidos)`,
+        );
       } else {
         this.logger.log(
           `⏭️  Ejercicios ya existentes (${exerciseCount}), verificando normalización...`,
