@@ -51,6 +51,30 @@ export class AiRateLimitService {
     }
   }
 
+  /**
+   * Devuelve el estado actual del rate limit para un usuario
+   * sin modificar el contador.
+   */
+  async getUsage(userId: string): Promise<{
+    used: number;
+    limit: number;
+    remaining: number;
+    resetAt: Date;
+  }> {
+    const limit = Number(process.env.AI_DAILY_LIMIT ?? DEFAULT_DAILY_LIMIT);
+    const windowStart = this.currentWindowStart();
+
+    const doc = await this.aiUsageModel
+      .findOne({ userId: new Types.ObjectId(userId), windowStart })
+      .exec();
+
+    const used = doc?.count ?? 0;
+    const remaining = Math.max(0, limit - used);
+    const resetAt = new Date(windowStart.getTime() + DAY_MS);
+
+    return { used, limit, remaining, resetAt };
+  }
+
   private incrementCount(userId: string, windowStart: Date): Promise<AiUsage> {
     return this.aiUsageModel
       .findOneAndUpdate(

@@ -398,9 +398,11 @@ describe('Training Plan Generation with AI (e2e)', () => {
   });
 
   describe('validación de la respuesta de la IA', () => {
-    it('rechaza cuando la IA devuelve ejercicios fuera del catálogo', async () => {
+    it('descarta ejercicios fuera del catálogo y continúa con los válidos', async () => {
       await setupMinimumProfile();
       const badPlan = buildAiPlanJson();
+      // Un ejercicio desconocido conviviendo con ejercicios válidos NO debe
+      // tirar el plan: se descarta silenciosamente y se conservan los válidos.
       badPlan.days[0].exercises.push({
         name: 'Ejercicio Fantasma',
         plannedSets: 3,
@@ -410,12 +412,42 @@ describe('Training Plan Generation with AI (e2e)', () => {
 
       const response = await generatePlan();
 
+      // La generación tiene éxito (sin error en la respuesta)
+      expect(response.body.errors).toBeUndefined();
+      const plan = response.body.data.generatePlan;
+      expect(plan).toBeDefined();
+      expect(plan.title).toBe('PPL IA E2E');
+
+      // el snapshot conserva la respuesta cruda de la IA (3 ejercicios en days[0])
+      expect(plan.aiSnapshot.rawResponse.days[0].exercises).toHaveLength(3);
+
+      // el plan sí se persiste (fue una generación válida)
+      const { total } = await trainingPlanService.findAll(userId, 5, 0);
+      expect(total).toBe(1);
+    });
+
+    it('rechaza con 400 cuando todos los ejercicios son desconocidos', async () => {
+      await setupMinimumProfile();
+      const badPlan = buildAiPlanJson();
+      // Se reemplaza todo ejercicio válido por nombres fuera del catálogo
+      // en todos los días activos: plan inservible → 400 estricto.
+      for (const day of badPlan.days) {
+        if (day.isRest) continue;
+        day.exercises = [
+          { name: 'Ejercicio Fantasma', plannedSets: 3, plannedReps: '10' },
+        ];
+      }
+      invokeMock.mockResolvedValue(cannedAiResponse(badPlan));
+
+      const response = await generatePlan();
+
       const error = response.body.errors[0];
       expect(error.extensions.status).toBe(400);
-      expect(error.message).toContain('no existen en el catálogo');
+      expect(error.message).toContain('existe en el catálogo');
       expect(error.extensions.originalError.code).toBe(
         'AI_UNKNOWN_EXERCISE_NAME',
       );
+
       expect(error.extensions.originalError.invalidExerciseNames).toEqual([
         'Ejercicio Fantasma',
       ]);

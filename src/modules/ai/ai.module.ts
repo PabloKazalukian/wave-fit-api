@@ -2,6 +2,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AiService } from './ai.service';
+import { AiResolver } from './ai.resolver';
 import { GroqProvider } from './providers/groq.provider';
 import { AiRateLimitService } from './ai-rate-limit.service';
 import { AiUsage, AiUsageSchema } from './schemas/ai-usage.schema';
@@ -17,6 +18,7 @@ import { AuditLogsModule } from '../audit-logs/audit-logs.module';
   ],
   providers: [
     AiService,
+    AiResolver,
     AiRateLimitService,
     GroqProvider,
     // OpenAIProvider,
