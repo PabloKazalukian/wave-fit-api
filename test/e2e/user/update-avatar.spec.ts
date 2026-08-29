@@ -89,7 +89,9 @@ describe('updateAvatar (e2e)', () => {
     await clearDatabase();
     await createTestUser(userService);
     uploadFileMock.mockReset();
-    uploadFileMock.mockResolvedValue('https://mock-bucket/avatar.jpg');
+    uploadFileMock.mockImplementation(
+      (key: string) => `https://mock-bucket/${key}`,
+    );
     deleteFileMock.mockClear();
 
     const loginResponse = await request(app.getHttpServer())
@@ -137,14 +139,18 @@ describe('updateAvatar (e2e)', () => {
     expect(response.body.errors).toBeUndefined();
 
     const avatar = response.body.data.updateAvatar.avatar;
-    expect(avatar.storageKey).toBe(`avatars/${userId}/avatar.jpg`);
-    expect(avatar.url).toBe('https://mock-bucket/avatar.jpg');
+    expect(avatar.storageKey).toMatch(
+      new RegExp(`^avatars/${userId}/avatar-\\d+\\.jpg$`),
+    );
+    expect(avatar.url).toBe(`https://mock-bucket/${avatar.storageKey}`);
     expect(avatar.source).toBe('upload');
 
     // sharp re-encodea el buffer a JPEG, pero el contentType conserva el formato origen
     expect(uploadFileMock).toHaveBeenCalledTimes(1);
     const [key, buffer, contentType] = uploadFileMock.mock.calls[0];
-    expect(key).toBe(`avatars/${userId}/avatar.jpg`);
+    expect(key).toMatch(
+      new RegExp(`^avatars/${userId}/avatar-\\d+\\.jpg$`),
+    );
     expect(buffer).toBeInstanceOf(Buffer);
     expect(contentType).toBe('image/png');
   });
@@ -154,8 +160,10 @@ describe('updateAvatar (e2e)', () => {
 
     const meResponse = await gql(ME_QUERY);
     const avatar = meResponse.body.data.me.avatar;
-    expect(avatar.storageKey).toBe(`avatars/${userId}/avatar.jpg`);
-    expect(avatar.url).toBe('https://mock-bucket/avatar.jpg');
+    expect(avatar.storageKey).toMatch(
+      new RegExp(`^avatars/${userId}/avatar-\\d+\\.jpg$`),
+    );
+    expect(avatar.url).toBe(`https://mock-bucket/${avatar.storageKey}`);
   });
 
   it('rechaza un formato que no es data URI de imagen', async () => {

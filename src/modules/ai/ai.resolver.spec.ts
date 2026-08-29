@@ -1,13 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AiResolver } from './ai.resolver';
-import { AiService } from './ai.service';
+import { AiRateLimitService } from './ai-rate-limit.service';
 
 describe('AiResolver', () => {
   let resolver: AiResolver;
 
-  const aiServiceMock = {
-    getAvailableProviders: jest.fn(),
-    generatePlan: jest.fn(),
+  const rateLimitServiceMock = {
+    getUsage: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -17,8 +16,8 @@ describe('AiResolver', () => {
       providers: [
         AiResolver,
         {
-          provide: AiService,
-          useValue: aiServiceMock,
+          provide: AiRateLimitService,
+          useValue: rateLimitServiceMock,
         },
       ],
     }).compile();

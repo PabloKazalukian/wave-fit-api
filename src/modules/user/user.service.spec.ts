@@ -295,8 +295,9 @@ describe('UserService', () => {
         toBuffer: jest.fn().mockResolvedValue(processed),
       });
       userModel.findById.mockResolvedValue(null);
-      storageService.uploadFile.mockResolvedValue(
-        'https://bucket.s3.amazonaws.com/avatars/u1/avatar.jpg',
+      storageService.uploadFile.mockImplementation(
+        (key: string) =>
+          `https://bucket.s3.amazonaws.com/${key}`,
       );
       const updated = { _id: 'u1', avatar: { url: 'https://...' } };
       userModel.findByIdAndUpdate.mockReturnValue({
@@ -306,8 +307,11 @@ describe('UserService', () => {
       const result = await service.uploadAvatar(validJpegBase64, 'u1');
 
       expect(sharpMock).toHaveBeenCalledWith(expect.any(Buffer));
+      const expectedKey = expect.stringMatching(
+        /^avatars\/u1\/avatar-\d+\.jpg$/,
+      );
       expect(storageService.uploadFile).toHaveBeenCalledWith(
-        'avatars/u1/avatar.jpg',
+        expectedKey,
         processed,
         'image/jpeg',
       );
@@ -316,8 +320,10 @@ describe('UserService', () => {
         {
           $set: {
             avatar: {
-              storageKey: 'avatars/u1/avatar.jpg',
-              url: 'https://bucket.s3.amazonaws.com/avatars/u1/avatar.jpg',
+              storageKey: expectedKey,
+              url: expect.stringMatching(
+                /^https:\/\/bucket\.s3\.amazonaws\.com\/avatars\/u1\/avatar-\d+\.jpg$/,
+              ),
               source: 'upload',
             },
           },
@@ -350,7 +356,7 @@ describe('UserService', () => {
       );
     });
 
-    it('should not delete anything when re-uploading with the same key', async () => {
+    it('should delete the previous avatar whenever a new upload generates a new key', async () => {
       const processed = Buffer.from('processed-image');
       sharpMock.mockReturnValue({
         resize: jest.fn().mockReturnThis(),
@@ -359,7 +365,7 @@ describe('UserService', () => {
       });
       userModel.findById.mockResolvedValue({
         _id: 'u1',
-        avatar: { storageKey: 'avatars/u1/avatar.jpg' },
+        avatar: { storageKey: 'avatars/u1/avatar-123.jpg' },
       });
       storageService.uploadFile.mockResolvedValue('https://new-url');
       userModel.findByIdAndUpdate.mockReturnValue({
@@ -368,7 +374,14 @@ describe('UserService', () => {
 
       await service.uploadAvatar(validJpegBase64, 'u1');
 
-      expect(storageService.deleteFile).not.toHaveBeenCalled();
+      expect(storageService.uploadFile).toHaveBeenCalledWith(
+        expect.stringMatching(/^avatars\/u1\/avatar-\d+\.jpg$/),
+        expect.any(Buffer),
+        expect.any(String),
+      );
+      expect(storageService.deleteFile).toHaveBeenCalledWith(
+        'avatars/u1/avatar-123.jpg',
+      );
     });
   });
 });

@@ -139,7 +139,7 @@ export class UserService {
       .jpeg({ quality: 80 })
       .toBuffer();
 
-    const key = `avatars/${userId}/avatar.jpg`;
+    const key = `avatars/${userId}/avatar-${Date.now()}.jpg`;
 
     const currentUser = await this.findOne(userId);
     if (
