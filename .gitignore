@@ -4,7 +4,6 @@
 /build
 .tsconfig.build.tsbuildinfo
 
-AGENTS.md
 # Logs
 logs
 *.log
