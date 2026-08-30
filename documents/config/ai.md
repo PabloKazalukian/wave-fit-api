@@ -215,14 +215,12 @@ AI:
   aiUsageStatus -> AiUsageStatusOutput { used, limit, remaining, resetAt }
 
 TrainingPlan:
-  createTrainingPlan(createTrainingPlanInput) -> TrainingPlan        # manual
   trainingPlans(limit, offset) -> TrainingPlanPage                    # paginado
   trainingPlan(id) -> TrainingPlan
   updateTrainingPlan(updateTrainingPlanInput) -> TrainingPlan
-  removeTrainingPlan(id) -> TrainingPlan
+  removeTrainingPlan(id) -> TrainingPlan                              # única vía de borrado
   generatePlan(comment = '') -> TrainingPlan                          # con IA
   confirmPlan(id, action: PlanConfirmationAction) -> ConfirmPlanOutput
-  removePlan(id) -> TrainingPlan
 
 Enums GraphQL:
   PlanStatus: draft | active | completed | abandoned | archived
@@ -252,7 +250,7 @@ Modelo actual del proveedor Groq: `openai/gpt-oss-120b`, `temperature: 0`, `reas
 
 ## 8. Limitaciones y Deuda Técnica Conocida
 
-- **Flag origen AI vs MANUAL:** `TrainingPlan` **no** tiene campo `source`. `aiSnapshot` es `required: true` y la ruta manual `createTrainingPlan` **no lo setea**, por lo que hoy la creación manual fallaría en la validación de Mongoose (el schema asume planes de IA). `RoutinePlan` sí distingue con `isAiGenerated`.
+- **TrainingPlan es solo-IA por diseño:** la ruta manual **fue eliminada** (mutation `createTrainingPlan`, `service.create()` y `create-training-plan.input.ts`). `aiSnapshot` es `required: true` por diseño, ya que todo plan proviene de la IA. La semana o rutina manual se crea directamente con los CRUD de WeekLog/RoutinePlan (este último distingue origen con `isAiGenerated`). El alias `removePlan` también fue eliminado; el borrado es vía `removeTrainingPlan`.
 - **`comment` sin límite de longitud:** `generatePlan(comment)` no tiene `@Max`. Un comentario muy largo (o malicioso) puede distorsionar el prompt sin control server-side.
 - **`ADAPT_ACTIVE_WEEK`** no implementado (reservado).
 - **Semana de la IA no persistida en generación:** `generatePlan` usa el `WeekLog` solo para `startDate`; el WeekLog real se crea en la confirmación con `startDate = hoy`.

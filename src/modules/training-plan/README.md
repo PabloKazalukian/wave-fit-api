@@ -1,281 +1,156 @@
-# Training Plan Module
+# Training Plan Module — Generación de planes con IA
 
-## Mutations
+> ⚠️ **Módulo SOLO-IA.** Un `TrainingPlan` se crea exclusivamente vía `generatePlan` (IA). **No existe** ruta manual de creación: la semana de tracking o la rutina manual se crean directamente con los CRUD de WeekLog/RoutinePlan, jamás con un TrainingPlan. La mutation `createTrainingPlan` y el alias `removePlan` fueron **eliminados** (usa `removeTrainingPlan`).
 
-### `generatePlan`
+## Propósito
 
-Genera un plan de entrenamiento personalizado usando IA, lo **persiste** en MongoDB como `TrainingPlan` con `confirmed: false`, y lo devuelve. No recibe argumentos; obtiene el userId del JWT.
+`generatePlan(comment)` construye un plan de entrenamiento personalizado con IA. En `confirmPlan(id, action)` se **materializa** el resultado en un artefacto real:
 
-**Qué hace:**
+- `confirmPlan(..., CREATE_WEEK_LOG)` → crea un `WeekLog` (1 semana) + sus `WorkoutSession`s.
+- `confirmPlan(..., CREATE_ROUTINE_PLAN)` → crea un `RoutinePlan` template (sin pesos) con `RoutineDay`s solo para días de entrenamiento.
+- `confirmPlan(..., ADAPT_ACTIVE_WEEK)` → **reservado** (501, aún no implementado).
 
-1. Valida que el usuario tenga perfil completo (UserProfile) — si falta algo, lanza `BadRequestException` con el campo faltante.
-2. Construye el contexto del usuario (datos del perfil, historial, etc.).
-3. Crea un `Goal` con ese contexto como snapshot (para auditoría).
-4. Obtiene el catálogo completo de exercises (`ExerciseService.findAll()`).
-5. Envía el contexto + exercises a la IA (Groq por defecto) con un prompt que incluye la lista de exercises disponibles (id, name, category).
-6. La IA responde con una semana completa (7 días) usando **IDs reales** del catálogo.
-7. Parsea y valida la respuesta: exactamente 7 días, exerciseIds válidos. `durationWeeks` mínimo 1.
-8. Construye un `WeekLogDomain` en memoria con WorkoutSessions para cada día de entrenamiento.
-9. **Persiste** un `TrainingPlan` en MongoDB con status DRAFT y `confirmed: false`.
-10. Devuelve el `TrainingPlan` al cliente.
-
-**Flujo del cliente:**
-
-```
-generatePlan → TrainingPlan (confirmed: false) → cliente revisa → confirmPlan(id)
-```
-
-**Requisitos previos (si falla, 400):**
-
-- `UserProfile` del usuario debe existir (nombre, edad, peso, nivel, objetivos, etc.)
-
-**GraphQL:**
-
-```graphql
-mutation GeneratePlan {
-  generatePlan {
-    id
-    userId
-    userProfileId
-    goalId
-    title
-    description
-    focus
-    status
-    startDate
-    endDate
-    durationWeeks
-    trainingDaysPerWeek
-    confirmed
-    aiSnapshot {
-      modelUsed
-      tokensUsed
-      generatedAt
-    }
-    overallAdherencePercent
-    totalSessionsCompleted
-    totalSessionsPlanned
-    version
-    tags
-    createdAt
-    updatedAt
-  }
-}
-```
-
-**Valores de retorno (TrainingPlan):**
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `id` | `ID` | ID del TrainingPlan persistido |
-| `userId` | `ID` | ID del usuario |
-| `userProfileId` | `ID` | ID del perfil de usuario usado para generar |
-| `goalId` | `ID` | ID del snapshot de Goal (auditoría) |
-| `title` | `String` | Nombre del plan (generado por la IA) |
-| `description` | `String?` | Descripción opcional |
-| `focus` | `PlanFocus` | `fat_loss`, `muscle_gain`, `strength`, `endurance`, `maintenance`, `recomp` |
-| `status` | `PlanStatus` | `draft` (al generar) |
-| `startDate` | `DateTime` | Fecha de inicio (hoy en UTC) |
-| `endDate` | `DateTime` | Fecha fin (startDate + durationWeeks * 7 días) |
-| `durationWeeks` | `Int` | Duración en semanas (mínimo 1, definido por la IA) |
-| `trainingDaysPerWeek` | `Int` | Días de entrenamiento por semana |
-| `confirmed` | `Boolean` | `false` (recién generado, pendiente de confirmación) |
-| `aiSnapshot` | `AiSnapshot` | Contexto enviado, prompt, modelo, respuesta cruda, tokens |
-| `overallAdherencePercent` | `Float` | `0` (sin datos de progreso) |
-| `totalSessionsCompleted` | `Int` | `0` |
-| `totalSessionsPlanned` | `Int` | `0` |
-| `version` | `Int` | `1` |
-| `tags` | `[String]` | `[]` |
-| `createdAt` | `DateTime` | Fecha de creación |
-| `updatedAt` | `DateTime` | Fecha de última actualización |
-
-**Errores posibles:**
-
-- `400 Bad Request` — Faltan datos en el UserProfile (campos faltantes en `missing`)
-- `400 Bad Request` — La IA devolvió una estructura inválida (menos de 7 días, exerciseId faltante)
-- `404 Not Found` — UserProfile no encontrado
+La IA **no devuelve IDs**, devuelve **nombres de ejercicios**. Nada se persiste en `generatePlan` salvo el propio `TrainingPlan` (borrador `draft`); el WeekLog y las sesiones se construyen **en memoria** y solo se materializan al confirmar.
 
 ---
 
-### `confirmPlan(id, action)`
-
-Confirma un plan generado previamente ejecutando la **acción elegida** por el usuario. Recibe el ID del TrainingPlan y una acción (`PlanConfirmationAction`); el userId se obtiene del JWT (cookie).
-
-| Acción | Qué hace |
-|--------|----------|
-| `CREATE_WEEK_LOG` | Crea el **WeekLog** (my-week) + WorkoutSessions desde el snapshot IA. Solo permitido si el usuario **no tiene semana activa** (`ConflictException` si existe). `WeekLog.planId = null`. |
-| `CREATE_ROUTINE_PLAN` | Crea el template **RoutinePlan** + 7 `RoutineDay` (sin pesos), con `isAiGenerated: true`, `createdBy = userId` y `generatedFromPlanId`. Privado del creador. |
-| `ADAPT_ACTIVE_WEEK` | Reservado (stub): lanza `NotImplementedException`. |
-
-**Qué hace en común:**
-
-1. Busca el plan por `_id` y `userId` (scope por usuario).
-2. Rechaza doble confirmación de forma atómica (`confirmed: false` en la condición del update).
-3. Re-resuelve los nombres de ejercicios contra el catálogo vigente al confirmar (`PlanMaterializerService`).
-4. Marca `confirmed: true`, `status: ACTIVE`, guarda `confirmedAction` y el id del artefacto creado (`resultingWeekLogId` / `resultingRoutinePlanId`).
-5. Audita `TRAINING_PLAN_CONFIRMED`.
-6. Devuelve `ConfirmPlanOutput { trainingPlan, weekLog?, routinePlan? }`.
-
-**Flujo del cliente:**
+## Pipeline real
 
 ```
-generatePlan → TrainingPlan (confirmed:false) → usuario revisa → confirmPlan(id, action)
+generatePlan(comment)
+  └─ TrainingPlanService.generate(userId, comment)     [lock userId+comment]
+       └─ PlanGeneratorService.generatePlan(userId, comment)   [lock userId]
+            ├─ PlanValidatorService.validate(userId)   → valida perfil completo
+            ├─ UserProfileService.getFullProfileContext(userId) → 8 sub-docs
+            ├─ buildUserContextForAI(profile)          → JSON para el prompt
+            ├─ GoalModel.create({ contextSnapshot })   → snapshot del objetivo
+            ├─ ExerciseService.findAll()                → catálogo completo
+            ├─ PlanMaterializerService.buildUniqueCatalogNames(exercises)
+            │        → nombres ÚNICOS (sin ids ni categorías) para el prompt
+            ├─ buildPlanPrompts(aiContext, exerciseNames, comment)
+            │        → systemPrompt + userPrompt (+ comment del usuario)
+            ├─ AiService.executePrompt({ provider, system, user, userId })
+            │        → rate limit + retry/backoff (ver README de ai/)
+            ├─ PlanGeneratorParser.parseWithRawJson(rawContent)
+            │        → ParsedPlan { title, focus, durationWeeks, daysPerWeek, days[7] }
+            ├─ PlanMaterializerService.materializeWeekLog(userId, parsedPlan)
+            │        → resuelve nombres → ids reales (capas exact/folded/subset/levenshtein)
+            │        → construye WeekLogDomain + WorkoutSessions EN MEMORIA (startDate=hoy)
+            └─ persiste TrainingPlan { status: draft, confirmed: false, aiSnapshot }
 ```
 
-**GraphQL:**
-
-```graphql
-mutation ConfirmPlan($id: String!, $action: PlanConfirmationAction!) {
-  confirmPlan(id: $id, action: $action) {
-    trainingPlan {
-      id
-      confirmed
-      confirmedAction
-      resultingWeekLogId
-      resultingRoutinePlanId
-    }
-    weekLog {
-      id
-      startDate
-      days { order isRest workoutSessionId }
-    }
-    routinePlan {
-      id
-      name
-      isAiGenerated
-      generatedFromPlanId
-      routineDays { id title exercises { exercise { id name } } }
-    }
-  }
-}
-```
-
-**Errores posibles:**
-
-- `404 Not Found` — TrainingPlan no encontrado (ID inválido o no pertenece al usuario)
-- `409 Conflict` — El plan ya fue confirmado
-- `409 Conflict` — Acción `CREATE_WEEK_LOG` con semana activa existente
-- `501 Not Implemented` — Acción `ADAPT_ACTIVE_WEEK`
-- `400 Bad Request` — Snapshot sin ejercicios para crear rutina
-
-> **Nota:** los planes IA se materializan contra el catálogo al momento de confirmar. Si un ejercicio fue renombrado/eliminado del catálogo después de generar el plan, la confirmación fallará con `AI_UNKNOWN_EXERCISE_NAME`.
+**`confirmPlan(id, action)`**:
+1. Busca el plan por `_id` + `userId` (scope por usuario).
+2. Rechaza doble confirmación **atómica** (`findOneAndUpdate({ confirmed: false })`).
+3. Recupera el `ParsedPlan` desde `plan.aiSnapshot.rawResponse` (lo re-parsea y re-valida).
+4. Re-materializa contra el **catálogo vigente** al momento de confirmar.
+5. Ejecuta la acción: crea WeekLog o RoutinePlan (ver arriba).
+6. Marca `confirmed: true`, `status: ACTIVE`, `confirmedAction` y el link del artefacto creado (`resultingWeekLogId` / `resultingRoutinePlanId`).
+7. Audita `TRAINING_PLAN_CONFIRMED`.
 
 ---
 
-## Queries
+## Patrón reutilizable: "módulo de generación con IA"
 
-### `trainingPlans`
+Esta es la plantilla que conviene replicar en futuros módulos de generación (plans multi-semana, DayLog, etc.):
 
-Devuelve los planes del usuario autenticado con **paginación numerada** (offset/limit), ordenados por `createdAt` descendente.
+| Etapa | Pieza | TrainingPlan actual |
+|---|---|---|
+| 1. Validar entrada | `PlanValidatorService` | Valida perfil + objetivo + horario (campos `missing` bloquean; `recommended` no) |
+| 2. Snapshot de entrada | modelo `Goal` | `GoalModel.create({ contextSnapshot })` para auditoría |
+| 3. Construir prompt | `buildPlanPrompts` | Contexto + catálogo de nombres únicos + `comment` |
+| 4. Llamada a la IA | `AiService.executePrompt` | Único punto de llamada al LLM (rate limit + retry) |
+| 5. Parsear | `PlanGeneratorParser` | JSON validado (7 días, estructura tipada), errores con `AI_MALFORMED_JSON` |
+| 6. Resolver/Materializar | `PlanMaterializerService` | Nombres IA → ids reales; descarte de irresolubles; build de entidades en memoria |
+| 7. Persistir borrador | `TrainingPlan` | `status: draft`, `confirmed: false`, con `aiSnapshot` |
+| 8. Confirmar | `ConfirmPlanService` | Acción elegida; `findOneAndUpdate({ confirmed:false })` atómico |
 
-| Argumento | Tipo | Default | Descripción |
-|-----------|------|---------|-------------|
-| `limit` | `Int` | `5` | Cantidad de planes por página |
-| `offset` | `Int` | `0` | Desplazamiento (`(page - 1) * limit`) |
+**Contrato `aiSnapshot`** (fuente de verdad para confirmar). Guía lo que se envió/resolvió:
+`contextSentToAI`, `promptUsed`, `modelUsed`, `rawResponse` (el JSON crudo), `tokensUsed`, `generatedAt`.
 
-Retorna un objeto `TrainingPlanPage`: `items[]`, `total`, `limit`, `offset`, `totalPages`.
+**Taxonomía de errores** (`AI_CAUSE`): `AI_PROVIDER_ERROR`, `AI_MALFORMED_JSON`, `AI_EMPTY_RESPONSE`, `AI_UNKNOWN_EXERCISE_NAME`, `RATE_LIMIT_EXCEEDED`.
 
-```graphql
-query GetTrainingPlans($limit: Int!, $offset: Int!) {
-  trainingPlans(limit: $limit, offset: $offset) {
-    items {
-      id
-      title
-      focus
-      status
-      confirmed
-      durationWeeks
-      trainingDaysPerWeek
-      createdAt
-    }
-    total
-    limit
-    offset
-    totalPages
-  }
-}
-```
-
-**Cálculo de páginas:** `page 1 → offset 0`, `page 2 → offset = limit`, `page N → offset = (N - 1) * limit`. Total de páginas: `totalPages = Math.ceil(total / limit)`.
-
-### `trainingPlan(id: String)`
-
-Devuelve un plan específico por ID.
-
-```graphql
-query GetTrainingPlan($id: String!) {
-  trainingPlan(id: $id) {
-    id
-    title
-    description
-    focus
-    status
-    confirmed
-    startDate
-    endDate
-    durationWeeks
-    trainingDaysPerWeek
-    tags
-    aiSnapshot {
-      modelUsed
-      tokensUsed
-    }
-  }
-}
-```
+Puntos que un módulo nuevo debería replicar: un validator, un prompt builder, un parser, un materializer, **locks de idempotencia** (en memoria por `userId` y por `userId+comment`) y **confirmación atómica**.
 
 ---
 
-## Otras Mutations
+## Arquitectura por archivo
 
-```graphql
-mutation CreateTrainingPlan($input: CreateTrainingPlanInput!) {
-  createTrainingPlan(createTrainingPlanInput: $input) {
-    id
-    title
-  }
-}
-
-mutation UpdateTrainingPlan($input: UpdateTrainingPlanInput!) {
-  updateTrainingPlan(updateTrainingPlanInput: $input) {
-    id
-    title
-  }
-}
-
-mutation RemoveTrainingPlan($id: String!) {
-  removeTrainingPlan(id: $id) {
-    id
-  }
-}
 ```
+src/modules/training-plan/
+├── training-plan.module.ts            # Wiring del módulo (exports ConfirmPlanService)
+├── training-plan.resolver.ts          # Queries/Mutations GraphQL (guard JWT)
+├── training-plan.service.ts           # Facade: generate (lock userId+comment) + findAll/findOne/update/remove
+├── schema/
+│   ├── training-plan.schema.ts        # TrainingPlan + enums (PlanStatus, PlanFocus, PlanConfirmationAction)
+│   │                                  #   + normalizePlanFocus() (mapeo legacy)
+│   └── ai-snapshot.schema.ts          # AiSnapshot embebido (contexto/prompt/modelo/raw/tokens)
+├── entities/                          # Tipos GraphQL de salida (TrainingPlan, AiSnapshot, Goal...)
+├── dto/
+│   └── update-training-plan.input.ts  # Único input CRUD (autocontenido); sin create-training-plan.input
+├── plan-validator/
+│   └── plan-validator.service.ts      # Valida perfil completo; devuelve missing/recommended
+├── plan-generator/
+│   ├── plan-generator.service.ts      # Lock userId; orquesta validación→prompt→IA→parse→materialize
+│   ├── plan-generator.prompt.ts       # buildPlanPrompts(aiContext, exerciseNames, comment)
+│   ├── plan-generator.parser.ts       # parseWithRawJson → ParsedPlan (7 días) + rawJson; AI_MALFORMED_JSON
+│   └── plan-generator.parser.spec.ts / prompt.spec.ts / service.spec.ts
+├── plan-materializer/
+│   └── plan-materializer.service.ts   # buildUniqueCatalogNames + resolveAgainstCatalog
+│                                      #   + materializeWeekLog (capas exact/folded/subset/levenshtein)
+└── plan-confirmation/
+    ├── confirm-plan.service.ts        # confirm(userId, id, action) → materializa + marca confirmed atómico
+    └── entities/confirm-plan.output.entity.ts
+```
+
+**Locks de idempotencia (single-node):**
+- `TrainingPlanService.generating` — key `userId::comment` → deduplica la **persistencia** del plan.
+- `PlanGeneratorService.inFlight` — key `userId` → deduplica la **llamada a la IA** (mismo comment devuelve el mismo resultado; comment distinto lanza `ConflictException`).
 
 ---
 
-## Arquitectura del Plan Generator
+## API GraphQL
 
 ```
-PlanGeneratorService
-  ├─ PlanValidatorService.validate()    → valida perfil completo
-  ├─ ExerciseService.findAll()          → catálogo de exercises
-  ├─ UserProfileService                 → contexto del usuario
-  ├─ Goal model.create()                → snapshot de auditoría
-  ├─ buildPlanPrompts(ctx, exercises)   → systemPrompt + userPrompt
-  │    ├─ systemPrompt: rol + estructura JSON esperada (days[])
-  │    └─ userPrompt: datos usuario + consideraciones + catálogo exercises
-  ├─ AiService.executePrompt()          → rawContent (JSON)
-  ├─ PlanGeneratorParser.parse()        → ParsedPlan { days: ParsedDay[] }
-  │    ├─ validate(): 7 días, order/isRest/exerciseId
-  │    └─ normalize(): estructura tipada (durationWeeks min 1)
-  └─ buildWeekLogFromPlan()             → WeekLogDomain + WorkoutSessionCreationData[]
-       ├─ startDate = hoy (LocalDate)
-       ├─ endDate = hoy + 6 días
-       ├─ days[0-6]: WeekLogDayDomain con dates UTC
-       └─ sessions: WorkoutSessionCreationData para días no-rest
-
-TrainingPlanService.generate()
-  ├─ PlanGeneratorService.generatePlan() → result (goalId, userProfileId, aiSnapshot, weekLog, metadata)
-  └─ trainingPlanModel.create()          → TrainingPlan persistido (confirmed: false)
+TrainingPlan:
+  generatePlan(comment: String) -> TrainingPlan          # genera borrador IA (draft, confirmed:false)
+  confirmPlan(id: String!, action: PlanConfirmationAction) -> ConfirmPlanOutput
+  trainingPlans(limit: Int, offset: Int) -> TrainingPlanPage
+  trainingPlan(id: String!) -> TrainingPlan
+  updateTrainingPlan(updateTrainingPlanInput) -> TrainingPlan
+  removeTrainingPlan(id: String!) -> TrainingPlan        # única vía de borrado
 ```
 
-**Nota:** El WeekLog y las WorkoutSessions se construyen en memoria dentro del PlanGeneratorService. Se persisten como parte del TrainingPlan. La confirmación del plan (`confirmPlan`) es el paso siguiente para activarlo.
+**`PlanFocus`**: `fat_loss | muscle_gain | strength | endurance | maintenance | recomp`
+**`PlanConfirmationAction`**: `create_week_log | create_routine_plan | adapt_active_week`
+
+---
+
+## Detalles clave (corrección de errores históricos del README)
+
+- **La IA devuelve NOMBRES**, no IDs. `PlanMaterializerService` resuelve contra el catálogo real (capas: exact → folded singular/plural → subset tokens → levenshtein con guarda de opuestos). Los nombres irresolubles se **descartan** (la generación continúa); solo falla con 400 (`AI_UNKNOWN_EXERCISE_NAME`) si NINGÚN ejercicio del plan resolvió.
+- **Las entidades se construyen en memoria** en `generate`; se persisten SOLO en `confirmPlan`.
+- **`generatePlan` recibe `comment`** (opcional, se añade al prompt como preferencia adicional del usuario).
+- **`CREATE_ROUTINE_PLAN`** crea `RoutineDay`s **solo para días de entrenamiento** (descarta `isRest` y días sin ejercicios), no 7 días.
+- **`ADAPT_ACTIVE_WEEK`** está reservado (501).
+- En `CREATE_ROUTINE_PLAN`, el `RoutinePlan` creado lleva `isAiGenerated: true` y `generatedFromPlanId`.
+- En `CREATE_WEEK_LOG`, se lanza `ConflictException` si el usuario **ya tiene una semana activa**.
+
+---
+
+## Env vars
+
+Referencia completa y configuración del módulo transversal `ai/` en `documents/config/ai.md`.
+
+---
+
+## Estado y evolución
+
+| Escenario | Estado |
+|---|---|
+| 1 semana por plan | ✅ Actual |
+| N semanas por plan | 🔜 Futuro |
+| `DayLog` como artefacto de confirmación | 🔜 Futuro |
+| Nuevos módulos replicando el esquema 8-etapas | 🔜 Futuro |
+
+> **Nota:** los planes IA se re-materializan contra el catálogo al confirmar. Si un ejercicio fue renombrado/eliminado después de generar, la confirmación puede descartarlo o fallar (ver `AI_UNKNOWN_EXERCISE_NAME`).

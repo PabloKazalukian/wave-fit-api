@@ -8,7 +8,6 @@ import {
 import { PlanConfirmationAction } from './schema/training-plan.schema';
 import { ConfirmPlanOutput } from './plan-confirmation/entities/confirm-plan.output.entity';
 import { ConfirmPlanService } from './plan-confirmation/confirm-plan.service';
-import { CreateTrainingPlanInput } from './dto/create-training-plan.input';
 import { UpdateTrainingPlanInput } from './dto/update-training-plan.input';
 import { extractUserId } from 'src/common/utils/user-id.utils';
 import { GqlAuthGuard } from 'src/modules/auth/guards/gql-auth.guard';
@@ -20,16 +19,6 @@ export class TrainingPlanResolver {
     private readonly trainingPlanService: TrainingPlanService,
     private readonly confirmPlanService: ConfirmPlanService,
   ) {}
-
-  @Mutation(() => TrainingPlan)
-  createTrainingPlan(
-    @Args('createTrainingPlanInput')
-    createTrainingPlanInput: CreateTrainingPlanInput,
-    @Context() context,
-  ) {
-    const userId = extractUserId(context);
-    return this.trainingPlanService.create(createTrainingPlanInput, userId);
-  }
 
   @Query(() => TrainingPlanPage, { name: 'trainingPlans' })
   findAll(
@@ -97,14 +86,5 @@ export class TrainingPlanResolver {
   ) {
     const userId = extractUserId(context);
     return this.confirmPlanService.confirm(userId, id, action);
-  }
-
-  @Mutation(() => TrainingPlan, { name: 'removePlan' })
-  async removePlan(
-    @Args('id', { type: () => String }) id: string,
-    @Context() context,
-  ) {
-    const userId = extractUserId(context);
-    return this.trainingPlanService.remove(id, userId);
   }
 }

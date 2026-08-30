@@ -12,7 +12,6 @@ describe('TrainingPlanResolver', () => {
   const PLAN_ID = '64f000000000000000000010';
 
   const trainingPlanServiceMock = {
-    create: jest.fn(),
     findAll: jest.fn(),
     findOne: jest.fn(),
     update: jest.fn(),

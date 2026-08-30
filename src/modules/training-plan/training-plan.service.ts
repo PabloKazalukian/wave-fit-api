@@ -1,7 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { CreateTrainingPlanInput } from './dto/create-training-plan.input';
 import { UpdateTrainingPlanInput } from './dto/update-training-plan.input';
 import {
   GeneratePlanResult,
@@ -28,26 +27,6 @@ export class TrainingPlanService {
     private readonly trainingPlanModel: Model<TrainingPlan>,
     private readonly generator: PlanGeneratorService,
   ) {}
-
-  async create(
-    createTrainingPlanInput: CreateTrainingPlanInput,
-    userId: string,
-  ) {
-    const plan = await this.trainingPlanModel.create({
-      userId: new Types.ObjectId(userId),
-      title: createTrainingPlanInput.title,
-      focus: createTrainingPlanInput.focus,
-      startDate: createTrainingPlanInput.startDate
-        ? new Date(createTrainingPlanInput.startDate)
-        : new Date(),
-      endDate: new Date(),
-      durationWeeks: createTrainingPlanInput.durationWeeks,
-      trainingDaysPerWeek: createTrainingPlanInput.trainingDaysPerWeek,
-      tags: createTrainingPlanInput.tags ?? [],
-    });
-    plan.focus = normalizePlanFocus(plan.focus as string);
-    return plan;
-  }
 
   async findAll(userId: string, limit: number = 5, offset: number = 0) {
     const userIdObj = new Types.ObjectId(userId);

@@ -12,12 +12,12 @@ export class DayLogResolver {
     return this.dayLogService.create();
   }
 
-  @Query(() => [DayLog], { name: 'dayLog' })
+  @Query(() => [DayLog], { name: 'dayLogFindAll' })
   findAll() {
     return this.dayLogService.findAll();
   }
 
-  @Query(() => DayLog, { name: 'dayLog' })
+  @Query(() => DayLog, { name: 'dayLogFindOne' })
   findOne(@Args('id', { type: () => Int }) id: number) {
     return this.dayLogService.findOne(id);
   }

@@ -4,6 +4,15 @@
 > **Alcance:** `src/modules/ai`, `src/modules/training-plan`, `src/modules/user/user-profile`, `src/modules/routines/tracking/week-log`
 > **Criterio:** Todo lo descripto fue verificado contra el código real. Nada es asumido.
 
+> ## ✅ Estado 2026-08-29 (actualización posterior a la implementación)
+>
+> Este documento es un **histórico trazable** de la revisión original. Todos los puntos fueron abordados en la implementación posterior. La **fuente vigente** es:
+> - Generación de planes: `src/modules/training-plan/README.md`
+> - Capa transversal de IA (rate limit, retry): `src/modules/ai/README.md`
+> - Config general: `documents/config/ai.md`
+>
+> Resumen del estado real por punto: **ver tabla del Resumen ejecutivo abajo.**
+
 ## Flujo actual de generación (contexto)
 
 ```
@@ -28,14 +37,14 @@ TrainingPlanResolver.generatePlan (comment)
 
 ## Resumen ejecutivo
 
-| # | Punto | Estado |
-|---|-------|--------|
-| 1 | Idempotencia en generación | ❌ No implementado |
-| 2 | Validación en modificación de plan | ⚠️ Parcial |
-| 3 | Logging de causa de fallo | ⚠️ Parcial |
-| 4 | Rate limit por usuario | ❌ No implementado |
-| 5 | Flag de origen AI vs MANUAL | ❌ No implementado |
-| 6 | Manejo de fallos de Groq (retry/backoff/timeout) | ❌ No implementado |
+| # | Punto | Estado original (2026-08-21) | Estado real 2026-08-29 |
+|---|-------|------------------------------|------------------------|
+| 1 | Idempotencia en generación | ❌ No implementado | ✅ Resuelto: `generating` (userId+comment) en `TrainingPlanService` + `inFlight` (userId) en `PlanGeneratorService` |
+| 2 | Validación en modificación de plan | ⚠️ Parcial | ⚠️ Parcial: el materializer valida/descarta nombres contra el catálogo real; sigue pendiente `@Max` de longitud en `comment` |
+| 3 | Logging de causa de fallo | ⚠️ Parcial | ✅ Resuelto: Loggers + audit + contenido crudo truncado (500 chars) en JSON inválido |
+| 4 | Rate limit por usuario | ❌ No implementado | ✅ Resuelto: `AiUsage` + `AiRateLimitService` (fixed window UTC, upsert atómico, 429) |
+| 5 | Flag de origen AI vs MANUAL | ❌ No implementado | ✅ Resuelto por diseño: ruta manual **eliminada**; `TrainingPlan` es solo-IA (`aiSnapshot` requerido). `RoutinePlan` mantiene `isAiGenerated` |
+| 6 | Manejo de fallos de Groq (retry/backoff/timeout) | ❌ No implementado | ✅ Resuelto: loop externo con presupuesto global + `maxRetries:0` en el SDK |
 
 ---
 

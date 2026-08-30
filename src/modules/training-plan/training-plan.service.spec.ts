@@ -65,51 +65,6 @@ describe('TrainingPlanService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('create', () => {
-    const baseInput = {
-      title: 'PPL Verano',
-      focus: 'muscle_gain',
-      durationWeeks: 8,
-      trainingDaysPerWeek: 6,
-    } as any;
-
-    it('crea el plan con valores por defecto de fechas y tags', async () => {
-      const created = makePlan({ focus: 'hypertrophy' });
-      trainingPlanModelMock.create.mockResolvedValue(created);
-
-      const result = await service.create(baseInput, USER_ID);
-
-      expect(trainingPlanModelMock.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          title: 'PPL Verano',
-          tags: [],
-        }),
-      );
-      const args = trainingPlanModelMock.create.mock.calls[0][0];
-      expect(args.startDate).toBeInstanceOf(Date);
-      expect(args.endDate).toBeInstanceOf(Date);
-      expect(result.focus).toBe('muscle_gain');
-    });
-
-    it('usa la startDate provista y normaliza el focus legacy', async () => {
-      const created = makePlan({ focus: 'hypertrophy' });
-      trainingPlanModelMock.create.mockResolvedValue(created);
-
-      await service.create(
-        { ...baseInput, startDate: '2026-02-01', tags: ['ppl'] } as any,
-        USER_ID,
-      );
-
-      expect(trainingPlanModelMock.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          startDate: new Date('2026-02-01'),
-          tags: ['ppl'],
-        }),
-      );
-      expect(created.focus).toBe('muscle_gain');
-    });
-  });
-
   describe('findAll', () => {
     it('pagina, cuenta y normaliza el focus de cada plan', async () => {
       const plans = [makePlan(), makePlan({ focus: 'sport_specific' })];

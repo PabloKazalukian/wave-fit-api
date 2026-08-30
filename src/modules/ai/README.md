@@ -1,151 +1,82 @@
-# AI Module — Generación de Planes de Entrenamiento
+# AI Module — Capa transversal de acceso al LLM
 
-## Contexto
+> Este módulo es una **capa transversal** (no un dominio): expone el único punto de llamada al LLM (`AiService.executePrompt`), rate limit por usuario, reintentos con presupuesto y auditoría. Lo consumen módulos de generación como `training-plan`. La documentación de generación de planes vive en `src/modules/training-plan/README.md` y `documents/config/ai.md`.
 
-Este módulo expone el servicio `AiService` con el patrón **Provider** (LangChain). Actualmente solo existe el provider **Groq** (`llama-3.3-70b-versatile`). La conexión con `training-plan` ya está armada a nivel de módulo; falta implementar la lógica de generación con IA y la creación posterior de WeekLogs.
+## Rol
 
----
+`AiService.executePrompt()` es el **único punto de llamada al LLM** del proyecto. Orquesta:
 
-## Diagnóstico Actual (Junio 2026)
+1. **Rate limit** por usuario (fixed window diario UTC) antes de invocar el modelo.
+2. Resolución del **proveedor** desde el registry `'AI_PROVIDERS'` (patrón estrategia).
+3. Armado de mensajes LangChain (`SystemMessage` + `HumanMessage`).
+4. **Reintentos** de errores transitorios con backoff y **presupuesto global** de tiempo.
+5. **Auditoría** (`AI_PROMPT_EXECUTED`) y logging de causa/duration/tokens.
 
-| Componente | Estado |
-|---|---|
-| `AiService.executePrompt()` | ✅ Funciona con Groq |
-| `GroqProvider` | ✅ Configurado con `.env` |
-| `PlanGeneratorService.generatePlan()` | ⚠️ Parcial (sin validación ni WeekLogs) |
-| `TrainingPlan Schema` (MongoDB) | ✅ Completo |
-| `TrainingPlan` Entity/DTOs (GraphQL) | ❌ Placeholders |
-| `plan-generator.prompt.ts` | ❌ Vacío (0 bytes) |
-| `plan-generator..parser.ts` | ❌ Vacío + typo en nombre |
-| `UserProfileService.getFullProfileContext()` | ✅ Trae todos los 8 sub-schemas |
-| `buildUserContextForAI()` | ✅ Transforma datos para IA |
-| `WeekLog` (hexagonal completo) | ✅ Usable desde otros módulos |
+```ts
+const { rawContent, modelUsed, promptUsed, tokensUsed } =
+  await aiService.executePrompt({
+    providerName: 'groq',
+    systemPrompt,
+    userPrompt,
+    userId, // opcional: si se pasa, aplica rate limit por usuario
+  });
+```
 
-### Gaps
+## Proveedores (`AI_PROVIDERS`)
 
-1. `PlanGeneratorService` usa `getFullLlmContext()` (5/8 sub-documentos) en vez de `getFullProfileContext()` (8/8)
-2. No hay validación de campos mínimos requeridos
-3. No hay prompt real (archivos vacíos)
-4. No se crean WeekLogs tras generar el plan
-5. Resolver/Service/DTOs son placeholders
+- Interfaz `IAiProvider { name: string; getModel(): BaseChatModel }` en `interfaces/ai-proider.interface.ts`.
+- Registro vía token `'AI_PROVIDERS'` (un `Map<name, provider>`) construido en `ai.module.ts` (patrón estrategia; exportado para los consumidores).
+- Hoy solo existe **`GroqProvider`** (`name = 'groq'`):
+  - Modelo: `openai/gpt-oss-120b`
+  - `temperature: 0`, `reasoningEffort: 'low'`
+  - `maxTokens` desde `AI_MAX_OUTPUT_TOKENS` (default 5000)
+  - `timeout` desde `AI_CALL_TIMEOUT_MS` (default 45000)
+  - `maxRetries: 0` — **la única capa de reintentos vive en `AiService`** (no en el SDK).
+  - Añadir un provider nuevo = implementar `IAiProvider`, registrarlo en `ai.module.ts`.
 
----
+## Rate limit
 
-## Campos Mínimos Requeridos
+- Colección `ai_usage` (`schemas/ai-usage.schema.ts`): `userId`, `windowStart`, `count`.
+  - Índice único `{ userId, windowStart }` → **una ventana por usuario y día**.
+  - Índice **TTL** en `windowStart` (2 días) → purga automática.
+- `AiRateLimitService.assertWithinLimit(userId)`:
+  - `findOneAndUpdate({ upsert: true, $inc: { count: 1 } })` **atómico**.
+  - Ante `E11000` (carrera del primer insert) reintenta una vez.
+  - Si `count > limit` → `HttpException 429` con `code: RATE_LIMIT_EXCEEDED`, `limit` y `resetAt`.
+- Límite: `AI_DAILY_LIMIT` (default 10).
+- Exposición **sin** modificar contador: `AiResolver.aiUsageStatus` → `AiUsageStatusOutput { used, limit, remaining, resetAt }`.
 
-### Mínimo indispensable
+## Reintentos (retry/backoff)
 
-Sin estos datos no se puede generar un plan personalizado:
+- **Solo errores transitorios** se reintentan (`transient: true`): network (`E*`/`UND_ERR`), timeout (`ETIMEDOUT`/`ECONNABORTED`/msg timeout), 5xx, `429`, y **respuesta vacía** (`AI_EMPTY_RESPONSE`, incluye modelos de razonamiento que agotan tokens).
+- `AI_MAX_ATTEMPTS` intentos (default 3) dentro de un **presupuesto global** `AI_TOTAL_BUDGET_MS` (default 80000) compartido entre intentos + backoffs. Si el presupuesto no alcanza, se abandona.
+- Backoff: `min(1000 * attempt, 4000) ms`; respeta `Retry-After` (header o mensaje "try again in Xs/ms") en `429`.
+- `maxRetries: 0` en el proveedor → la transparencia total del retry está en `AiService`.
 
-| Esquema | Campos | Razón |
+## Taxonomía de errores y auditoría
+
+`AI_CAUSE` (`ai-error-causes.ts`): `AI_PROVIDER_ERROR`, `AI_MALFORMED_JSON` (usado por parser de training-plan), `AI_EMPTY_RESPONSE`, `AI_UNKNOWN_EXERCISE_NAME` (usado por materializer), `RATE_LIMIT_EXCEEDED`.
+
+Cada llamada registra audit `AI_PROMPT_EXECUTED` (`success: true|false`) con metadata: `provider`, `modelUsed`, `durationMs`, `tokensUsed` (+ `cause`/`httpStatus`/`attempts` en fallos).
+
+## Configuración (env)
+
+| Variable | Default | Descripción |
 |---|---|---|
-| `UserProfile` | `sex`, `birthDate`, `heightCm`, `weightKg` | Biometría base (edad, IMC, BMR) |
-| `UserGoal` | `primaryGoal`, `trainingExperience`, `timelineWeeks` | Objetivo, experiencia y duración |
-| `UserSchedule` | `daysPerWeek`, `sessionDurationMin` | Frecuencia y disponibilidad |
-| `UserHealthConstraint` | (existencia del documento) | Lesiones/restricciones activas |
+| `GROQ_API_KEY` | — | API key de Groq |
+| `PREFERRED_AI_PROVIDER` | `groq` | Proveedor usado por `training-plan` |
+| `AI_DAILY_LIMIT` | `10` | Máx. llamadas IA por usuario/día UTC |
+| `AI_CALL_TIMEOUT_MS` | `45000` | Timeout por intento del cliente ChatGroq |
+| `AI_MAX_ATTEMPTS` | `3` | Intentos totales ante fallos transitorios |
+| `AI_TOTAL_BUDGET_MS` | `80000` | Presupuesto global compartido entre intentos |
+| `AI_MAX_OUTPUT_TOKENS` | `5000` | Presupuesto de tokens de salida (evita content vacío) |
 
-### Altamente recomendado (opcional pero valioso)
+## Cómo consumir `AiService` desde un módulo nuevo
 
-| Esquema | Campos |
-|---|---|
-| `UserResource` | `equipment`, `trainingEnvironments` |
-| `UserTrainingPreference` | `preferredStyles`, `intensityPreference`, `dislikedExercises` |
-| `UserStrengthMetric` | Al menos 1 registro (press banca, sentadilla, etc.) |
+1. Importar `AiModule` (exporta `AiService` y `AiRateLimitService`).
+2. Inyectar `AiService`.
+3. Construir `systemPrompt` y `userPrompt` (LangChain messages).
+4. Llamar `executePrompt({ providerName, systemPrompt, userPrompt, userId })`.
+5. Devuelve `{ rawContent, modelUsed, promptUsed, tokensUsed }`; manejar los `AI_CAUSE` según corresponda (p.ej. parsear con un parser propio y lanzar `AI_MALFORMED_JSON` si el JSON no es válido).
 
----
-
-## Flujo Propuesto (2 pasos)
-
-### Paso 1: `generateTrainingPlan` (Mutation)
-
-```
-1. PlanValidator.validate(userId)
-   └─ Si falta data → error con listado de campos faltantes
-2. UserProfileService.getFullProfileContext(userId)
-   └─ Obtiene los 8 sub-documentos (profile, goal, schedule, health, resources, preferences, strengthMetrics, weightLogs)
-3. buildUserContextForAI(data)
-   └─ Transforma a JSON limpio para el prompt
-4. PlanGeneratorPrompt.build(context)
-   └─ Construye system + user prompt según data disponible
-5. AiService.executePrompt({ provider: 'groq', system, user })
-   └─ Llama a Groq, recibe JSON crudo
-6. PlanGeneratorParser.parse(rawResponse)
-   └─ Limpia ```json, valida estructura, mapea ejercicios
-7. TrainingPlanModel.create({ ...plan, status: DRAFT })
-   └─ Guarda borrador con AiSnapshot (contexto enviado + respuesta cruda)
-8. Retorna plan preview (semanas, días, ejercicios + trainingPlanId)
-```
-
-### Paso 2: `confirmTrainingPlan` (Mutation)
-
-```
-1. TrainingPlanService.findOne(trainingPlanId)
-   └─ Verifica que exista y esté en status DRAFT
-2. Por cada semana del plan:
-   a. WeekLogService.create({
-        startDate,     // "yyyy-MM-dd" calculada
-        endDate,       // "yyyy-MM-dd" (startDate + 6 días)
-        timezone,      // del perfil del usuario
-        planId,        // trainingPlanId
-      })
-   └─ Crea el WeekLog + WorkoutSessions a través del CreateWeekLogUseCase
-3. TrainingPlanModel.update({ status: ACTIVE })
-4. Retorna el/los WeekLogs creados
-```
-
-### Diagrama de dependencias
-
-```
-TrainingPlanResolver
-  └─ TrainingPlanService (facade)
-       ├─ PlanValidator → verifica datos mínimos en UserProfile
-       ├─ UserProfileService.getFullProfileContext() → obtiene perfil completo
-       ├─ buildUserContextForAI() → transforma a JSON para IA
-       ├─ PlanGeneratorPrompt.build() → arma prompts
-       ├─ AiService.executePrompt() → llama a Groq
-       ├─ PlanGeneratorParser.parse() → procesa respuesta
-       ├─ TrainingPlanModel → guarda borrador (DRAFT)
-       └─ WeekLogService.create() → crea WeekLogs al confirmar
-```
-
----
-
-## Responsabilidad de Módulos
-
-| Módulo | Responsabilidad |
-|---|---|
-| **AI** | Proveer `AiService` con providers (Groq, etc.). No sabe de dominios. |
-| **TrainingPlan** | Orquestar la generación (validación → IA → borrador → confirmación). Depende de AI + UserProfile + WeekLog. |
-| **UserProfile** | Exponer datos del usuario. No sabe de planes ni IA. |
-| **WeekLog** | Crear y gestionar WeekLogs + WorkoutSessions. El training-plan lo invoca, no duplica su lógica. |
-
----
-
-## Archivos a Modificar/Crear
-
-### TrainingPlan Module (`src/modules/training-plan/`)
-
-| Archivo | Acción |
-|---|---|
-| `plan-validator.service.ts` | **Crear** — Validación de campos mínimos |
-| `plan-generator.prompt.ts` | **Implementar** — Builder de prompts |
-| `plan-generator.parser.ts` | **Crear** (renombrar, eliminar typo) — Parser de respuesta JSON |
-| `plan-generator.service.ts` | **Actualizar** — Usar `getFullProfileContext`, integrar validator/prompt/parser |
-| `training-plan.service.ts` | **Implementar** — Lógica real CRUD + confirmPlan |
-| `training-plan.resolver.ts` | **Implementar** — Mutaciones reales (generate, confirm, CRUD) |
-| `dto/create-training-plan.input.ts` | **Implementar** — Input real |
-| `dto/confirm-training-plan.input.ts` | **Crear** — Input para confirmación |
-| `entities/training-plan.entity.ts` | **Implementar** — GraphQL output type real |
-
-### AI Module (`src/modules/ai/`)
-
-| Archivo | Acción |
-|---|---|
-| `README.md` | ✅ Este archivo |
-| *(ningún cambio necesario)* | El módulo ya está completo |
-
-### UserProfile Module
-
-| Archivo | Acción |
-|---|---|
-| *(ningún cambio necesario)* | `getFullContextProfile` + `buildUserContextForAI` ya existen |
+> Detalle de uso en generación de planes: `src/modules/training-plan/README.md` y `documents/config/ai.md`.

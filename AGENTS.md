@@ -29,8 +29,18 @@ src/modules/
 │   ├── local.strategy.ts
 │   ├── guards/
 │   │   └── gql-auth.guard.ts
-│   └── google/              # OAuth Google
-├── user/                    # Gestión usuarios
+│   └── google/              # OAuth Google (loginWithGoogle)
+├── user/                    # Gestión usuarios (+ avatar vía StorageService)
+│   └── user-profile/        # Perfil del usuario (bounded-contexts)
+│       ├── goals/            # ✅ Resolver/Service propios
+│       ├── training-preference/  # ✅ Resolver/Service propios (+ favorites)
+│       ├── weight/           # ✅ Resolver/Service propios
+│       ├── schedule/         # ⚠️ Service migrado (sin resolver propio)
+│       ├── health-constraints/   # ⚠️ Service migrado (sin resolver propio)
+│       ├── resource/         # ⚠️ Service migrado (sin resolver propio)
+│       └── strength-metrics/ # ⚠️ Service migrado (sin resolver propio)
+├── storage/                 # 💾 Utilidad S3 (uploadFile/deleteFile) para avatares.
+│                            #    Resolver/Entity/DTO aún son scaffold placeholder.
 ├── routines/
 │   ├── templates/
 │   │   ├── exercise/        # Catálogo ejercicios
@@ -40,17 +50,24 @@ src/modules/
 │       ├── workout-session/ # Sesiones de entrenamiento
 │       ├── week-log/        # Registro semanal (gestión completa de WS/ES)
 │       ├── day-log/         # Día suelto de entrenamiento (scaffold)
-│       └── extra-session/   # Sesiones extras
+│       ├── extra-session/   # Sesiones extras
+│       └── training-history/# ✅ Calendario de entrenamiento (trainingCalendar)
 ├── ai/                       # IA: proveedores LLM (Groq), rate limit, retry/backoff
 ├── training-plan/            # Planes de entrenamiento generados con IA (generatePlan/confirmPlan)
-├── stats/                    # Métricas y estadísticas (placeholder)
+├── stats/                    # Métricas y estadísticas (experimental, hexagonal, fuera de tests)
 └── audit-logs/              # Registro cambios en DB
+
+src/common/common.resolver.ts  # Query `warmup` (ping anti-sleep)
+```
+
+**Leyenda:** ✅ implantado · ⚠️ parcial/pendiente · 💾 utilidad interna.
 
 ---
 
 ## 4. Arquitectura
 
 ### Flujo de datos
+
 ```
 Resolver → Service → Schema (MongoDB)
            ↓
@@ -176,26 +193,50 @@ export class UserResolver {
 
 ## 9. Rutas GraphQL
 
+Vista resumida por módulo. Para el detalle completo de una operación (inputs, tipos de retorno) ir al documento de referencia de cada módulo.
+
 ```
+Global:
+  warmup -> String                         # Ping anti-sleep (CommonResolver)
+
 Auth:
   login(identifier, password) -> Boolean
   logout -> Boolean
   me -> User
+  loginWithGoogle(code, codeVerifier) -> GoogleLoginOutput
 
 User:
-  findAll, findOne, create, update, remove
+  createUser, users, user, userName, userEmail, updateUser, removeUser,
+  isEmailAvailable, updateAvatar -> User
+  (avatar: S3 con clave única `avatars/{userId}/avatar-{timestamp}.jpg`)
+
+UserProfile:                              # Ver src/modules/user/user-profile/README.md
+  myProfile, userProfile, userProfileContext, userProfiles,
+  upsertUserProfile, createUserProfile, updateUserProfile,
+  removeUserProfile, removeMyProfileData
+  Sub-módulos (goals, schedule, health-constraints, resource,
+             training-preference, strength-metrics, weight):
+  updateUserGoals, userGoals, updateUserSchedule, userSchedule,
+  updateUserHealthConstraints, userHealthConstraints, updateUserResource,
+  userResource, updateUserTrainingPreference, userTrainingPreference,
+  toggleFavoriteExercise / toggleFavoriteRoutine / toggleFavoriteRoutineDay,
+  createUserStrengthMetric, userStrengthMetrics, removeUserStrengthMetric,
+  createWeightLog, userWeightLogs
 
 Exercise:
-  findAll, findOne, create, update, remove
+  createExercise, exercises, exercise, updateExercise, removeExercise
 
 RoutinePlan:
-  findAll, findOne, create, update, remove, isRoutineTitleAvailable
+  createRoutinePlan, routinePlans, routinePlan, updateRoutinePlan,
+  removeRoutinePlan, isRoutineTitleAvailable
 
 RoutineDay:
-  findAll, findOne, create, update, remove
+  createRoutineDay, routineDays, routineDay, updateRoutineDay, removeRoutineDay,
+  routinesByCategory, createRoutineByWorkout
 
 WorkoutSession:
-  findAll, findOne, create, update, remove
+  createWorkoutSession, workoutSessionFindAll, workoutSessionFindOne,
+  workoutSessionByDate, updateWorkoutSession, removeWorkoutSession
 
 WeekLog:
   createWeekLog, findAll, findOne, activeWeekLog, currentWorkoutSession,
@@ -204,18 +245,34 @@ WeekLog:
   syncWeekLogDays, removeWeekLog
 
 DayLog:
-  createDayLog, dayLog (findAll), dayLog (findOne), updateDayLog, removeDayLog
+  createDayLog, dayLogFindAll, dayLogFindOne, updateDayLog, removeDayLog
 
-Stats:
-  createStat, stats (findAll), stat (findOne), updateStat, removeStat
+ExtraSession:
+  extraSessionCatalog, createExtraSession, extraSessionFindAll, extraSessionFindOne,
+  extraSessionsByIds, extraSessionsByWorkoutSession, updateExtraSession,
+  removeExtraSession -> Boolean
+
+TrainingHistory:
+  trainingCalendar(input: { year, month, timezone? }) -> TrainingCalendarResponse
 
 AI:
   aiUsageStatus -> { used, limit, remaining, resetAt }
 
-TrainingPlan:
-  createTrainingPlan, trainingPlans, trainingPlan, updateTrainingPlan,
-  removeTrainingPlan, generatePlan, confirmPlan, removePlan
+TrainingPlan:                             # Solo-IA. Ver src/modules/training-plan/README.md
+  trainingPlans (paginado), trainingPlan, updateTrainingPlan,
+  removeTrainingPlan, generatePlan, confirmPlan
+
+Stats:                                    # Módulo experimental (hexagonal)
+  Queries (GqlAuthGuard): getTopExercises, getTopRoutines,
+    getPersonalRecords, getAdherence
+  Queries/Mutations (ServiceAuthGuard): getRawDataForWorker,
+    saveTopExercises, saveTopRoutines, savePersonalRecords, saveAdherence
+
+AuditLogs:
+  auditLogs, userAuditLogs
 ```
+
+**Nota de colisiones de nombres GraphQL:** las operaciones findAll/findOne de workout-session, extra-session y day-log **ya no colisionan** (fueron renombradas con `name` overrides: `workoutSessionFindAll/FindOne`, `extraSessionFindAll/FindOne`, `dayLogFindAll/FindOne`). Ver §10.
 
 ---
 
@@ -237,16 +294,24 @@ El proyecto usa el algoritmo de distancia de Levenshtein (`fastest-levenshtein`)
 
 ### Tests Unitarios
 Suite completa verde en `src/`:
-- **46 suites / 240 tests** (tracking, auth, user-profile, templates, etc.)
-- Comando: `npm test` — al filtrar por ruta usar SIEMPRE `npx jest --config jest.config.js <ruta>` (configuración dual de Jest)
+- **59 suites / 586 tests** (tracking, auth, user-profile, templates, ai, training-plan, etc.)
+- Comando: `npm test` (configuración de Jest unificada en `jest.config.js`, única fuente de verdad desde que se retiró el bloque `jest` de `package.json`). Al filtrar por ruta: `npx jest --config jest.config.js <ruta>`.
 - Patrones de mocks documentados en `documents/config/testing.md`
 
 ### Tests End-to-End (E2E)
 Se han implementado tests automatizados que prueban flujos completos:
-- **21 spec files / 112 tests** en `test/e2e/` cubriendo auth, week-log (CRUD, extra-session, workout-session) y user-profile (incluye aislamiento entre usuarios)
+- **23 spec files / 126 tests** en `test/e2e/` cubriendo auth, week-log (CRUD, extra-session, workout-session) y user-profile (incluye aislamiento entre usuarios)
 - Infraestructura: MongoDB en memoria (`mongodb-memory-server`), `supertest`, `cookie-parser`
 - Comando: `npm run test:e2e` (fijado `--maxWorkers=2` por condiciones de carrera con más workers)
 - Documentación detallada: `documents/config/testing.md`
+
+### Colisiones de nombres GraphQL (RESUELTO ✅)
+Las operaciones findAll/findOne de workout-session, extra-session y day-log **compartían el mismo nombre GraphQL** (`workoutSession`, `extraSession`, `dayLog`), por lo que en el schema la segunda ocultaba a la primera. **Corregido** (2026-08-29) renombrando las operaciones con `name` overrides:
+
+- `workoutSession` (findAll/findOne) → `workoutSessionFindAll` / `workoutSessionFindOne`
+- `extraSession` (findAll/findOne) → `extraSessionFindAll` / `extraSessionFindOne`
+- `dayLog` (findAll/findOne) → `dayLogFindAll` / `dayLogFindOne`
+- `removeExtraSession` devuelve `Boolean` (excepción intencionada, se mantiene).
 
 ---
 
@@ -277,8 +342,11 @@ npm run test:e2e     # Tests end-to-end
 | Seed y autoseeding | `documents/config/seed.md` |
 | Tests E2E detallado | `documents/config/testing.md` |
 | Módulo AI y generación de planes | `documents/config/ai.md` |
+| Módulo AI (capa transversal) | `src/modules/ai/README.md` |
+| Módulo TrainingPlan (solo-IA) | `src/modules/training-plan/README.md` |
+| Módulo UserProfile (bounded-contexts) | `src/modules/user/user-profile/README.md` |
 
-> **Importante:** Antes de modificar código de autenticación o tracking, leer los documentos de referencia en `documents/config/`.
+> **Importante:** Antes de modificar código de autenticación, tracking o IA, leer los documentos de referencia.
 
 ---
 
@@ -309,6 +377,8 @@ AI_MAX_OUTPUT_TOKENS=5000 # Presupuesto de tokens de salida (combate content vac
 Permite al usuario crear un día de entrenamiento **sin necesidad de una semana completa**. Ideal para entrenamiento ad-hoc o días sueltos fuera del plan semanal.
 
 ### Estado Actual
+El resolver (`day-log.resolver.ts`) ya expone las operaciones GraphQL (`createDayLog`, `dayLogFindAll`/`dayLogFindOne`, `updateDayLog`, `removeDayLog`), pero internamente delegan en use cases que **retornan placeholders**:
+
 | Capa | Estado |
 |------|--------|
 | `presentation/` | ✅ DTOs y entidad GraphQL definidos |
@@ -355,13 +425,12 @@ Módulo planeado para exponer métricas de entrenamiento del usuario:
 - Definir modelo de datos de métricas
 - Implementar agregaciones sobre WorkoutSession y WeekLog
 - Endpoints para dashboard de progreso
-```
 
 ---
 
 ## 16. AI y Generación de Planes (Implementado)
 
-**Documentación detallada:** `documents/config/ai.md`
+**Documentación canónica:** `src/modules/training-plan/README.md` y `src/modules/ai/README.md` · Detalle transversal en `documents/config/ai.md`
 
 ### Módulo `ai/` (capa transversal)
 - **`AiService.executePrompt()`**: rate limit por usuario → proveedor → reintentos con backoff y presupuesto. Es el único punto de llamada al LLM.

@@ -44,7 +44,7 @@ export class WorkoutSessionResolver {
     return result;
   }
 
-  @Query(() => [WorkoutSession], { name: 'workoutSession' })
+  @Query(() => [WorkoutSession], { name: 'workoutSessionFindAll' })
   findAll(@Context() context) {
     if (!Types.ObjectId.isValid(context?.req?.user?.id)) {
       throw new BadRequestException('Invalid user id');
@@ -52,7 +52,7 @@ export class WorkoutSessionResolver {
     return this.workoutSessionService.findAllByUser(context?.req?.user?.id);
   }
 
-  @Query(() => WorkoutSession, { name: 'workoutSession' })
+  @Query(() => WorkoutSession, { name: 'workoutSessionFindOne' })
   findOne(@Args('id', { type: () => String }) id: string, @Context() context) {
     if (!Types.ObjectId.isValid(context?.req?.user?.id)) {
       throw new BadRequestException('Invalid user id');

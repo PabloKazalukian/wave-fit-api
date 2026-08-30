@@ -41,7 +41,7 @@ export class ExtraSessionResolver {
     );
   }
 
-  @Query(() => [ExtraSession], { name: 'extraSession' })
+  @Query(() => [ExtraSession], { name: 'extraSessionFindAll' })
   findAll(@Context() context) {
     if (!Types.ObjectId.isValid(context?.req?.user?.id)) {
       throw new BadRequestException('Invalid user id');
@@ -49,7 +49,7 @@ export class ExtraSessionResolver {
     return this.extraSessionService.findAllByUser(context?.req?.user?.id);
   }
 
-  @Query(() => ExtraSession, { name: 'extraSession' })
+  @Query(() => ExtraSession, { name: 'extraSessionFindOne' })
   findOne(@Args('id', { type: () => String }) id: string, @Context() context) {
     if (!Types.ObjectId.isValid(context?.req?.user?.id)) {
       throw new BadRequestException('Invalid user id');
