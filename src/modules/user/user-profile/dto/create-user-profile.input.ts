@@ -11,6 +11,7 @@ import {
 
 const GENDER_VALUES = ['M', 'F', 'other'] as const;
 const UNITS_VALUES = ['metric', 'imperial'] as const;
+const DISTRIBUTION_VALUES = ['week_log', 'day_log'] as const;
 
 @InputType()
 export class CreateUserProfileInput {
@@ -49,4 +50,10 @@ export class CreateUserProfileInput {
   @IsString()
   @IsIn(UNITS_VALUES)
   unitsPreference?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  @IsIn(DISTRIBUTION_VALUES)
+  distributionDays?: string;
 }

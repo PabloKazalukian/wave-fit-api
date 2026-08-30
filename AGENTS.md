@@ -214,6 +214,8 @@ UserProfile:                              # Ver src/modules/user/user-profile/RE
   myProfile, userProfile, userProfileContext, userProfiles,
   upsertUserProfile, createUserProfile, updateUserProfile,
   removeUserProfile, removeMyProfileData
+  (campo `distributionDays`: week_log|day_log, default week_log, gate blando;
+   backfill one-time en bootstrap — Fase A day-log)
   Sub-módulos (goals, schedule, health-constraints, resource,
              training-preference, strength-metrics, weight):
   updateUserGoals, userGoals, updateUserSchedule, userSchedule,
@@ -294,7 +296,7 @@ El proyecto usa el algoritmo de distancia de Levenshtein (`fastest-levenshtein`)
 
 ### Tests Unitarios
 Suite completa verde en `src/`:
-- **59 suites / 586 tests** (tracking, auth, user-profile, templates, ai, training-plan, etc.)
+- **59 suites / 589 tests** (tracking, auth, user-profile, templates, ai, training-plan, etc.)
 - Comando: `npm test` (configuración de Jest unificada en `jest.config.js`, única fuente de verdad desde que se retiró el bloque `jest` de `package.json`). Al filtrar por ruta: `npx jest --config jest.config.js <ruta>`.
 - Patrones de mocks documentados en `documents/config/testing.md`
 
@@ -386,6 +388,14 @@ El resolver (`day-log.resolver.ts`) ya expone las operaciones GraphQL (`createDa
 | `application/validators/` | ✅ Validator stub creado |
 | `domain/` | ❌ Vacío (sin entidades ni interfaces) |
 | `infrastructure/` | ❌ Vacío (sin schema ni repositorio) |
+
+### Fase A (day-log) — activación de `distributionDays` ✅ (rama `feat/day-log`)
+- Enum normalizado en `user-profile.schema.ts`: `WEEK='week_log'` | `DAY='day_log'` (default `week_log`).
+- Expuesto en entidad GraphQL `UserProfile`, DTOs create/update y persistido en service.
+- **Backfill one-time** en `UserProfileService.onApplicationBootstrap` (normaliza legacy `'Week-log'`/`'Day-log'`/`WEKK`/`DAY`, idempotente).
+- Incluido en el contexto IA (`buildUserContextForAI` → `ctx.distributionDays`).
+- **Gate blando**: solo sugiere default en el front; no bloquea la creación del otro tipo.
+- Tests: +5 (create/update/backfill) → suite unit 59 suites / 589 tests, e2e 23/126 verdes.
 
 ### Próximos Pasos
 1. Definir entidad de dominio `DayLogDomain` e interfaz `IDayLogRepository`

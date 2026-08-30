@@ -13,8 +13,8 @@ export enum UnitsPreference {
 }
 
 export enum DistributionDays {
-  WEKK = 'Week-log',
-  DAY = 'Day-log',
+  WEEK = 'week_log',
+  DAY = 'day_log',
 }
 
 @Schema({ timestamps: true })
@@ -46,7 +46,7 @@ export class UserProfile extends Document {
   @Prop({
     type: String,
     enum: DistributionDays,
-    default: DistributionDays.WEKK,
+    default: DistributionDays.WEEK,
   })
   distributionDays: DistributionDays;
 
