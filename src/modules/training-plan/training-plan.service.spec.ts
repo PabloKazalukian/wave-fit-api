@@ -4,6 +4,7 @@ import { NotFoundException } from '@nestjs/common';
 import { TrainingPlanService } from './training-plan.service';
 import { TrainingPlan, PlanStatus } from './schema/training-plan.schema';
 import { PlanGeneratorService } from './plan-generator/plan-generator.service';
+import { PlanModifierService } from './plan-modifier/plan-modifier.service';
 
 describe('TrainingPlanService', () => {
   let service: TrainingPlanService;
@@ -19,6 +20,10 @@ describe('TrainingPlanService', () => {
 
   const planGeneratorServiceMock = {
     generatePlan: jest.fn(),
+  };
+
+  const planModifierServiceMock = {
+    modifyPlan: jest.fn(),
   };
 
   const USER_ID = '507f1f77bcf86cd799439011';
@@ -54,6 +59,10 @@ describe('TrainingPlanService', () => {
         {
           provide: PlanGeneratorService,
           useValue: planGeneratorServiceMock,
+        },
+        {
+          provide: PlanModifierService,
+          useValue: planModifierServiceMock,
         },
       ],
     }).compile();
@@ -213,6 +222,77 @@ describe('TrainingPlanService', () => {
       expect(planGeneratorServiceMock.generatePlan).toHaveBeenCalledWith(
         USER_ID,
         'quiero más volumen',
+      );
+    });
+  });
+
+  describe('modify', () => {
+    const startDate = new Date('2026-01-05T00:00:00Z');
+
+    const modifyResult = {
+      weekLog: { startDate },
+      userProfileId: '64f000000000000000000001',
+      goalId: '64f000000000000000000002',
+      metadata: {
+        title: 'PPL Modificado',
+        focus: 'muscle_gain',
+        durationWeeks: 8,
+        daysPerWeek: 6,
+      },
+      aiSnapshot: { promptUsed: 'y', rawContent: 'z' },
+    } as any;
+
+    const withQueryMock = (resolveValue: any) => ({
+      exec: jest.fn().mockResolvedValue(resolveValue),
+    });
+
+    it('modifica el MISMO documento, incrementa version y actualiza aiSnapshot', async () => {
+      trainingPlanModelMock.findOne.mockReturnValue(
+        withQueryMock(makePlan({ confirmed: false, version: 2, aiSnapshot: { rawResponse: {} } })),
+      );
+      planModifierServiceMock.modifyPlan.mockResolvedValue(modifyResult);
+
+      const updatedPlan = makePlan({
+        focus: 'muscle_gain',
+        version: 3,
+        aiSnapshot: modifyResult.aiSnapshot,
+      });
+      trainingPlanModelMock.findOneAndUpdate.mockReturnValue(
+        withQueryMock(updatedPlan),
+      );
+
+      const result = await service.modify(USER_ID, PLAN_ID, 'cambia el día 2');
+
+      expect(planModifierServiceMock.modifyPlan).toHaveBeenCalledWith(
+        USER_ID,
+        expect.objectContaining({ _id: PLAN_ID }),
+        'cambia el día 2',
+      );
+
+      const setArgs = trainingPlanModelMock.findOneAndUpdate.mock.calls[0][1]
+        .$set;
+      expect(setArgs.title).toBe('PPL Modificado');
+      expect(setArgs.aiSnapshot).toBe(modifyResult.aiSnapshot);
+      expect(setArgs.version).toBe(3);
+      expect(result.focus).toBe('muscle_gain');
+    });
+
+    it('lanza ConflictException si el plan ya fue confirmado', async () => {
+      trainingPlanModelMock.findOne.mockReturnValue(
+        withQueryMock(makePlan({ confirmed: true })),
+      );
+
+      await expect(service.modify(USER_ID, PLAN_ID, 'cambia')).rejects.toThrow(
+        'El plan ya fue confirmado y no puede modificarse',
+      );
+      expect(planModifierServiceMock.modifyPlan).not.toHaveBeenCalled();
+    });
+
+    it('lanza NotFoundException si el plan no existe o es de otro usuario', async () => {
+      trainingPlanModelMock.findOne.mockReturnValue(withQueryMock(null));
+
+      await expect(service.modify(USER_ID, MISSING_ID, 'cambia')).rejects.toThrow(
+        NotFoundException,
       );
     });
   });

@@ -16,6 +16,7 @@ describe('TrainingPlanResolver', () => {
     findOne: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
+    modify: jest.fn(),
   };
 
   const confirmPlanServiceMock = {
@@ -48,6 +49,23 @@ describe('TrainingPlanResolver', () => {
 
   it('should be defined', () => {
     expect(resolver).toBeDefined();
+  });
+
+  describe('modifyPlan', () => {
+    it('delega en TrainingPlanService.modify con el userId de la cookie', async () => {
+      const plan = { id: PLAN_ID, version: 2 };
+      trainingPlanServiceMock.modify.mockResolvedValue(plan);
+      const context = buildContext();
+
+      const result = await resolver.modifyPlan(PLAN_ID, 'cambia el día 2', context);
+
+      expect(trainingPlanServiceMock.modify).toHaveBeenCalledWith(
+        USER_ID,
+        PLAN_ID,
+        'cambia el día 2',
+      );
+      expect(result).toBe(plan);
+    });
   });
 
   describe('confirmPlan', () => {

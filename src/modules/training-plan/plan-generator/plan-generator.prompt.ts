@@ -3,27 +3,14 @@ export interface BuiltPrompts {
   userPrompt: string;
 }
 
-export function buildPlanPrompts(
-  aiContext: Record<string, unknown>,
-  exerciseNames: string[],
-  comment: string = '',
-): BuiltPrompts {
-  const ctx = aiContext as any;
-
-  const goal = ctx.goal || {};
-  const schedule = ctx.schedule || {};
-  const health = ctx.health || {};
-  const resources = ctx.resources || {};
-  const preferences = ctx.preferences || {};
-  const strengthProfile = ctx.strengthProfile || {};
-
-  const primaryGoal = goal.primary || 'general';
-  const experience = goal.experience || 'intermediate';
-  const timelineWeeks = goal.timelineWeeks || 4;
-  const daysPerWeek = schedule.daysPerWeek || 3;
-  const sessionDurationMin = schedule.sessionDurationMin || 60;
-
-  const systemPrompt = [
+/**
+ * Prompt de sistema reutilizable (reglas del entrenador + estructura JSON de
+ * salida esperada). Compartido entre la generación (`buildPlanPrompts`) y la
+ * modificación (`buildModifyPlanPrompts`) para garantizar un formato de salida
+ * idéntico y parseable por `PlanGeneratorParser`.
+ */
+export function buildPlanSystemPrompt(): string {
+  return [
     'Eres un preparador físico experto con más de 10 años de experiencia.',
     'Tu especialidad es diseñar planes de entrenamiento personalizados',
     'basados en el perfil completo del usuario.',
@@ -79,6 +66,29 @@ export function buildPlanPrompts(
     '- NO inventes nombres ni uses ejercicios fuera del catálogo',
     '- Si el usuario no tiene suficiente equipamiento, adapta los ejercicios a su realidad',
   ].join('\n');
+}
+
+export function buildPlanPrompts(
+  aiContext: Record<string, unknown>,
+  exerciseNames: string[],
+  comment: string = '',
+): BuiltPrompts {
+  const ctx = aiContext as any;
+
+  const goal = ctx.goal || {};
+  const schedule = ctx.schedule || {};
+  const health = ctx.health || {};
+  const resources = ctx.resources || {};
+  const preferences = ctx.preferences || {};
+  const strengthProfile = ctx.strengthProfile || {};
+
+  const primaryGoal = goal.primary || 'general';
+  const experience = goal.experience || 'intermediate';
+  const timelineWeeks = goal.timelineWeeks || 4;
+  const daysPerWeek = schedule.daysPerWeek || 3;
+  const sessionDurationMin = schedule.sessionDurationMin || 60;
+
+  const systemPrompt = buildPlanSystemPrompt();
 
   let userPrompt = [
     `Genera un plan de entrenamiento personalizado para el siguiente usuario:`,

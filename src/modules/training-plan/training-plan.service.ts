@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { UpdateTrainingPlanInput } from './dto/update-training-plan.input';
@@ -6,6 +10,7 @@ import {
   GeneratePlanResult,
   PlanGeneratorService,
 } from './plan-generator/plan-generator.service';
+import { PlanModifierService } from './plan-modifier/plan-modifier.service';
 import {
   TrainingPlan,
   PlanStatus,
@@ -26,6 +31,7 @@ export class TrainingPlanService {
     @InjectModel(TrainingPlan.name)
     private readonly trainingPlanModel: Model<TrainingPlan>,
     private readonly generator: PlanGeneratorService,
+    private readonly modifier: PlanModifierService,
   ) {}
 
   async findAll(userId: string, limit: number = 5, offset: number = 0) {
@@ -143,5 +149,56 @@ export class TrainingPlanService {
 
     plan.focus = normalizePlanFocus(plan.focus as string);
     return plan;
+  }
+
+  /**
+   * Modifica un plan vigente (no confirmado) reenviándolo a la IA con el
+   * comentario de cambio. Sobrescribe el MISMO documento (aiSnapshot, metadatos,
+   * fechas) e incrementa su `version`.
+   */
+  async modify(userId: string, id: string, comment: string): Promise<TrainingPlan> {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new NotFoundException('Training plan not found');
+    }
+
+    const currentPlan = await this.trainingPlanModel
+      .findOne({ _id: new Types.ObjectId(id), userId: new Types.ObjectId(userId) })
+      .exec();
+    if (!currentPlan) throw new NotFoundException('Training plan not found');
+    if (currentPlan.confirmed) {
+      throw new ConflictException('El plan ya fue confirmado y no puede modificarse');
+    }
+
+    const result = await this.modifier.modifyPlan(userId, currentPlan, comment);
+
+    const startDate: Date = result.weekLog.startDate;
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + result.metadata.durationWeeks * 7);
+
+    const updated = await this.trainingPlanModel
+      .findOneAndUpdate(
+        {
+          _id: new Types.ObjectId(id),
+          userId: new Types.ObjectId(userId),
+        },
+        {
+          $set: {
+            title: result.metadata.title,
+            focus: result.metadata.focus,
+            startDate,
+            endDate,
+            durationWeeks: result.metadata.durationWeeks,
+            trainingDaysPerWeek: result.metadata.daysPerWeek,
+            aiSnapshot: result.aiSnapshot,
+            version: (currentPlan.version ?? 1) + 1,
+          },
+        },
+        { new: true },
+      )
+      .exec();
+    if (!updated) throw new NotFoundException('Training plan not found');
+
+    updated.focus = normalizePlanFocus(updated.focus as string);
+    return updated;
   }
 }

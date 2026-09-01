@@ -92,9 +92,13 @@ src/modules/training-plan/
 │   └── plan-validator.service.ts      # Valida perfil completo; devuelve missing/recommended
 ├── plan-generator/
 │   ├── plan-generator.service.ts      # Lock userId; orquesta validación→prompt→IA→parse→materialize
-│   ├── plan-generator.prompt.ts       # buildPlanPrompts(aiContext, exerciseNames, comment)
+│   ├── plan-generator.prompt.ts       # buildPlanSystemPrompt() (reutilizable) + buildPlanPrompts(...)
 │   ├── plan-generator.parser.ts       # parseWithRawJson → ParsedPlan (7 días) + rawJson; AI_MALFORMED_JSON
 │   └── plan-generator.parser.spec.ts / prompt.spec.ts / service.spec.ts
+├── plan-modifier/
+│   ├── plan-modifier.service.ts       # Lock userId; orquesta la MODIFICACIÓN de un plan no confirmado
+│   ├── plan-modifier.prompt.ts        # buildModifyPlanPrompts(aiContext, names, currentPlan, comment)
+│   ├── plan-modifier.prompt.spec.ts / service.spec.ts
 ├── plan-materializer/
 │   └── plan-materializer.service.ts   # buildUniqueCatalogNames + resolveAgainstCatalog
 │                                      #   + materializeWeekLog (capas exact/folded/subset/levenshtein)
@@ -114,6 +118,7 @@ src/modules/training-plan/
 ```
 TrainingPlan:
   generatePlan(comment: String) -> TrainingPlan          # genera borrador IA (draft, confirmed:false)
+  modifyPlan(id: String!, comment: String!) -> TrainingPlan # modifica un plan no confirmado (version+1)
   confirmPlan(id: String!, action: PlanConfirmationAction) -> ConfirmPlanOutput
   trainingPlans(limit: Int, offset: Int) -> TrainingPlanPage
   trainingPlan(id: String!) -> TrainingPlan
@@ -131,6 +136,7 @@ TrainingPlan:
 - **La IA devuelve NOMBRES**, no IDs. `PlanMaterializerService` resuelve contra el catálogo real (capas: exact → folded singular/plural → subset tokens → levenshtein con guarda de opuestos). Los nombres irresolubles se **descartan** (la generación continúa); solo falla con 400 (`AI_UNKNOWN_EXERCISE_NAME`) si NINGÚN ejercicio del plan resolvió.
 - **Las entidades se construyen en memoria** en `generate`; se persisten SOLO en `confirmPlan`.
 - **`generatePlan` recibe `comment`** (opcional, se añade al prompt como preferencia adicional del usuario).
+- **`modifyPlan(id, comment)`** modifica un plan **aún no confirmado** (`confirmed: false`). Reenvía a la IA el **plan actual** + el contexto del usuario + el comentario, y **sobrescribe el MISMO documento** `TrainingPlan` (actualiza `aiSnapshot`, metadatos, fechas e incrementa `version`). Lanza `ConflictException` si el plan ya fue confirmado. Reutiliza `buildPlanSystemPrompt()` para garantizar el mismo formato JSON de salida. Detalle del plan en `plans/ai/modifate/`.
 - **`CREATE_ROUTINE_PLAN`** crea `RoutineDay`s **solo para días de entrenamiento** (descarta `isRest` y días sin ejercicios), no 7 días.
 - **`ADAPT_ACTIVE_WEEK`** está reservado (501).
 - En `CREATE_ROUTINE_PLAN`, el `RoutinePlan` creado lleva `isAiGenerated: true` y `generatedFromPlanId`.

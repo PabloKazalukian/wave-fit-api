@@ -225,5 +225,28 @@ describe('PlanGeneratorParser', () => {
       expect(plan.title).toBe('PPL Hipertrofia');
       expect(rawJson).toEqual(rawPlan);
     });
+
+    it('tolera un `}` sobrante al final del JSON (cierre duplicado de la IA)', () => {
+      const rawPlan = buildPlan();
+      const valid = JSON.stringify(rawPlan);
+      // Simula que la IA añade un `}` extra tras el cierre del objeto raíz.
+      const messy = valid + '}';
+
+      const { plan, rawJson } = parser.parseWithRawJson(messy);
+
+      expect(plan.title).toBe('PPL Hipertrofia');
+      expect(rawJson).toEqual(rawPlan);
+    });
+
+    it('tolera texto/llaves extra después del JSON válido', () => {
+      const rawPlan = buildPlan();
+      const valid = JSON.stringify(rawPlan);
+      const messy = valid + ' } sobras de modelo';
+
+      const { plan, rawJson } = parser.parseWithRawJson(messy);
+
+      expect(plan.title).toBe('PPL Hipertrofia');
+      expect(rawJson).toEqual(rawPlan);
+    });
   });
 });

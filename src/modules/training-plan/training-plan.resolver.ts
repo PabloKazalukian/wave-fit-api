@@ -72,6 +72,21 @@ export class TrainingPlanResolver {
   }
 
   /**
+   * Modifica un plan vigente (no confirmado) a partir de un comentario del usuario.
+   * Reenvía a la IA el plan actual + el comentario y sobrescribe el mismo documento
+   * (version + 1).
+   */
+  @Mutation(() => TrainingPlan, { name: 'modifyPlan' })
+  async modifyPlan(
+    @Args('id', { type: () => String }) id: string,
+    @Args('comment', { type: () => String }) comment: string,
+    @Context() context,
+  ) {
+    const userId = extractUserId(context);
+    return this.trainingPlanService.modify(userId, id, comment);
+  }
+
+  /**
    * Confirma un plan generado con IA ejecutando la acción elegida:
    * - CREATE_WEEK_LOG → crea la semana de tracking (solo si no hay semana activa)
    * - CREATE_ROUTINE_PLAN → crea el template RoutinePlan (sin pesos)

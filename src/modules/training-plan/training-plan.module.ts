@@ -3,6 +3,7 @@ import { TrainingPlanService } from './training-plan.service';
 import { TrainingPlanResolver } from './training-plan.resolver';
 import { PlanGeneratorService } from './plan-generator/plan-generator.service';
 import { PlanGeneratorParser } from './plan-generator/plan-generator.parser';
+import { PlanModifierService } from './plan-modifier/plan-modifier.service';
 import { PlanValidatorService } from './plan-validator/plan-validator.service';
 import { PlanMaterializerService } from './plan-materializer/plan-materializer.service';
 import { ConfirmPlanService } from './plan-confirmation/confirm-plan.service';
@@ -45,6 +46,7 @@ import {
     TrainingPlanResolver,
     PlanGeneratorService,
     PlanGeneratorParser,
+    PlanModifierService,
     PlanValidatorService,
     PlanMaterializerService,
     ConfirmPlanService,
