@@ -167,7 +167,7 @@ describe('Update ExtraSession (e2e)', () => {
       .send({
         query: `
           mutation {
-            updateDay(input: {
+            updateWeekDay(input: {
               id: "${week.id}"
               days: [{
                 order: 1
@@ -187,7 +187,7 @@ describe('Update ExtraSession (e2e)', () => {
       });
 
     expect(addResponse.status).toBe(200);
-    const extraSessionId = addResponse.body.data.updateDay.extraSessionIds[0];
+    const extraSessionId = addResponse.body.data.updateWeekDay.extraSessionIds[0];
 
     const updateResponse = await request(app.getHttpServer())
       .post('/graphql')
@@ -305,7 +305,7 @@ describe('Update ExtraSession (e2e)', () => {
       .send({
         query: `
           mutation {
-            updateDay(input: {
+            updateWeekDay(input: {
               id: "${week.id}"
               days: [{
                 order: 1
@@ -325,7 +325,7 @@ describe('Update ExtraSession (e2e)', () => {
       });
 
     const extraSessionId =
-      addExtraResponse.body.data.updateDay.extraSessionIds[0];
+      addExtraResponse.body.data.updateWeekDay.extraSessionIds[0];
 
     await request(app.getHttpServer())
       .post('/graphql')
@@ -441,7 +441,7 @@ describe('Update ExtraSession (e2e)', () => {
       .send({
         query: `
           mutation {
-            updateDay(input: {
+            updateWeekDay(input: {
               id: "${week.id}"
               days: [{
                 order: 1
@@ -460,7 +460,7 @@ describe('Update ExtraSession (e2e)', () => {
         `,
       });
 
-    const extraSessionId = addResponse.body.data.updateDay.extraSessionIds[0];
+    const extraSessionId = addResponse.body.data.updateWeekDay.extraSessionIds[0];
 
     const updateNotesResponse = await request(app.getHttpServer())
       .post('/graphql')
@@ -549,7 +549,7 @@ describe('Update ExtraSession (e2e)', () => {
       .send({
         query: `
           mutation {
-            updateDay(input: {
+            updateWeekDay(input: {
               id: "${week.id}"
               days: [{
                 order: 1
@@ -568,7 +568,7 @@ describe('Update ExtraSession (e2e)', () => {
         `,
       });
 
-    const extraSessionId = addResponse.body.data.updateDay.extraSessionIds[0];
+    const extraSessionId = addResponse.body.data.updateWeekDay.extraSessionIds[0];
 
     const updateCaloriesResponse = await request(app.getHttpServer())
       .post('/graphql')

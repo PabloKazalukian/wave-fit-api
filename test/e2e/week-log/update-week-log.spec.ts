@@ -16,8 +16,8 @@ import {
 } from '../../fixtures/user.fixture';
 import {
   UPDATE_WEEK_LOG,
-  ASSIGN_ROUTINE_TO_DAY,
-  REMOVE_WORKOUT_SESSION_FROM_DAY,
+  ASSIGN_ROUTINE_TO_WEEK_DAY,
+  REMOVE_WORKOUT_SESSION_FROM_WEEK_DAY,
 } from '../../apollo/week-log.queries';
 import {
   getCookieWithToken,
@@ -229,7 +229,7 @@ describe('UpdateWeekLog (e2e)', () => {
       .post('/graphql')
       .set('Cookie', [authCookie])
       .send({
-        query: ASSIGN_ROUTINE_TO_DAY,
+        query: ASSIGN_ROUTINE_TO_WEEK_DAY,
         variables: {
           routineDayId: day3.id,
           date: firstDayDateOnly,
@@ -245,7 +245,7 @@ describe('UpdateWeekLog (e2e)', () => {
 
     expect(assignResponse.status).toBe(200);
     expect(
-      assignResponse.body.data.assignRoutineToDay.workoutSessionId,
+      assignResponse.body.data.assignRoutineToWeekDay.workoutSessionId,
     ).toBeDefined();
   });
 
@@ -330,7 +330,7 @@ describe('UpdateWeekLog (e2e)', () => {
       .post('/graphql')
       .set('Cookie', [authCookie])
       .send({
-        query: REMOVE_WORKOUT_SESSION_FROM_DAY,
+        query: REMOVE_WORKOUT_SESSION_FROM_WEEK_DAY,
         variables: {
           workoutSessionId: workoutSessionId,
         },
@@ -345,9 +345,9 @@ describe('UpdateWeekLog (e2e)', () => {
 
     expect(removeResponse.status).toBe(200);
     expect(
-      removeResponse.body.data.removeWorkoutSessionFromDay.workoutSessionId,
+      removeResponse.body.data.removeWorkoutSessionFromWeekDay.workoutSessionId,
     ).toBeNull();
-    expect(removeResponse.body.data.removeWorkoutSessionFromDay.status).toBe(
+    expect(removeResponse.body.data.removeWorkoutSessionFromWeekDay.status).toBe(
       'pending',
     );
   });

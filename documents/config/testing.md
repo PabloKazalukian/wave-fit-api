@@ -4,8 +4,8 @@
 
 | Suite | Ubicación | Suites | Tests | Comando |
 |-------|-----------|--------|-------|---------|
-| **Unitarios** | `src/**/*.spec.ts` | 55 | 456 | `npm test` |
-| **E2E** | `test/e2e/*.spec.ts` | 22 | 117 | `npm run test:e2e` |
+| **Unitarios** | `src/**/*.spec.ts` | 62 | 626 | `npm test` |
+| **E2E** | `test/e2e/*.spec.ts` | 31 | 154 | `npm run test:e2e` |
 
 Ambas suites están completamente verdes y son independientes entre sí:
 los unitarios mockean dependencias con Jest; los E2E levantan la app completa
@@ -51,7 +51,7 @@ ponderado por archivo. Referencia medida (2026-08-23):
 
 Los flujos que más aportan vía E2E: week-log (use cases 82–100%, resolver ~94%,
 repositorio ~70%) y auth. Áreas aún frías: stats (experimental, fuera de
-alcance), day-log (scaffold), google.service (requiere OAuth real).
+alcance), google.service (requiere OAuth real).
 
 **¿Por qué `--maxWorkers=2` en e2e?** Con más workers, `mongodb-memory-server`
 y el seeding automático generan condiciones de carrera y datos cruzados entre
@@ -156,7 +156,7 @@ Objetos `expect` reutilizables para validar la forma de las respuestas GraphQL:
 
 ---
 
-## 5. Estructura de Archivos E2E (21 specs)
+## 5. Estructura de Archivos E2E (31 specs)
 
 ```
 test/
@@ -180,6 +180,7 @@ test/
 │   │   ├── remove-week-log.spec.ts
 │   │   ├── active-week.spec.ts
 │   │   ├── repro-bug.spec.ts
+│   │   ├── empty-days-rest.spec.ts       (2 tests)
 │   │   ├── extra-session/
 │   │   │   ├── add-extra-session.spec.ts
 │   │   │   ├── remove-extra-session.spec.ts
@@ -187,10 +188,22 @@ test/
 │   │   │   └── extra-session-catalog.spec.ts
 │   │   └── workout-session/
 │   │       └── assign-with-routine.spec.ts
+│   ├── day-log/
+│   │   ├── create-day-log.spec.ts           (5 tests)
+│   │   ├── exclusivity.spec.ts              (5 tests)
+│   │   ├── assign-routine.spec.ts           (3 tests)
+│   │   ├── update-day-log.spec.ts           (3 tests)
+│   │   ├── crud.spec.ts                     (3 tests)
+│   │   ├── isolation.spec.ts                (4 tests)
+│   │   └── sessions.spec.ts                 (3 tests)
 │   ├── helpers/
-│   │   └── week-log.helper.ts
+│   │   ├── week-log.helper.ts
+│   │   └── day-log.helper.ts
 │   └── types/
 │       └── week-log.type.ts
+├── apollo/
+│   ├── week-log.queries.ts
+│   └── day-log.queries.ts
 ├── utils/
 │   ├── app-test.module.ts
 │   └── db-handler.ts
@@ -304,14 +317,14 @@ crear-desde-vacío / persistir-modificación / validar-rango:
 | Debería actualizar días via updateWeekLog | Actualiza ejercicios de un día específico |
 
 ### update-day-log.spec.ts
-Mutation `updateDay` — operación unificada para WS/ES dentro de un día:
+Mutation `updateWeekDay` — operación unificada para WS/ES dentro de un día:
 
 | Test | Descripción |
 |------|-------------|
-| should update a workout session in a week-log day via updateDay | Crea WS con ejercicios personalizados |
-| should replace an existing workout session with different exercises via updateDay | Reemplaza ejercicios manteniendo mismo WS ID |
-| should set a day as rest day via updateDay | Marca día como descanso, limpia WS si existe |
-| should update workout session and add extra session to a day via updateDay | Combina actualización de WS + creación de ES en una sola mutation |
+| should update a workout session in a week-log day via updateWeekDay | Crea WS con ejercicios personalizados |
+| should replace an existing workout session with different exercises via updateWeekDay | Reemplaza ejercicios manteniendo mismo WS ID |
+| should set a day as rest day via updateWeekDay | Marca día como descanso, limpia WS si existe |
+| should update workout session and add extra session to a day via updateWeekDay | Combina actualización de WS + creación de ES en una sola mutation |
 
 ### update-day-workout-status.spec.ts
 | Test | Descripción |
@@ -346,7 +359,7 @@ Test para reproducción de bugs específicos (regression).
 #### add-extra-session.spec.ts
 | Test | Descripción |
 |------|-------------|
-| should add an extra session to a day via updateDay | Agrega ES (running, 30min) a un día |
+| should add an extra session to a day via updateWeekDay | Agrega ES (running, 30min) a un día |
 | should add multiple extra sessions to different days | Agrega ES a varios días |
 | should add extra session to a rest day | ES en día de descanso |
 | should validate extra session intensity range | intensityLevel fuera de 1-5 → error |

@@ -53,8 +53,8 @@ const WEEK_LOG_WITH_DAYS = `
 `;
 
 const UPDATE_DAY_MUTATION = `
-    mutation UpdateDay($input: UpdateWeekLogDayUnifiedInput!) {
-        updateDay(input: $input) {
+    mutation UpdateWeekDay($input: UpdateWeekLogDayUnifiedInput!) {
+        updateWeekDay(input: $input) {
             ${DAY_FIELDS}
         }
     }
@@ -106,7 +106,7 @@ function createStartEndDates() {
   };
 }
 
-describe('updateDay (update-day-log) (e2e)', () => {
+describe('updateWeekDay (update-day-log) (e2e)', () => {
   let app: INestApplication<App>;
   let userService: UserService;
   let weekLogService: WeekLogService;
@@ -158,7 +158,7 @@ describe('updateDay (update-day-log) (e2e)', () => {
     await app.close();
   });
 
-  it('should update a workout session in a week-log day via updateDay', async () => {
+  it('should update a workout session in a week-log day via updateWeekDay', async () => {
     const ex1 = (await exerciseService.create({
       name: 'Bench UDL',
       category: ExerciseCategory.CHEST,
@@ -234,11 +234,11 @@ describe('updateDay (update-day-log) (e2e)', () => {
       });
 
     if (updateResponse.body.errors) {
-      console.log('updateDay errors:', JSON.stringify(updateResponse.body.errors, null, 2));
+      console.log('updateWeekDay errors:', JSON.stringify(updateResponse.body.errors, null, 2));
     }
 
     expect(updateResponse.status).toBe(200);
-    const updatedDay = updateResponse.body.data.updateDay;
+    const updatedDay = updateResponse.body.data.updateWeekDay;
     expect(updatedDay.workoutSessionId).toBeDefined();
     expect(updatedDay.isRest).toBe(false);
     expect(updatedDay.exercises).toHaveLength(1);
@@ -247,7 +247,7 @@ describe('updateDay (update-day-log) (e2e)', () => {
     expect(updatedDay.exercises[0].sets).toHaveLength(1);
   });
 
-  it('should replace an existing workout session with different exercises via updateDay', async () => {
+  it('should replace an existing workout session with different exercises via updateWeekDay', async () => {
     const ex1 = (await exerciseService.create({
       name: 'Push UDL',
       category: ExerciseCategory.CHEST,
@@ -340,11 +340,11 @@ describe('updateDay (update-day-log) (e2e)', () => {
       });
 
     if (updateResponse.body.errors) {
-      console.log('updateDay errors:', JSON.stringify(updateResponse.body.errors, null, 2));
+      console.log('updateWeekDay errors:', JSON.stringify(updateResponse.body.errors, null, 2));
     }
 
     expect(updateResponse.status).toBe(200);
-    const updatedDay = updateResponse.body.data.updateDay;
+    const updatedDay = updateResponse.body.data.updateWeekDay;
     expect(updatedDay.workoutSessionId).toBe(originalWsId);
     expect(updatedDay.exercises).toHaveLength(1);
     expect(updatedDay.exercises[0].exerciseId).toBe(ex2.id.toString());
@@ -352,7 +352,7 @@ describe('updateDay (update-day-log) (e2e)', () => {
     expect(updatedDay.exercises[0].sets).toHaveLength(2);
   });
 
-  it('should set a day as rest day via updateDay', async () => {
+  it('should set a day as rest day via updateWeekDay', async () => {
     const { startDate, endDate } = createStartEndDates();
 
     const createResponse = await request(app.getHttpServer())
@@ -401,17 +401,17 @@ describe('updateDay (update-day-log) (e2e)', () => {
       });
 
     if (updateResponse.body.errors) {
-      console.log('updateDay errors:', JSON.stringify(updateResponse.body.errors, null, 2));
+      console.log('updateWeekDay errors:', JSON.stringify(updateResponse.body.errors, null, 2));
     }
 
     expect(updateResponse.status).toBe(200);
-    const updatedDay = updateResponse.body.data.updateDay;
+    const updatedDay = updateResponse.body.data.updateWeekDay;
     expect(updatedDay.isRest).toBe(true);
     expect(updatedDay.workoutSessionId).toBeNull();
     expect(updatedDay.status).toBe('skipped');
   });
 
-  it('should update workout session and add extra session to a day via updateDay', async () => {
+  it('should update workout session and add extra session to a day via updateWeekDay', async () => {
     const ex1 = (await exerciseService.create({
       name: 'Push Up Cmb',
       category: ExerciseCategory.CHEST,
@@ -518,11 +518,11 @@ describe('updateDay (update-day-log) (e2e)', () => {
       });
 
     if (updateResponse.body.errors) {
-      console.log('updateDay errors:', JSON.stringify(updateResponse.body.errors, null, 2));
+      console.log('updateWeekDay errors:', JSON.stringify(updateResponse.body.errors, null, 2));
     }
 
     expect(updateResponse.status).toBe(200);
-    const updatedDay = updateResponse.body.data.updateDay;
+    const updatedDay = updateResponse.body.data.updateWeekDay;
     expect(updatedDay.workoutSessionId).toBeDefined();
     expect(updatedDay.exercises).toHaveLength(1);
     expect(updatedDay.exercises[0].exerciseId).toBe(ex3.id.toString());

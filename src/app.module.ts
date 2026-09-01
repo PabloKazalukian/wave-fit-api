@@ -27,6 +27,7 @@ import { StorageModule } from './modules/storage/storage.module';
 import { TrainingPlanModule } from './modules/training-plan/training-plan.module';
 import { AiModule } from './modules/ai/ai.module';
 import { TrainingHistoryModule } from './modules/routines/tracking/training-history/training-history.module';
+import { ActiveTrackingModule } from './modules/routines/tracking/active-tracking/active-tracking.module';
 
 @Module({
   imports: [
@@ -61,6 +62,7 @@ import { TrainingHistoryModule } from './modules/routines/tracking/training-hist
     TrainingPlanModule,
     AiModule,
     TrainingHistoryModule,
+    ActiveTrackingModule,
   ],
   controllers: [AppController],
   providers: [

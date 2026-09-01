@@ -84,7 +84,7 @@ type Query {
 |----------|----------|
 | **Punto de entrada** | Activar `distributionDays` existente (no migrarlo a training-preference). |
 | **Forma del documento DayLog** | **Sin array `days[]`**: un único `workoutSessionId`, `extraSessionIds[]` y `status` en el root (día suelto = una sesión principal). |
-| **Alcance de operaciones** | create / findAll / findOne / update / remove + assignRoutineToDay + updateDayStatus + removeWorkoutSession + removeExtraSession. Equivalente activo: `findActiveDayLog`. Sin `syncWeekLogDays`. |
+| **Alcance de operaciones** | create / findAll / findOne / update / remove + assignRoutineToDayLog + updateDayLogStatus + removeWorkoutSessionFromDayLog + removeExtraSessionFromDayLog. Equivalente activo: `findActiveDayLog`. Sin `syncWeekLogDays`. |
 | **`distributionDays` como gate** | **Gate blando**: preferencia por defecto en el front; **nunca bloquea** la creación del otro tipo. La única regla dura es la unicidad del activo. |
 | **Unicidad del activo** | Crear week-log o day-log exige no tener nada activo (ni el mismo ni el otro). `ConflictException` si lo hay. |
 | **Capa de lectura** | `activeTracking` unificada (Fase D). |
@@ -159,7 +159,7 @@ Implementación con populate + `mapToDomain` (patrón de `week-log.repository.ts
 - `find-all-day-logs.use-case` / `find-one-day-log.use-case`.
 - `update-day-log.use-case` — actualiza `notes`/`active`/`completed` + opcional WS/ES (mismo mecanismo `processDay` de week-log).
 - `remove-day-log.use-case` — soft delete.
-- `update-day-status.use-case` — equivalente a `updateDayWorkoutStatus` (isRest → `skipped` + elimina WS; activo → `pending` + crea/limpia WS).
+- `update-day-status.use-case` — equivalente a `updateWeekDayWorkoutStatus` (isRest → `skipped` + elimina WS; activo → `pending` + crea/limpia WS).
 - `assign-routine-day.use-case` — carga `RoutineDay`, construye ejercicios, crea/actualiza la WS del día.
 - `remove-workout-session.use-case` / `remove-extra-session.use-case` — quitan ref del day-log y borran el doc real.
 - `day-log.validator.ts` — `validateCreation` (fecha + exclusividad), `validateOwnership` (ya escrito), `validateUpdate`.
@@ -181,7 +181,7 @@ Orquestador (como `WeekLogService`): inyecta repositorio + use cases + `WorkoutS
   - `createDayLog(input)` → `DayLog`
   - `dayLogFindAll` / `dayLogFindOne(id)` → con ownership
   - `updateDayLog(input)`, `removeDayLog(id)`
-  - `assignRoutineToDay(routineDayId, date)`, `updateDayStatus(date, isRest)`, `removeWorkoutSessionFromDay(workoutSessionId)`, `removeExtraSessionFromDay(date, extraSessionId)`
+  - `assignRoutineToDayLog(routineDayId, date)`, `updateDayLogStatus(date, isRest)`, `removeWorkoutSessionFromDayLog(workoutSessionId)`, `removeExtraSessionFromDayLog(extraSessionId)`
 - Decoradores `@Audit(...)` en mutaciones (CREATE/UPDATE/DELETE/ASSIGN_DAY_LOG).
 
 #### B.8 DTOs / Entity reales

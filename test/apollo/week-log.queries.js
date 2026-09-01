@@ -131,17 +131,17 @@ export const UPDATE_WEEK_LOG_DAY = `
 //     }
 // `;
 
-export const ASSIGN_ROUTINE_TO_DAY = `
-    mutation AssignRoutineToDay($routineDayId: String!, $date: String!) {
-        assignRoutineToDay(routineDayId: $routineDayId, date: $date) {
+export const ASSIGN_ROUTINE_TO_WEEK_DAY = `
+    mutation AssignRoutineToWeekDay($routineDayId: String!, $date: String!) {
+        assignRoutineToWeekDay(routineDayId: $routineDayId, date: $date) {
             ${WEEK_LOG_DAY_FIELDS}
         }
     }
 `;
 
-export const REMOVE_WORKOUT_SESSION_FROM_DAY = `
-    mutation RemoveWorkoutSessionFromDay($workoutSessionId: String!) {
-        removeWorkoutSessionFromDay(workoutSessionId: $workoutSessionId) {
+export const REMOVE_WORKOUT_SESSION_FROM_WEEK_DAY = `
+    mutation RemoveWorkoutSessionFromWeekDay($workoutSessionId: String!) {
+        removeWorkoutSessionFromWeekDay(workoutSessionId: $workoutSessionId) {
             ${WEEK_LOG_DAY_FIELDS}
         }
     }
@@ -171,9 +171,9 @@ export const CURRENT_WORKOUT_SESSION = `
     }
 `;
 
-export const UPDATE_DAY = `
-    mutation UpdateDay($input: UpdateWeekLogDayUnifiedInput!) {
-        updateDay(input: $input) {
+export const UPDATE_WEEK_DAY = `
+    mutation UpdateWeekDay($input: UpdateWeekLogDayUnifiedInput!) {
+        updateWeekDay(input: $input) {
             ${WEEK_LOG_FIELDS}
         }
     }
@@ -205,7 +205,7 @@ export const REMOVE_WEEK_LOG = `
 
 export const CREATE_EXTRA_SESSION = `
     mutation CreateExtraSession($input: UpdateWeekLogDayUnifiedInput!) {
-        updateDay(input: $input) {
+        updateWeekDay(input: $input) {
             ${WEEK_LOG_FIELDS}
         }
     }

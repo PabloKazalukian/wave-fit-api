@@ -48,8 +48,8 @@ const WEEK_LOG_WITH_DAYS = `
 `;
 
 const UPDATE_DAY_WORKOUT_STATUS = `
-    mutation UpdateDayWorkoutStatus($input: UpdateDayWorkoutStatusInput!) {
-        updateDayWorkoutStatus(input: $input) {
+    mutation UpdateWeekDayWorkoutStatus($input: UpdateDayWorkoutStatusInput!) {
+        updateWeekDayWorkoutStatus(input: $input) {
             ${DAY_FIELDS}
         }
     }
@@ -92,7 +92,7 @@ async function closeActiveWeek(
   }
 }
 
-describe('updateDayWorkoutStatus (e2e)', () => {
+describe('updateWeekDayWorkoutStatus (e2e)', () => {
   let app: INestApplication<App>;
   let userService: UserService;
   let exerciseService: ExerciseService;
@@ -227,7 +227,7 @@ describe('updateDayWorkoutStatus (e2e)', () => {
     }
 
     expect(updateResponse.status).toBe(200);
-    const updatedDay = updateResponse.body.data.updateDayWorkoutStatus;
+    const updatedDay = updateResponse.body.data.updateWeekDayWorkoutStatus;
     expect(updatedDay.isRest).toBe(true);
     expect(updatedDay.workoutSessionId).toBeNull();
     expect(updatedDay.status).toBe('skipped');
@@ -283,7 +283,7 @@ describe('updateDayWorkoutStatus (e2e)', () => {
     }
 
     expect(updateResponse.status).toBe(200);
-    const updatedDay = updateResponse.body.data.updateDayWorkoutStatus;
+    const updatedDay = updateResponse.body.data.updateWeekDayWorkoutStatus;
     expect(updatedDay.isRest).toBe(true);
     expect(updatedDay.workoutSessionId).toBeNull();
     expect(updatedDay.status).toBe('skipped');
@@ -349,7 +349,7 @@ describe('updateDayWorkoutStatus (e2e)', () => {
     }
 
     expect(updateResponse.status).toBe(200);
-    const updatedDay = updateResponse.body.data.updateDayWorkoutStatus;
+    const updatedDay = updateResponse.body.data.updateWeekDayWorkoutStatus;
     expect(updatedDay.isRest).toBe(false);
     expect(updatedDay.workoutSessionId).toBeDefined();
     expect(updatedDay.status).toBe('pending');
@@ -439,7 +439,7 @@ describe('updateDayWorkoutStatus (e2e)', () => {
     }
 
     expect(updateResponse.status).toBe(200);
-    const updatedDay = updateResponse.body.data.updateDayWorkoutStatus;
+    const updatedDay = updateResponse.body.data.updateWeekDayWorkoutStatus;
     expect(updatedDay.isRest).toBe(false);
     expect(updatedDay.workoutSessionId).toBeDefined();
     expect(updatedDay.workoutSessionId).not.toBe(originalWsId);

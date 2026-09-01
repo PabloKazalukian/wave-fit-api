@@ -1,7 +1,39 @@
-import { InputType, Int, Field } from '@nestjs/graphql';
+import { InputType, Field, ID } from '@nestjs/graphql';
+import { IsOptional, IsString, Matches } from 'class-validator';
 
 @InputType()
 export class CreateDayLogInput {
-  @Field(() => Int, { description: 'Example field (placeholder)' })
-  exampleField: number;
+  /**
+   * Fecha del día suelto en formato "yyyy-MM-dd" (LocalDate).
+   * ❌ No enviar como Date o ISO UTC — el backend necesita la fecha calendario del usuario.
+   */
+  @Field(() => String)
+  @IsString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+    message: 'date must be in format yyyy-MM-dd',
+  })
+  date: string; // LocalDate
+
+  /**
+   * Timezone IANA del usuario (ej: "America/Argentina/Buenos_Aires").
+   * Se usa para convertir LocalDate a UTC al guardar en MongoDB.
+   */
+  @Field(() => String)
+  @IsString()
+  timezone: string;
+
+  @Field(() => ID, { nullable: true })
+  @IsOptional()
+  @IsString()
+  planId?: string;
+
+  @Field(() => ID, { nullable: true })
+  @IsOptional()
+  @IsString()
+  routineDayId?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  notes?: string;
 }

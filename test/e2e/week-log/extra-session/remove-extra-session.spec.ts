@@ -167,7 +167,7 @@ describe('Remove ExtraSession (e2e)', () => {
       .send({
         query: `
           mutation {
-            updateDay(input: {
+            updateWeekDay(input: {
               id: "${week.id}"
               days: [{
                 order: 1
@@ -187,7 +187,7 @@ describe('Remove ExtraSession (e2e)', () => {
       });
 
     expect(addResponse.status).toBe(200);
-    const extraSessionId = addResponse.body.data.updateDay.extraSessionIds[0];
+    const extraSessionId = addResponse.body.data.updateWeekDay.extraSessionIds[0];
 
     const removeResponse = await request(app.getHttpServer())
       .post('/graphql')
@@ -195,7 +195,7 @@ describe('Remove ExtraSession (e2e)', () => {
       .send({
         query: `
           mutation {
-            removeExtraSessionFromDay(date: "${dayDate}", extraSessionId: "${extraSessionId}") {
+            removeExtraSessionFromWeekDay(date: "${dayDate}", extraSessionId: "${extraSessionId}") {
               order
               extraSessionIds
             }
@@ -212,7 +212,7 @@ describe('Remove ExtraSession (e2e)', () => {
 
     expect(removeResponse.status).toBe(200);
     expect(
-      removeResponse.body.data.removeExtraSessionFromDay.extraSessionIds,
+      removeResponse.body.data.removeExtraSessionFromWeekDay.extraSessionIds,
     ).toHaveLength(0);
   });
 
@@ -294,7 +294,7 @@ describe('Remove ExtraSession (e2e)', () => {
       .send({
         query: `
           mutation {
-            updateDay(input: {
+            updateWeekDay(input: {
               id: "${week.id}"
               days: [{
                 order: 1
@@ -319,7 +319,7 @@ describe('Remove ExtraSession (e2e)', () => {
 
     expect(addExtraResponse.status).toBe(200);
     const extraSessionId =
-      addExtraResponse.body.data.updateDay.extraSessionIds[0];
+      addExtraResponse.body.data.updateWeekDay.extraSessionIds[0];
 
     const removeResponse = await request(app.getHttpServer())
       .post('/graphql')
@@ -327,7 +327,7 @@ describe('Remove ExtraSession (e2e)', () => {
       .send({
         query: `
           mutation {
-            removeExtraSessionFromDay(date: "${dayDate}", extraSessionId: "${extraSessionId}") {
+            removeExtraSessionFromWeekDay(date: "${dayDate}", extraSessionId: "${extraSessionId}") {
               order
               workoutSessionId
               extraSessionIds
@@ -349,13 +349,13 @@ describe('Remove ExtraSession (e2e)', () => {
 
     expect(removeResponse.status).toBe(200);
     expect(
-      removeResponse.body.data.removeExtraSessionFromDay.extraSessionIds,
+      removeResponse.body.data.removeExtraSessionFromWeekDay.extraSessionIds,
     ).toHaveLength(0);
     expect(
-      removeResponse.body.data.removeExtraSessionFromDay.workoutSessionId,
+      removeResponse.body.data.removeExtraSessionFromWeekDay.workoutSessionId,
     ).toBe(workoutSessionId);
     expect(
-      removeResponse.body.data.removeExtraSessionFromDay.exercises,
+      removeResponse.body.data.removeExtraSessionFromWeekDay.exercises,
     ).toHaveLength(2);
   });
 
@@ -419,7 +419,7 @@ describe('Remove ExtraSession (e2e)', () => {
       .send({
         query: `
           mutation {
-            updateDay(input: {
+            updateWeekDay(input: {
               id: "${week.id}"
               days: [{
                 order: 1
@@ -439,7 +439,7 @@ describe('Remove ExtraSession (e2e)', () => {
       });
 
     const firstExtraSessionId =
-      addFirstResponse.body.data.updateDay.extraSessionIds[0];
+      addFirstResponse.body.data.updateWeekDay.extraSessionIds[0];
 
     const addSecondResponse = await request(app.getHttpServer())
       .post('/graphql')
@@ -447,7 +447,7 @@ describe('Remove ExtraSession (e2e)', () => {
       .send({
         query: `
           mutation {
-            updateDay(input: {
+            updateWeekDay(input: {
               id: "${week.id}"
               days: [{
                 order: 1
@@ -466,7 +466,7 @@ describe('Remove ExtraSession (e2e)', () => {
         `,
       });
 
-    expect(addSecondResponse.body.data.updateDay.extraSessionIds).toHaveLength(
+    expect(addSecondResponse.body.data.updateWeekDay.extraSessionIds).toHaveLength(
       2,
     );
 
@@ -476,7 +476,7 @@ describe('Remove ExtraSession (e2e)', () => {
       .send({
         query: `
           mutation {
-            removeExtraSessionFromDay(date: "${dayDate}", extraSessionId: "${firstExtraSessionId}") {
+            removeExtraSessionFromWeekDay(date: "${dayDate}", extraSessionId: "${firstExtraSessionId}") {
               order
               extraSessionIds
             }
@@ -486,10 +486,10 @@ describe('Remove ExtraSession (e2e)', () => {
 
     expect(removeResponse.status).toBe(200);
     expect(
-      removeResponse.body.data.removeExtraSessionFromDay.extraSessionIds,
+      removeResponse.body.data.removeExtraSessionFromWeekDay.extraSessionIds,
     ).toHaveLength(1);
     expect(
-      removeResponse.body.data.removeExtraSessionFromDay.extraSessionIds[0],
+      removeResponse.body.data.removeExtraSessionFromWeekDay.extraSessionIds[0],
     ).not.toBe(firstExtraSessionId);
   });
 });
