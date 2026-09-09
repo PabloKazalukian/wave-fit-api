@@ -24,6 +24,8 @@ import {
   isValidLocalDate,
   nowUtc,
 } from 'src/common/utils/date.utils';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { StatusWorkoutSessionEnum } from './schema/workout-session.schema';
 
 const DEFAULT_TIMEZONE = 'America/Argentina/Buenos_Aires';
 
@@ -35,6 +37,7 @@ export class WorkoutSessionService {
     @Inject(forwardRef(() => WeekLogService))
     private weekLogService: WeekLogService,
     private readonly validator: WorkoutSessionValidator,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async create(
@@ -79,7 +82,7 @@ export class WorkoutSessionService {
     const session = await this.sessionModel.create({
       userId: new Types.ObjectId(userId),
       weekLogId: input.weekLogId ? new Types.ObjectId(input.weekLogId) : null,
-      date: dateUtc, // ✅ Date UTC normalizada
+      date: dateUtc, // �o. Date UTC normalizada
       routineDayId: input.routineDayId
         ? new Types.ObjectId(input.routineDayId)
         : null,
@@ -89,6 +92,10 @@ export class WorkoutSessionService {
       edited: input.edited || false,
       deleted: input.deleted || false,
     });
+
+    if (input.status === StatusWorkoutSessionEnum.COMPLETE) {
+      this.emitSessionSaved(session);
+    }
 
     return session;
   }
@@ -197,7 +204,19 @@ export class WorkoutSessionService {
       throw new NotFoundException(`Workout Session with ID "${id}" no existe`);
     }
 
+    if (updated.status === StatusWorkoutSessionEnum.COMPLETE) {
+      this.emitSessionSaved(updated);
+    }
+
     return updated;
+  }
+
+  private emitSessionSaved(session: WorkoutSessionDocument) {
+    this.eventEmitter.emit('workout-session.saved', {
+      userId: session.userId.toString(),
+      triggerType: 'WORKOUT_SESSION',
+      entityId: session._id.toString(),
+    });
   }
 
   async remove(id: string, userId: string) {

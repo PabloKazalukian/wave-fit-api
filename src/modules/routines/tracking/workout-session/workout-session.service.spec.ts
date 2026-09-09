@@ -7,6 +7,7 @@ import { WorkoutSessionValidator } from './workout-session.validator';
 import { NotFoundException } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { StatusWorkoutSessionEnum } from './schema/workout-session.schema';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 describe('WorkoutSessionService', () => {
   let service: WorkoutSessionService;
@@ -65,6 +66,10 @@ describe('WorkoutSessionService', () => {
         {
           provide: WorkoutSessionValidator,
           useValue: mockValidator,
+        },
+        {
+          provide: EventEmitter2,
+          useValue: { emit: jest.fn() },
         },
       ],
     }).compile();

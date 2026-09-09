@@ -32,7 +32,20 @@ export class StatsEventPublisher implements OnModuleInit {
     }
 
     this.queueUrl = queueUrl;
-    this.sqsClient = new SQSClient({ region });
+    const accessKeyId = this.configService.get<string>('AWS_ACCESS_KEY');
+    const secretAccessKey = this.configService.get<string>('AWS_SECRET_KEY');
+
+    this.sqsClient = new SQSClient(
+      accessKeyId && secretAccessKey
+        ? {
+            region,
+            credentials: {
+              accessKeyId,
+              secretAccessKey,
+            },
+          }
+        : { region },
+    );
     this.logger.log(`SQS publisher initialized for queue: ${queueUrl}`);
   }
 
@@ -48,8 +61,10 @@ export class StatsEventPublisher implements OnModuleInit {
 
   private async publishToSqs(payload: StatsTriggerEvent) {
     if (!this.sqsClient || !this.queueUrl) {
-      this.logger.debug(
-        `SQS not configured — skipping publish for ${payload.triggerType}`,
+      this.logger.warn(
+        `[stats] No se pudo entregar la estadística al worker/Lambda (aún no disponible/no configurado). ` +
+          `Evento ${payload.triggerType} para usuario ${payload.userId} (entityId ${payload.entityId}) no fue procesado. ` +
+          `Configura STATS_SQS_QUEUE_URL y despliega el Lambda para habilitar el cómputo de métricas.`,
       );
       return;
     }
@@ -66,6 +81,8 @@ export class StatsEventPublisher implements OnModuleInit {
         new SendMessageCommand({
           QueueUrl: this.queueUrl,
           MessageBody: JSON.stringify(message),
+          MessageGroupId: 'workout-session-group',
+          MessageDeduplicationId: `${Date.now()}-${Math.random()}`,
           MessageAttributes: {
             triggerType: {
               DataType: 'String',

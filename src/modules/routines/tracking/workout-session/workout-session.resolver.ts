@@ -12,16 +12,13 @@ import {
 import { Types } from 'mongoose';
 import { AuditInterceptor } from 'src/modules/audit-logs/audit-logs.interceptor';
 import { Audit } from 'src/modules/audit-logs/audit-logs.decorator';
-import { EventEmitter2 } from '@nestjs/event-emitter';
+import { extractUserId } from 'src/common/utils/user-id.utils';
 
 @Resolver(() => WorkoutSession)
 @UseGuards(GqlAuthGuard)
 @UseInterceptors(AuditInterceptor)
 export class WorkoutSessionResolver {
-  constructor(
-    private readonly workoutSessionService: WorkoutSessionService,
-    private readonly eventEmitter: EventEmitter2,
-  ) {}
+  constructor(private readonly workoutSessionService: WorkoutSessionService) {}
 
   @Mutation(() => WorkoutSession)
   @Audit('CREATE_WORKOUT_SESSION', 'WeeklyRoutine')
@@ -30,16 +27,12 @@ export class WorkoutSessionResolver {
     createWorkoutSessionInput: CreateWorkoutSessionInput,
     @Context() context,
   ) {
+    const userId = extractUserId(context);
+
     const result = await this.workoutSessionService.create(
       createWorkoutSessionInput,
-      context?.req?.user?.id,
+      userId,
     );
-
-    this.eventEmitter.emit('workout-session.saved', {
-      userId: context?.req?.user?.id,
-      triggerType: 'WORKOUT_SESSION',
-      entityId: result._id.toString(),
-    });
 
     return result;
   }
@@ -88,12 +81,6 @@ export class WorkoutSessionResolver {
       updateWorkoutSessionInput,
       context?.req?.user?.id,
     );
-
-    this.eventEmitter.emit('workout-session.saved', {
-      userId: context?.req?.user?.id,
-      triggerType: 'WORKOUT_SESSION',
-      entityId: id,
-    });
 
     return result;
   }
