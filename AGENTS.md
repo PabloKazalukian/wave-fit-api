@@ -446,3 +446,19 @@ Módulo planeado para exponer métricas de entrenamiento del usuario:
 - **`confirmPlan(id, action)`** → `create_week_log` (WeekLog + sesiones, 409 si hay semana activa) | `create_routine_plan` (template RoutinePlan con `isAiGenerated: true`) | `adapt_active_week` (reservado, 501). Confirmación atómica vía `findOneAndUpdate({ confirmed: false })`.
 
 > **Importante:** antes de modificar código de `ai/` o `training-plan/`, leer `documents/config/ai.md`.
+
+---
+
+## 17. Spec-Driven Development (SDD)
+
+El backlog ejecutable vive en `sdd/` (ver `sdd/README.md`). Cada archivo es una **spec autocontenida** que un agente IA puede implementar sin contexto externo.
+
+Reglas clave (detalle en `sdd/README.md`):
+
+- **Plantilla obligatoria:** usar `sdd/_TEMPLATE.md` (frontmatter + requisitos RFC 2119 `MUST`/`SHOULD`/`MAY` + `ai_instructions` + `tech_context` + checklist de archivos + tests).
+- **Test-first por capa:** escribir los tests de la capa antes de su implementación.
+- **Fallo = spec:** un requisito o test fallido se corrige contra la spec, no improvisando.
+- **Verificación final de una spec `done`:** `npm run build` · `npm run lint` · `npm test` · `npm run test:e2e` en verde.
+- Los planes de `documents/plans/` o `plans/` priorizados se destilan en specs de `sdd/`.
+
+Antes de implementar cualquier spec, leer `documents/config/testing.md` y la documentación del módulo afectado.
