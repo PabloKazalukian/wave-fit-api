@@ -1,7 +1,7 @@
 ---
 title: <Nombre corto de la feature>
 description: <Una o dos líneas. Qué hace y para qué sirve>
-status: draft            # draft | in_progress | done
+status: draft # draft | in_progress | done
 priority: <alta | media | baja>
 created: <YYYY-MM-DD>
 updated: <YYYY-MM-DD>
@@ -76,5 +76,5 @@ npm run test:e2e
 <Runbook: qué hacer si un test de esta spec falla en CI o en producción. Casos conocidos y sus síntomas.>
 
 | Síntoma | Causa probable | Acción |
-|---------|----------------|--------|
-| <...> | <...> | <...> |
+| ------- | -------------- | ------ |
+| <...>   | <...>          | <...>  |
