@@ -2,6 +2,7 @@ import {
   forwardRef,
   Inject,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { isValidLocalDate } from 'src/common/utils/date.utils';
@@ -13,6 +14,7 @@ import { DayLogValidator } from '../validators/day-log.validator';
 import { WorkoutSessionService } from '../../../workout-session/workout-session.service';
 import { localDateToUtc } from 'src/common/utils/date.utils';
 import { StatusWorkoutSessionEnum } from '../../../workout-session/schema/workout-session.schema';
+import { RoutineDayService } from 'src/modules/routines/templates/routine-day/routine-day.service';
 
 @Injectable()
 export class CreateDayLogUseCase {
@@ -22,6 +24,7 @@ export class CreateDayLogUseCase {
     private readonly validator: DayLogValidator,
     @Inject(forwardRef(() => WorkoutSessionService))
     private readonly workoutSessionService: WorkoutSessionService,
+    private readonly routineDayService: RoutineDayService,
   ) {}
 
   async execute(
@@ -55,12 +58,32 @@ export class CreateDayLogUseCase {
     // 3. Si viene un routineDayId, crear la WorkoutSession inicial con sus ejercicios
     if (routineDayId) {
       try {
+        const routineDay = await this.routineDayService.findOne(routineDayId);
+        if (!routineDay) {
+          throw new NotFoundException(
+            `RoutineDay con ID "${routineDayId}" no encontrado`,
+          );
+        }
+
+        const exercises =
+          routineDay.exercises?.map((e: any) => ({
+            exerciseId: (
+              e.exercise?._id ||
+              e.exercise?.id ||
+              e.exercise ||
+              e.exerciseId ||
+              ''
+            ).toString(),
+            series: 0,
+            sets: [],
+          })) || [];
+
         const session = await this.workoutSessionService.create(
           {
             date: localDate,
             timezone,
             routineDayId,
-            exercises: [],
+            exercises,
             status: StatusWorkoutSessionEnum.NOT_STARTED,
             notes: '',
             edited: false,

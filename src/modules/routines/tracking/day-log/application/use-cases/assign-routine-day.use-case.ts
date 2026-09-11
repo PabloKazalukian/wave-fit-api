@@ -105,11 +105,8 @@ export class AssignRoutineDayUseCase {
       sessionId = (newSession as any)._id.toString();
     }
 
-    await this.dayLogRepository.updateStatus(
-      dayLog.id,
-      'pending',
-      sessionId,
-    );
+    await this.dayLogRepository.updateStatus(dayLog.id, 'pending', sessionId);
+
     await this.dayLogRepository.findByIdAndUpdate(dayLog.id, {
       routineDayId: new Types.ObjectId(routineDayId),
     } as any);

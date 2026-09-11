@@ -259,6 +259,9 @@ DayLog:
   createDayLog, dayLogFindAll, dayLogFindOne, activeDayLog, updateDayLog,
   updateDayLogStatus, assignRoutineToDayLog, removeWorkoutSessionFromDayLog,
   removeExtraSessionFromDayLog, removeDayLog
+  (updateDayLog acepta un bloque `extraSession` para crear y vincular una
+   extra-session al day-log, como updateWeekDay; expone `extraSessionIds`
+   poblado en activeDayLog/activeTracking)
 
 ActiveTracking:
   activeTracking -> ActiveTracking (hasActive, type WEEK_LOG|DAY_LOG, week?, day?)

@@ -207,6 +207,7 @@ export class DayLogRepository implements IDayLogRepository {
       obj.active,
       obj.completed,
       obj.notes,
+      isPopulated ? ((session as any).exercises ?? []) : [],
     );
   }
 }

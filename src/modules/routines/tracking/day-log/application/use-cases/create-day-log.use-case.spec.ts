@@ -3,6 +3,7 @@ import { CreateDayLogUseCase } from './create-day-log.use-case';
 import { DAY_LOG_REPOSITORY } from '../../domain/interfaces/repositories/day-log.repository.interface';
 import { DayLogValidator } from '../validators/day-log.validator';
 import { WorkoutSessionService } from '../../../workout-session/workout-session.service';
+import { RoutineDayService } from 'src/modules/routines/templates/routine-day/routine-day.service';
 import { DayLogDomain } from '../../domain/entities/day-log.domain';
 
 describe('CreateDayLogUseCase', () => {
@@ -23,6 +24,10 @@ describe('CreateDayLogUseCase', () => {
     create: jest.fn(),
   };
 
+  const mockRoutineDayService = {
+    findOne: jest.fn(),
+  };
+
   const mockUserId = '507f1f77bcf86cd799439011';
 
   const validInput = {
@@ -41,6 +46,7 @@ describe('CreateDayLogUseCase', () => {
         { provide: DAY_LOG_REPOSITORY, useValue: mockRepository },
         { provide: DayLogValidator, useValue: mockValidator },
         { provide: WorkoutSessionService, useValue: mockWorkoutSessionService },
+        { provide: RoutineDayService, useValue: mockRoutineDayService },
       ],
     }).compile();
 
@@ -89,6 +95,16 @@ describe('CreateDayLogUseCase', () => {
       mockRepository.findActive.mockResolvedValue(null);
       mockValidator.validateCreation.mockResolvedValue(undefined);
 
+      mockRoutineDayService.findOne.mockResolvedValue({
+        _id: '507f1f77bcf86cd799439016',
+        exercises: [
+          {
+            exercise: { _id: '507f1f77bcf86cd799439017' },
+            order: 1,
+          },
+        ],
+      });
+
       mockWorkoutSessionService.create.mockResolvedValue({
         _id: '507f1f77bcf86cd799439015',
       });
@@ -118,7 +134,21 @@ describe('CreateDayLogUseCase', () => {
         mockUserId,
       );
 
-      expect(mockWorkoutSessionService.create).toHaveBeenCalled();
+      expect(mockRoutineDayService.findOne).toHaveBeenCalledWith(
+        '507f1f77bcf86cd799439016',
+      );
+      expect(mockWorkoutSessionService.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          exercises: [
+            {
+              exerciseId: '507f1f77bcf86cd799439017',
+              series: 0,
+              sets: [],
+            },
+          ],
+        }),
+        mockUserId,
+      );
       expect(result).toEqual(createdDomain);
     });
   });

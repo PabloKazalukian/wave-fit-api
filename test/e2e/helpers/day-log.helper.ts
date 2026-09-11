@@ -38,6 +38,14 @@ export function createDayLog(
             planId
             routineDayId
             workoutSessionId
+            exercises {
+              exerciseId
+              series
+              sets {
+                reps
+                weights
+              }
+            }
             extraSessionIds
             status
             active

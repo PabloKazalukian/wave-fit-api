@@ -126,6 +126,10 @@ describe('DayLog Creation + Internal Exclusivity (e2e)', () => {
     expect(day).toBeDefined();
     expect(day.routineDayId).toBe(routineDay.id);
     expect(day.workoutSessionId).toBeDefined();
+    expect(day.exercises).toHaveLength(1);
+    expect(day.exercises[0].exerciseId).toBe(ex1.id);
+    expect(day.exercises[0].series).toBe(0);
+    expect(day.exercises[0].sets).toEqual([]);
   });
 
   it('should not require authentication to create (guard blocks)', async () => {

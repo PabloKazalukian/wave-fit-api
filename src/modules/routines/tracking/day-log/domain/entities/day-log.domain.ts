@@ -24,6 +24,7 @@ export class DayLogDomain {
   private _active: boolean;
   private _completed: boolean;
   private _notes?: string;
+  public readonly exercises: any[];
 
   constructor(
     id: string,
@@ -37,6 +38,7 @@ export class DayLogDomain {
     active: boolean,
     completed: boolean,
     notes?: string,
+    exercises: any[] = [],
   ) {
     this.id = id;
     this.userId = userId;
@@ -49,6 +51,7 @@ export class DayLogDomain {
     this._active = active;
     this._completed = completed;
     this._notes = notes;
+    this.exercises = exercises;
   }
 
   get workoutSessionId(): string | null {

@@ -111,10 +111,7 @@ export class DayLogResolver {
     @Context() context,
   ) {
     const userId = extractUserId(context);
-    return this.dayLogService.removeExtraSessionFromDay(
-      extraSessionId,
-      userId,
-    );
+    return this.dayLogService.removeExtraSessionFromDay(extraSessionId, userId);
   }
 
   @Mutation(() => DayLog)

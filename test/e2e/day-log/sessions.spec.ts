@@ -2,8 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
-import { getModelToken } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
 import { AppTestModule } from '../../utils/app-test.module';
 import { closeInMongodConnection, clearDatabase } from '../../utils/db-handler';
 import { UserService } from '../../../src/modules/user/user.service';
@@ -23,7 +21,6 @@ describe('DayLog workout-session & extra-session removal (e2e)', () => {
   let userService: UserService;
   let exerciseService: ExerciseService;
   let routineDayService: RoutineDayService;
-  let dayLogModel: Model<any>;
   let authCookie: string;
 
   beforeAll(async () => {
@@ -35,7 +32,6 @@ describe('DayLog workout-session & extra-session removal (e2e)', () => {
     userService = module.get<UserService>(UserService);
     exerciseService = module.get<ExerciseService>(ExerciseService);
     routineDayService = module.get<RoutineDayService>(RoutineDayService);
-    dayLogModel = module.get<Model<any>>(getModelToken('DayLog'));
 
     app.use(cookieParser());
     await app.init();
@@ -110,39 +106,84 @@ describe('DayLog workout-session & extra-session removal (e2e)', () => {
     expect(result.status).toBe('pending');
   });
 
-  it('should remove an extra session from the active day-log', async () => {
+  it('should add an extra session via updateDayLog and expose it on the active queries', async () => {
     const day = await createDayWithWorkoutSession();
 
-    // 1. Create an extra session linked to the day-log workout session
-    const esResponse = await request(app.getHttpServer())
+    // 1. Add the extra session through updateDayLog (extraSession block, like updateWeekDay)
+    const addResponse = await request(app.getHttpServer())
       .post('/graphql')
       .set('Cookie', [authCookie])
       .send({
         query: `
           mutation {
-            createExtraSession(createExtraSessionInput: {
-              workoutSessionId: "${day.workoutSessionId}",
-              date: "${todayLocalDate()}",
-              discipline: "running",
-              duration: 30,
-              intensityLevel: 3
-            }) { id }
+            updateDayLog(input: {
+              id: "${day.id}"
+              extraSession: {
+                date: "${todayLocalDate()}"
+                discipline: "running"
+                duration: 30
+                intensityLevel: 3
+              }
+            }) {
+              id
+              workoutSessionId
+              extraSessionIds
+            }
           }
         `,
       });
 
-    expect(esResponse.status).toBe(200);
-    if (esResponse.body.errors) {
-      console.log('createExtraSession errors:', JSON.stringify(esResponse.body.errors));
+    expect(addResponse.status).toBe(200);
+    if (addResponse.body.errors) {
+      console.log(
+        'addExtraSession errors:',
+        JSON.stringify(addResponse.body.errors),
+      );
     }
-    const extraSessionId = esResponse.body.data?.createExtraSession?.id;
+    const updated = addResponse.body.data.updateDayLog;
+    expect(updated.extraSessionIds).toHaveLength(1);
+    const extraSessionId = updated.extraSessionIds[0];
     expect(extraSessionId).toBeDefined();
 
-    // 2. Manually link the extra session to the day-log (there is no resolver mutation to add it)
-    await dayLogModel.updateOne(
-      { _id: new Types.ObjectId(day.id) },
-      { $set: { extraSessionIds: [new Types.ObjectId(extraSessionId)] } },
-    );
+    // 2. The active queries must expose the extraSessionId (same as week-log)
+    const activeResponse = await request(app.getHttpServer())
+      .post('/graphql')
+      .set('Cookie', [authCookie])
+      .send({
+        query: `
+          query {
+            activeDayLog {
+              hasActiveDay
+              day {
+                id
+                extraSessionIds
+              }
+            }
+            activeTracking {
+              hasActive
+              type
+              day {
+                id
+                extraSessionIds
+              }
+            }
+          }
+        `,
+      });
+
+    expect(activeResponse.status).toBe(200);
+    if (activeResponse.body.errors) {
+      console.log(
+        'active queries errors:',
+        JSON.stringify(activeResponse.body.errors),
+      );
+    }
+    expect(
+      activeResponse.body.data.activeDayLog.day.extraSessionIds,
+    ).toContain(extraSessionId);
+    expect(
+      activeResponse.body.data.activeTracking.day.extraSessionIds,
+    ).toContain(extraSessionId);
 
     // 3. Remove it via removeExtraSessionFromDayLog
     const removeResponse = await request(app.getHttpServer())

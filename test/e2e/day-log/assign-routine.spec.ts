@@ -92,6 +92,14 @@ describe('DayLog assignRoutineToDayLog (e2e)', () => {
               routineDayId
               workoutSessionId
               status
+              exercises {
+                exerciseId
+                series
+                sets {
+                  reps
+                  weights
+                }
+              }
             }
           }
         `,
@@ -103,6 +111,8 @@ describe('DayLog assignRoutineToDayLog (e2e)', () => {
     expect(assigned.routineDayId).toBe(routineDay.id);
     expect(assigned.workoutSessionId).toBeDefined();
     expect(assigned.status).toBe('pending');
+    expect(assigned.exercises).toHaveLength(1);
+    expect(assigned.exercises[0].exerciseId).toBe(ex1.id);
   });
 
   it('should fail to assign a routine when there is no active day-log', async () => {
