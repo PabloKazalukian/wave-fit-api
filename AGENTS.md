@@ -214,6 +214,8 @@ UserProfile:                              # Ver src/modules/user/user-profile/RE
   myProfile, userProfile, userProfileContext, userProfiles,
   upsertUserProfile, createUserProfile, updateUserProfile,
   removeUserProfile, removeMyProfileData
+  (campo `distributionDays`: week_log|day_log, default week_log, gate blando;
+   backfill one-time en bootstrap — Fase A day-log)
   Sub-módulos (goals, schedule, health-constraints, resource,
              training-preference, strength-metrics, weight):
   updateUserGoals, userGoals, updateUserSchedule, userSchedule,
@@ -240,12 +242,29 @@ WorkoutSession:
 
 WeekLog:
   createWeekLog, findAll, findOne, activeWeekLog, currentWorkoutSession,
-  updateDay, updateDayWorkoutStatus, updateWeekLog, assignRoutineToDay,
-  removeWorkoutSessionFromDay, removeExtraSessionFromDay,
-  syncWeekLogDays, removeWeekLog
+  updateWeekDay, updateWeekDayWorkoutStatus, updateWeekLog,
+  assignRoutineToWeekDay, removeWorkoutSessionFromWeekDay,
+  removeExtraSessionFromWeekDay, syncWeekLogDays, removeWeekLog
+
+> **Día vacío → descanso (regla de negocio):** al enviar `days[]` en `updateWeekLog`
+> (o `updateWeekDay`), si un día llega sin `workoutSession`, sin `extraSession` y con
+> `workoutSessionId` vacío (`""`), el backend lo trata como día no trabajado: elimina
+> cualquier WorkoutSession que tuviera y lo fuerza a día de descanso (`isRest: true`,
+> `status: "skipped"`), ignorando `status`/`isRest` que envíe el cliente para ese día.
+> Un día con WS trabajado o con ExtraSession asignada **no** se marca como descanso.
+> `workoutSessionId: ""` se acepta en el DTO (no falla `@IsMongoId`) para permitir
+> finalizar semanas no cargadas.
 
 DayLog:
-  createDayLog, dayLogFindAll, dayLogFindOne, updateDayLog, removeDayLog
+  createDayLog, dayLogFindAll, dayLogFindOne, activeDayLog, updateDayLog,
+  updateDayLogStatus, assignRoutineToDayLog, removeWorkoutSessionFromDayLog,
+  removeExtraSessionFromDayLog, removeDayLog
+  (updateDayLog acepta un bloque `extraSession` para crear y vincular una
+   extra-session al day-log, como updateWeekDay; expone `extraSessionIds`
+   poblado en activeDayLog/activeTracking)
+
+ActiveTracking:
+  activeTracking -> ActiveTracking (hasActive, type WEEK_LOG|DAY_LOG, week?, day?)
 
 ExtraSession:
   extraSessionCatalog, createExtraSession, extraSessionFindAll, extraSessionFindOne,
@@ -294,13 +313,13 @@ El proyecto usa el algoritmo de distancia de Levenshtein (`fastest-levenshtein`)
 
 ### Tests Unitarios
 Suite completa verde en `src/`:
-- **59 suites / 586 tests** (tracking, auth, user-profile, templates, ai, training-plan, etc.)
+- **59 suites / 589 tests** (tracking, auth, user-profile, templates, ai, training-plan, etc.)
 - Comando: `npm test` (configuración de Jest unificada en `jest.config.js`, única fuente de verdad desde que se retiró el bloque `jest` de `package.json`). Al filtrar por ruta: `npx jest --config jest.config.js <ruta>`.
 - Patrones de mocks documentados en `documents/config/testing.md`
 
 ### Tests End-to-End (E2E)
 Se han implementado tests automatizados que prueban flujos completos:
-- **23 spec files / 126 tests** en `test/e2e/` cubriendo auth, week-log (CRUD, extra-session, workout-session) y user-profile (incluye aislamiento entre usuarios)
+- **31 spec files / 154 tests** en `test/e2e/` cubriendo auth, week-log (CRUD, extra-session, workout-session), day-log (creación, exclusividad, rutina, WS/ES, CRUD, aislamiento, `activeTracking`) y user-profile (incluye aislamiento entre usuarios)
 - Infraestructura: MongoDB en memoria (`mongodb-memory-server`), `supertest`, `cookie-parser`
 - Comando: `npm run test:e2e` (fijado `--maxWorkers=2` por condiciones de carrera con más workers)
 - Documentación detallada: `documents/config/testing.md`
@@ -377,22 +396,39 @@ AI_MAX_OUTPUT_TOKENS=5000 # Presupuesto de tokens de salida (combate content vac
 Permite al usuario crear un día de entrenamiento **sin necesidad de una semana completa**. Ideal para entrenamiento ad-hoc o días sueltos fuera del plan semanal.
 
 ### Estado Actual
-El resolver (`day-log.resolver.ts`) ya expone las operaciones GraphQL (`createDayLog`, `dayLogFindAll`/`dayLogFindOne`, `updateDayLog`, `removeDayLog`), pero internamente delegan en use cases que **retornan placeholders**:
+Day-log implementado como módulo hexagonal completo (Fase B), con coordinación de unicidad (Fase C) y capa de lectura unificada `activeTracking` (Fase D):
 
 | Capa | Estado |
 |------|--------|
-| `presentation/` | ✅ DTOs y entidad GraphQL definidos |
-| `application/use-cases/` | 🏗️ 6 use cases creados pero retornan placeholders |
-| `application/validators/` | ✅ Validator stub creado |
-| `domain/` | ❌ Vacío (sin entidades ni interfaces) |
-| `infrastructure/` | ❌ Vacío (sin schema ni repositorio) |
+| `presentation/` | ✅ DTOs, entidad GraphQL y `ActiveDayLogResponse` |
+| `application/use-cases/` | ✅ 10 use cases reales (create/update/status/assign/remove WS/ES/find) |
+| `application/validators/` | ✅ `DayLogValidator` (fecha, ownership, exclusividad + Fase C) |
+| `domain/` | ✅ `DayLogDomain` + `IDayLogRepository` |
+| `infrastructure/` | ✅ schema Mongoose + `DayLogRepository` |
 
-### Próximos Pasos
-1. Definir entidad de dominio `DayLogDomain` e interfaz `IDayLogRepository`
-2. Crear schema Mongoose `day-log.schema.ts`
-3. Implementar repositorio concreto
-4. Implementar lógica real en los use cases
-5. Conectar resolver con la lógica real
+### Fase A (day-log) — activación de `distributionDays` ✅ (rama `feat/day-log`)
+- Enum normalizado en `user-profile.schema.ts`: `WEEK='week_log'` | `DAY='day_log'` (default `week_log`).
+- Expuesto en entidad GraphQL `UserProfile`, DTOs create/update y persistido en service.
+- **Backfill one-time** en `UserProfileService.onApplicationBootstrap` (normaliza legacy `'Week-log'`/`'Day-log'`/`WEKK`/`DAY`, idempotente).
+- Incluido en el contexto IA (`buildUserContextForAI` → `ctx.distributionDays`).
+- **Gate blando**: solo sugiere default en el front; no bloquea la creación del otro tipo.
+
+### Fase B (day-log real) ✅
+- Módulo hexagonal completo (`day-log/`): domain, infrastructure (schema + repo), application (10 use cases + validator), presentation (DTOs/entity).
+- Relaciones entre week-log y day-log coordinadas vía `ActiveTrackingService` (Fase C), sin acoplamiento directo.
+
+### Fase C — Unicidad del activo ✅
+- `ActiveTrackingService` (`hasActiveWeek`/`hasActiveDay`/`hasActiveTracking`) inyectado en week-log y day-log.
+- `WeekLogValidator.validateCreation` lanza `ConflictException('Already active day-log')` si hay día activo.
+- `DayLogValidator.validateNoActiveWeek` lanza `ConflictException('Already active week-log')` si hay semana activa.
+- No se puede tener semana y día activos simultáneamente (regla dura de escritura).
+
+### Fase D — Capa de lectura `activeTracking` ✅
+- Query `activeTracking` → `ActiveTracking` (`hasActive`, `type WEEK_LOG|DAY_LOG`, `week?`, `day?`). Reemplaza a `activeWeekLog` para el front (deprecado en transición).
+
+### Tests
+- Unit: suite 62 suites / 626 tests verdes.
+- E2E: suite 31 suites / 154 tests verdes (incluye `test/e2e/day-log/`: creación, exclusividad interna y cruzada, asignación de rutina, update/status, WS/ES, CRUD, aislamiento entre usuarios, `activeTracking`). `DayLogModule` + `ActiveTrackingModule` registrados en `test/utils/app-test.module.ts`.
 
 ---
 

@@ -97,7 +97,7 @@ export class WeekLogResolver {
    * Mutation unificada que crea/actualiza WorkoutSession y/o ExtraSession
    * en un día del WeekLog en una sola operación.
    */
-  @Mutation(() => WeekLogDay)
+  @Mutation(() => WeekLogDay, { name: 'updateWeekDay' })
   async updateDay(
     @Args('input') input: UpdateWeekLogDayUnifiedInput,
     @Context() context,
@@ -107,7 +107,7 @@ export class WeekLogResolver {
     return this.weekLogService.updateDay(input, userId);
   }
 
-  @Mutation(() => WeekLogDay)
+  @Mutation(() => WeekLogDay, { name: 'updateWeekDayWorkoutStatus' })
   async updateDayWorkoutStatus(
     @Args('input') input: UpdateDayWorkoutStatusInput,
     @Context() context,
@@ -154,7 +154,7 @@ export class WeekLogResolver {
     return this.weekLogService.syncDaysWithSessions(weekLogId, userId);
   }
 
-  @Mutation(() => WeekLogDay)
+  @Mutation(() => WeekLogDay, { name: 'assignRoutineToWeekDay' })
   @Audit('ASSIGN_ROUTINE_TO_DAY', 'WeekLog')
   async assignRoutineToDay(
     @Args('routineDayId', { type: () => String }) routineDayId: string,
@@ -166,7 +166,7 @@ export class WeekLogResolver {
     return this.weekLogService.assignRoutineToDay(routineDayId, date, userId);
   }
 
-  @Mutation(() => WeekLogDay)
+  @Mutation(() => WeekLogDay, { name: 'removeWorkoutSessionFromWeekDay' })
   async removeWorkoutSessionFromDay(
     @Args('workoutSessionId', { type: () => String }) workoutSessionId: string,
     @Context() context,
@@ -179,7 +179,7 @@ export class WeekLogResolver {
     );
   }
 
-  @Mutation(() => WeekLogDay)
+  @Mutation(() => WeekLogDay, { name: 'removeExtraSessionFromWeekDay' })
   async removeExtraSessionFromDay(
     @Args('date', { type: () => String }) date: string,
     @Args('extraSessionId', { type: () => String }) extraSessionId: string,

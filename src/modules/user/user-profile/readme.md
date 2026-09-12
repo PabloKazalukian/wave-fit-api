@@ -64,6 +64,15 @@ user-profile/
 | `createWeightLog(input)`          | Registrar peso                          | WeightResolver            |
 | `userWeightLogs`                  | Historial de peso                       | WeightResolver            |
 
+#### Campo `distributionDays` (preferencia semana / día suelto)
+
+- Enum normalizado: `week_log` (semana) | `day_log` (día suelto). Default: `week_log`.
+- Se expone en la entidad GraphQL `UserProfile` y en `create/updateUserProfile` (opcional).
+- **Gate blando**: solo sugiere el tipo por defecto en el frontend; **no bloquea** la creación del otro tipo.
+- **Backfill one-time** en arranque (`UserProfileService.onApplicationBootstrap`): normaliza valores legacy
+  (`'Week-log'`/`'Day-log'`/`WEKK`/`DAY`) a los valores normalizados. Idempotente.
+- Se incluye en el contexto de IA (`buildUserContextForAI` → `ctx.distributionDays`).
+
 ### Utilidades (`user-profile.utils.ts`)
 
 - `extractUserId(context)` → Valida y extrae el userId del contexto JWT

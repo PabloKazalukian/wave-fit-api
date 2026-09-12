@@ -21,14 +21,14 @@ const DAY_FIELDS = `
 `;
 
 const UPDATE_DAY_MUTATION = `
-    mutation UpdateDay($input: UpdateWeekLogDayUnifiedInput!) {
-        updateDay(input: $input) {
+    mutation UpdateWeekDay($input: UpdateWeekLogDayUnifiedInput!) {
+        updateWeekDay(input: $input) {
             ${DAY_FIELDS}
         }
     }
 `;
 
-describe('updateDay Bug Reproduction (e2e)', () => {
+describe('updateWeekDay Bug Reproduction (e2e)', () => {
   let app: INestApplication<App>;
   let userService: UserService;
   let authCookie: string;
@@ -65,7 +65,7 @@ describe('updateDay Bug Reproduction (e2e)', () => {
     await app.close();
   });
 
-  it('should SUCCEED when creating a workout session via updateDay (fix verified)', async () => {
+  it('should SUCCEED when creating a workout session via updateWeekDay (fix verified)', async () => {
     // 1. Create a WeekLog WITHOUT a plan (so days have no WorkoutSession)
     const today = new Date();
     const startOfWeek = new Date(today);
@@ -98,7 +98,7 @@ describe('updateDay Bug Reproduction (e2e)', () => {
     const week = createResponse.body.data.createWeekLog;
     expect(week.days[0].workoutSessionId).toBeNull();
 
-    // 2. Try to create a workout session via updateDay
+    // 2. Try to create a workout session via updateWeekDay
     // This used to fail due to timezone bug, now it should succeed
     const updateResponse = await request(app.getHttpServer())
       .post('/graphql')
@@ -127,7 +127,7 @@ describe('updateDay Bug Reproduction (e2e)', () => {
     
     expect(updateResponse.status).toBe(200);
     expect(updateResponse.body.errors).toBeUndefined();
-    const updatedDay = updateResponse.body.data.updateDay;
+    const updatedDay = updateResponse.body.data.updateWeekDay;
     expect(updatedDay.workoutSessionId).toBeDefined();
     expect(updatedDay.workoutSessionId).not.toBeNull();
   });

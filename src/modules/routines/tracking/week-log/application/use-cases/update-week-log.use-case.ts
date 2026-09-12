@@ -139,6 +139,34 @@ export class UpdateWeekLogUseCase {
       );
     }
 
+    // Día vacío → descanso.
+    // Si el día llega sin workoutSession, sin extraSession y con workoutSessionId
+    // vacío, significa que el usuario no lo trabajó (p.ej. al finalizar una semana
+    // que no cargó). Se elimina cualquier WorkoutSession que tuviera y se marca
+    // como día de descanso. Un día con WS trabajado o con ExtraSession asignada
+    // NO se marca como descanso.
+    const isEmptyDay =
+      !dayInput.workoutSession &&
+      !dayInput.extraSession &&
+      (dayInput.workoutSessionId === undefined ||
+        dayInput.workoutSessionId === null ||
+        dayInput.workoutSessionId === '');
+
+    if (isEmptyDay && !day.extraSessionIds?.length) {
+      if (day.workoutSessionId) {
+        await this.workoutSessionService.remove(
+          day.workoutSessionId.toString(),
+          userId,
+        );
+      }
+      day.workoutSessionId = null;
+      day.isRest = true;
+      day.status = 'skipped';
+      // El día declarado vacío se fuerza como descanso: ignora cualquier
+      // status/isRest que el cliente envíe en este mismo input.
+      return;
+    }
+
     // WorkoutSession
     if (dayInput.workoutSession) {
       await this.handleWorkoutSession(weekLog, day, dayInput, userId, timezone);

@@ -26,6 +26,9 @@ export class UserProfile {
   @Field({ nullable: true })
   unitsPreference?: string;
 
+  @Field({ nullable: true })
+  distributionDays?: string;
+
   @Field()
   createdAt: Date;
 

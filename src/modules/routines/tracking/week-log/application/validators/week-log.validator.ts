@@ -14,12 +14,14 @@ import {
 import type { IWeekLogRepository } from '../../domain/interfaces/repositories/week-log.repository.interface';
 import { WEEK_LOG_REPOSITORY } from '../../domain/interfaces/repositories/week-log.repository.interface';
 import { WeekLogDomain } from '../../domain/entities/week-log.domain';
+import { ActiveTrackingService } from '../../../active-tracking/active-tracking.service';
 
 @Injectable()
 export class WeekLogValidator {
   constructor(
     @Inject(WEEK_LOG_REPOSITORY)
     private readonly weekLogRepository: IWeekLogRepository,
+    private readonly activeTrackingService: ActiveTrackingService,
   ) {}
 
   async validateCreation(
@@ -42,6 +44,12 @@ export class WeekLogValidator {
 
     if (existing !== null) {
       throw new ConflictException('Already active week');
+    }
+
+    // Fase C: no se puede crear semana si hay un day-log activo
+    const hasActiveDay = await this.activeTrackingService.hasActiveDay(userId);
+    if (hasActiveDay) {
+      throw new ConflictException('Already active day-log');
     }
   }
 

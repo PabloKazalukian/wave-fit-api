@@ -20,8 +20,8 @@ lerna-debug.log*
 package-lock.json
 
 /documents/as.md
-/documents/reports
-/documents/plans
+# /documents/reports
+# /documents/plans  (versionado desde 2026-08-29)
 
 
 # Tests

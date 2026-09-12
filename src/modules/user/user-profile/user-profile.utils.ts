@@ -16,6 +16,7 @@ export interface UserContextInput {
     heightCm: number;
     weightKg: number;
     bodyFatPct?: number | null;
+    distributionDays?: string;
   };
   goal?: {
     primaryGoal: string;
@@ -105,6 +106,7 @@ export function buildUserContextForAI(input: any): Record<string, unknown> {
         input.profile.gender,
       ),
     };
+    ctx.distributionDays = input.profile.distributionDays ?? 'week_log';
   }
 
   if (input.goal) {

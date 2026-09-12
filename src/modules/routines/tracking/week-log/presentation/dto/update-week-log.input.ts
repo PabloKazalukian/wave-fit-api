@@ -11,6 +11,7 @@ import {
   Min,
   Max,
   ValidateNested,
+  ValidateIf,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { UpdateWorkoutSessionInput } from '../../../workout-session/dto/update-workout-session.input';
@@ -63,9 +64,17 @@ export class UpdateDayInput {
   /**
    * ID de un WorkoutSession ya existente en DB para vincular al crear el ES.
    * Prioridad: day.workoutSessionId > workoutSessionId > crear nuevo WS vacío.
+   * Puede venir vacío ("") cuando el día no se trabajó → se trata como día de
+   * descanso en el use case (no valida como MongoId en ese caso).
    */
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @IsOptional()
+  @ValidateIf(
+    (o) =>
+      o.workoutSessionId !== undefined &&
+      o.workoutSessionId !== null &&
+      o.workoutSessionId !== '',
+  )
   @IsMongoId()
   workoutSessionId?: string;
 

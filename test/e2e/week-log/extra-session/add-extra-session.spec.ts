@@ -178,7 +178,7 @@ describe('Add ExtraSession (e2e)', () => {
       .send({
         query: `
           mutation {
-            updateDay(input: {
+            updateWeekDay(input: {
               id: "${week.id}"
               days: [{
                 order: 1
@@ -209,9 +209,9 @@ describe('Add ExtraSession (e2e)', () => {
     }
 
     expect(updateResponse.status).toBe(200);
-    expect(updateResponse.body.data.updateDay.extraSessionIds).toHaveLength(1);
-    expect(updateResponse.body.data.updateDay.workoutSessionId).toBeDefined();
-    expect(updateResponse.body.data.updateDay.exercises).toHaveLength(1);
+    expect(updateResponse.body.data.updateWeekDay.extraSessionIds).toHaveLength(1);
+    expect(updateResponse.body.data.updateWeekDay.workoutSessionId).toBeDefined();
+    expect(updateResponse.body.data.updateWeekDay.exercises).toHaveLength(1);
   });
 
   it('should add extra session without losing existing exercises', async () => {
@@ -285,7 +285,7 @@ describe('Add ExtraSession (e2e)', () => {
       .send({
         query: `
           mutation {
-            updateDay(input: {
+            updateWeekDay(input: {
               id: "${week.id}"
               days: [{
                 order: 1
@@ -399,7 +399,7 @@ describe('Add ExtraSession (e2e)', () => {
       .send({
         query: `
           mutation {
-            updateDay(input: {
+            updateWeekDay(input: {
               id: "${week.id}"
               days: [{
                 order: 1
@@ -424,7 +424,7 @@ describe('Add ExtraSession (e2e)', () => {
       .send({
         query: `
           mutation {
-            updateDay(input: {
+            updateWeekDay(input: {
               id: "${week.id}"
               days: [{
                 order: 1
@@ -451,7 +451,7 @@ describe('Add ExtraSession (e2e)', () => {
     }
 
     expect(addSecondResponse.status).toBe(200);
-    expect(addSecondResponse.body.data.updateDay.extraSessionIds).toHaveLength(
+    expect(addSecondResponse.body.data.updateWeekDay.extraSessionIds).toHaveLength(
       2,
     );
   });

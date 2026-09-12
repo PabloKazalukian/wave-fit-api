@@ -23,10 +23,12 @@ import { WeekLogRepository } from './infrastructure/repositories/week-log.reposi
 import { WEEK_LOG_REPOSITORY } from './domain/interfaces/repositories/week-log.repository.interface';
 import { WEEK_LOG_USE_CASES } from './application/use-cases';
 import { ExtraSessionModule } from '../extra-session/extra-session.module';
+import { ActiveTrackingModule } from '../active-tracking/active-tracking.module';
 
 @Module({
   imports: [
     forwardRef(() => WorkoutSessionModule),
+    forwardRef(() => ActiveTrackingModule),
     RoutinePlanModule,
     RoutineDayModule,
     MongooseModule.forFeature([

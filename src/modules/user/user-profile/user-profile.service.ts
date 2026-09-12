@@ -2,6 +2,8 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
+  OnApplicationBootstrap,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -17,7 +19,9 @@ import { ResourceService } from './resource/resource.service';
 import { StrengthMetricsService } from './strength-metrics/strength-metrics.service';
 
 @Injectable()
-export class UserProfileService {
+export class UserProfileService implements OnApplicationBootstrap {
+  private readonly logger = new Logger(UserProfileService.name);
+
   constructor(
     @InjectModel(UserProfile.name)
     private readonly profileModel: Model<UserProfile>,
@@ -29,6 +33,46 @@ export class UserProfileService {
     private readonly resourceService: ResourceService,
     private readonly strengthMetricsService: StrengthMetricsService,
   ) {}
+
+  /**
+   * Backfill one-time: normaliza los valores viejos de `distributionDays`
+   * (typo `WEKK` + PascalCase con guión) a los valores normalizados actuales.
+   *   'Week-log' -> 'week_log'
+   *   'Day-log'  -> 'day_log'
+   * Idempotente: solo actualiza docs cuyo valor aún no sea uno de los válidos.
+   */
+  async onApplicationBootstrap(): Promise<void> {
+    const LEGACY_MAP: Record<string, string> = {
+      'Week-log': 'week_log',
+      'Day-log': 'day_log',
+      WEKK: 'week_log',
+      DAY: 'day_log',
+    };
+
+    const profiles = await this.profileModel
+      .find({
+        distributionDays: {
+          $nin: Object.values(LEGACY_MAP),
+        },
+      })
+      .exec();
+
+    let normalized = 0;
+    for (const profile of profiles) {
+      const normalizedValue = LEGACY_MAP[profile.distributionDays];
+      if (!normalizedValue) continue;
+      await this.profileModel
+        .updateOne({ _id: profile._id }, { $set: { distributionDays: normalizedValue } })
+        .exec();
+      normalized++;
+    }
+
+    if (normalized > 0) {
+      this.logger.log(
+        `✅ ${normalized} user-profiles normalizados (distributionDays)`,
+      );
+    }
+  }
 
   async create(
     input: CreateUserProfileInput,
@@ -52,6 +96,7 @@ export class UserProfileService {
       weightKg: input.weightKg ?? null,
       bodyFatPct: input.bodyFatPct ?? null,
       unitsPreference: input.unitsPreference ?? 'metric',
+      distributionDays: input.distributionDays ?? 'week_log',
     });
 
     return profile;
@@ -162,6 +207,8 @@ export class UserProfileService {
       updateData.bodyFatPct = input.bodyFatPct;
     if (input.unitsPreference !== undefined)
       updateData.unitsPreference = input.unitsPreference;
+    if (input.distributionDays !== undefined)
+      updateData.distributionDays = input.distributionDays;
 
     const updated = await this.profileModel
       .findByIdAndUpdate(id, { $set: updateData }, { new: true })

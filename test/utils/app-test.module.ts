@@ -12,6 +12,8 @@ import { RoutineDayModule } from '../../src/modules/routines/templates/routine-d
 import { WorkoutSessionModule } from '../../src/modules/routines/tracking/workout-session/workout-session.module';
 import { ExerciseModule } from '../../src/modules/routines/templates/exercise/exercise.module';
 import { WeekLogModule } from '../../src/modules/routines/tracking/week-log/week-log.module';
+import { DayLogModule } from '../../src/modules/routines/tracking/day-log/day-log.module';
+import { ActiveTrackingModule } from '../../src/modules/routines/tracking/active-tracking/active-tracking.module';
 import { ExtraSessionModule } from '../../src/modules/routines/tracking/extra-session/extra-session.module';
 import { GoogleModule } from '../../src/modules/auth/google/google.module';
 import { AuditLogsModule } from '../../src/modules/audit-logs/audit-logs.module';
@@ -45,6 +47,8 @@ import { GraphQLExceptionFilter } from '../../src/common/filters/gql-exception.f
     WorkoutSessionModule,
     ExerciseModule,
     WeekLogModule,
+    DayLogModule,
+    ActiveTrackingModule,
     ExtraSessionModule,
     GoogleModule,
     AuditLogsModule,
