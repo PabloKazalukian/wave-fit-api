@@ -2,11 +2,11 @@
   <img src="https://nestjs.com/img/logo-small.svg" alt="WaveFit API Logo" width="120" />
 </p>
 
-<h1 align="center">🏋️ WaveFit API</h1>
+<h1 align="center">WaveFit API</h1>
 
 <p align="center">
-  <strong>Backend para tu compañero de entrenamiento personal.</strong><br/>
-  API GraphQL para gestionar ejercicios, rutinas y seguimiento de entrenamiento.
+  <strong>Backend for your personal training companion.</strong><br/>
+  A GraphQL API to manage exercises, routines and training tracking.
 </p>
 
 <p align="center">
@@ -17,118 +17,99 @@
 </p>
 
 <p align="center">
-  <a href="https://wave-fit.vercel.app/">🌐 Ver Demo Frontend</a> •
-  <a href="https://github.com/PabloKazalukian/wave-fit">🔗 Repositorio Frontend</a>
+  <a href="https://wave-fit.vercel.app/">View Frontend Demo</a> •
+  <a href="https://github.com/PabloKazalukian/wave-fit">Frontend Repository</a>
 </p>
 
 ---
 
-## ✨ Funcionalidades
+## Features
 
-### Disponibles
+### Available
 
-- 📋 **Gestión de ejercicios** — CRUD completo del catálogo de ejercicios
-- 🗓️ **Planificación de rutinas** — RoutinePlan → RoutineDay → Exercises
-- 💪 **Seguimiento de entrenamiento** — WorkoutSession, WeekLog, ExtraSession
-- 🔐 **Autenticación segura** — JWT (cookie HttpOnly) + Google OAuth (PKCE)
-- 📝 **Auditoría de cambios** — Registro automático de modificaciones en la DB
+- **Exercise management** — full CRUD over the exercise catalog
+- **Routine planning** — RoutinePlan → RoutineDay → Exercises
+- **Training tracking** — WorkoutSession, WeekLog, ExtraSession, DayLog
+- **Secure authentication** — JWT in an HttpOnly cookie + Google OAuth (PKCE)
+- **AI-generated training plans** — `generatePlan` / `confirmPlan` / `modifyPlan`
+- **Change audit** — automatic DB change records (AuditLogs)
 
-### Próximamente
+### Upcoming
 
-- 📈 **Estadísticas avanzadas** — Endpoints para analíticas de rendimiento
-- 🔄 **WebSockets** — Actualizaciones en tiempo real
-
----
-
-## 🛠️ Stack Tecnológico
-
-| Categoría     | Tecnología         |
-| ------------- | ------------------ |
-| **Framework** | NestJS 11          |
-| **API**       | GraphQL (Apollo)   |
-| **Database**  | MongoDB (Mongoose) |
-| **Auth**      | Passport + JWT     |
-| **OAuth**     | Google (PKCE)      |
-| **Testing**   | Jest               |
-| **Deploy**    | Render             |
-
-> 🔗 **Frontend:** Angular 20 + TailwindCSS + Apollo — [Ver repositorio](https://github.com/PabloKazalukian/wave-fit) | [Demo en producción](https://wave-fit.vercel.app/)
+- **Advanced statistics** — analytics endpoints (stats module is experimental)
+- **WebSockets** — real-time updates
 
 ---
 
-## 🚀 Instalación
+## Tech Stack
 
-### Pre-requisitos
+| Category      | Technology          |
+| ------------- | ------------------- |
+| **Framework** | NestJS 11           |
+| **API**       | GraphQL (Apollo)    |
+| **Database**  | MongoDB (Mongoose)  |
+| **Auth**      | Passport + JWT      |
+| **OAuth**     | Google (PKCE)       |
+| **Testing**   | Jest                |
+
+> **Frontend:** Angular + TailwindCSS + Apollo — [repository](https://github.com/PabloKazalukian/wave-fit) | [production demo](https://wave-fit.vercel.app/)
+
+---
+
+## Setup
+
+### Prerequisites
 
 - Node.js (v18+)
-- MongoDB (local o Atlas)
+- MongoDB (local or Atlas)
 - npm
 
-### Setup
+### Install and run
 
 ```bash
-# Clonar el repositorio
 git clone https://github.com/PabloKazalukian/wave-fit-api.git
 cd wave-fit-api
-
-# Instalar dependencias
 npm install
 
-# Configurar variables de entorno
-cp .env.example .env
-# Editar .env con tus credenciales
-
-# Compilar TypeScript
+cp .env.example .env   # edit with your credentials
 npm run build
 
-# Correr en modo desarrollo
 npm run start:dev
 ```
 
-La API está disponible en `http://localhost:3000/`
+The API is available at `http://localhost:3000/`.
 
 ---
 
-## 📂 Estructura del Proyecto
+## Project Structure
 
 ```
 src/
-├── app.module.ts              # Módulo raíz
+├── app.module.ts              # Root module
 ├── main.ts                    # Entry point
-├── common/                    # Filters, interceptors, guards
+├── common/                    # Filters, interceptors, guards, utils
 ├── modules/
 │   ├── auth/                  # JWT + Google OAuth
-│   │   ├── guards/
-│   │   ├── google/
-│   │   ├── auth.service.ts
-│   │   ├── auth.resolver.ts
-│   │   └── jwt.strategy.ts
-│   ├── user/                  # Gestión de usuarios
+│   ├── user/                  # Users + user-profile bounded contexts
+│   ├── storage/               # Avatar upload (S3) helper
 │   ├── routines/
-│   │   ├── templates/
-│   │   │   ├── exercise/      # Catálogo de ejercicios
-│   │   │   ├── routine-day/  # Días de rutina
-│   │   │   └── routine-plan/ # Planes semanales
-│   │   └── tracking/
-│   │       ├── workout-session/
-│   │       ├── week-log/
-│   │       └── extra-session/
-│   └── audit-logs/           # Registro de cambios
-└── documents/
-    └── config/                # Documentación técnica
+│   │   ├── templates/         # exercise, routine-day, routine-plan
+│   │   └── tracking/          # workout-session, week-log, day-log, extra-session, training-history
+│   ├── ai/                    # Transversal LLM layer (executePrompt)
+│   ├── training-plan/         # AI-generated training plans
+│   ├── stats/                 # Metrics (experimental)
+│   └── audit-logs/            # DB change records
 ```
 
----
+## GraphQL Playground
 
-## 📡 GraphQL Playground
-
-En desarrollo, podés acceder al Playground en:
+In development the Playground is available at:
 
 ```
 http://localhost:3000/graphql
 ```
 
-### Ejemplo de Query
+Example query:
 
 ```graphql
 query {
@@ -140,47 +121,36 @@ query {
 }
 ```
 
-### Ejemplo de Mutation (Login)
+## Deploy: Render
 
-```graphql
-mutation {
-  login(identifier: "user@example.com", password: "password123")
-}
-```
+Production is hosted on **Render**:
 
----
+- Frontend: `https://wave-fit-front.onrender.com` (CORS origin in `src/main.ts`)
+- API: `https://wave-fit-api.onrender.com` (Google OAuth redirect target)
+- Deployment is manual via Render dashboards; there is no CI pipeline (see `documents/engineering/ci-cd.md`).
 
-## 📖 Documentación
+## Documentation
 
-La documentación técnica se encuentra en [`/documents`](./documents/config/):
+- **`AGENTS.md`** is the navigation entry point for engineers and AI agents.
+- **`documents/engineering/`** — stable rules: charter, architecture, testing, coding standards, git workflow, CI/CD, seed.
+- **`documents/domain/`** — domain overview, glossary, business rules.
+- **`documents/modules/`** — implemented, validated module state.
+- **`documents/decisions/`** — ADRs (decision rationale).
+- **`sdd/`** — feature specs (feature contracts, authoritative alongside the code).
+- **`documents/plans/`** — historical/non-authoritative execution plans.
 
-- [Flujos de login](./documents/config/login_flows.md) — Email/password y Google OAuth
-- [Configuración de cookies](./documents/config/cookie_configuration.md) — HttpOnly, Secure, SameSite
-- [Autenticación](./documents/config/authentication.md) — Principios y diseño
-- [Módulo Auth](./documents/config/auth_module.md) — Arquitectura detallada
-
----
-
-## 🧪 Tests
+## Tests
 
 ```bash
-# Tests unitarios
-npm test
-
-# Tests con coverage
-npm run test:cov
-
-# Tests e2e
-npm run test:e2e
-
-# Modo watch
-npm run test:watch
+npm test                # unit tests
+npm run test:cov        # unit coverage
+npm run test:e2e        # e2e tests
+npm run test:e2e:cov    # e2e coverage
+npm run test:cov:combined  # unit + e2e merged coverage
 ```
 
----
-
-## 👤 Autor
+## Author
 
 **[Pablo Kazalukian](https://github.com/PabloKazalukian)**
 
-> 🔗 [Repositorio Frontend](https://github.com/PabloKazalukian/wave-fit)
+> [Frontend repository](https://github.com/PabloKazalukian/wave-fit) | [Production demo](https://wave-fit.vercel.app/)
