@@ -2,7 +2,7 @@
 
 > Part of the stable module documentation. Specs live under `sdd/`; this document describes the implemented system state.
 > **Status:** Current
-> **Last updated:** 2026-09-12
+> **Last updated:** 2026-09-13
 
 > **Feature contract:** `sdd/training-plan.spec.md`.
 
@@ -83,6 +83,7 @@ src/modules/training-plan/
 ├── schema/
 │   ├── training-plan.schema.ts        # TrainingPlan + enums (PlanStatus, PlanFocus, PlanConfirmationAction)
 │   │                                  #   + normalizePlanFocus() (legacy mapping)
+│   ├── goal.schema.ts                 # Goal snapshot ({ contextSnapshot, userId, capturedAt }) for auditing
 │   └── ai-snapshot.schema.ts          # Embedded AiSnapshot (context/prompt/model/raw/tokens)
 ├── entities/                          # GraphQL output types (TrainingPlan, AiSnapshot, Goal...)
 ├── dto/
@@ -150,7 +151,7 @@ All operations protected with `GqlAuthGuard`.
 
 - `PlanStatus`: `draft -> active -> completed | abandoned | archived`.
 - `PlanConfirmationAction`: `create_week_log | create_routine_plan | adapt_active_week` (reserved).
-- `resolveFocus()` accepts the AI value if valid; otherwise derives from `goal.primary`; otherwise `maintenance`. Legacy values (`hypertrophy`, `sport_specific`, `general`) are normalized on read.
+- `resolveFocus()` (implemented in `PlanGeneratorService` and `PlanModifierService`) accepts the AI value if valid; otherwise derives from `goal.primary`; otherwise `maintenance`. Legacy values (`hypertrophy`, `sport_specific`, `general`) are normalized on read by `normalizePlanFocus()` in `schema/training-plan.schema.ts`.
 
 ### Plan persistence
 

@@ -2,7 +2,7 @@
 
 > Part of the stable module documentation. Specs live under `sdd/`; this document describes the implemented system state.
 > **Status:** Current
-> **Last updated:** 2026-09-12
+> **Last updated:** 2026-09-13
 
 ## Design principles
 
@@ -18,13 +18,15 @@ The `AuthModule` centralizes the API security. Its main components are:
 - **AuthService**: contains the credential validation logic and the building of JWT payloads.
 - **JwtStrategy**: Passport strategy to validate the token on each request. It is configured to extract the JWT from cookies.
 - **GoogleModule**: specific integration for the OAuth2 flow with Google (login via `GoogleResolver.loginWithGoogle`).
-- Guards: `GqlAuthGuard` (user JWT from cookie) alongside the auth module.
+- Guards: `GqlAuthGuard` (user JWT from cookie, with a `google-token` fallback) alongside the `ServiceAuthGuard` (service JWTs, used by the stats worker).
 
 ### JWT strategy
 
 The API uses JSON Web Tokens signed with a secret defined in the environment variable `JWT_SECRET`.
 
-**Token extraction:** the system does **not** look for the token in the `Authorization` header. Instead, it uses a custom extractor that looks for the cookie `token`.
+**Token extraction:** the user JWT is **not** looked up in the `Authorization` header. `JwtStrategy` uses a custom extractor that reads the cookie `token`.
+
+> **Nuance (Google fallback):** `GqlAuthGuard` registers the strategies `['jwt', 'google-token']`. The `jwt` strategy reads only the cookie; the `google-token` strategy additionally accepts a Google ID token via `Authorization: Bearer <id_token>` and resolves/creates the user from it. Only `/auth`-related flows and the Google token path use the header; the project's own JWTs are always cookie-based.
 
 ### Guards
 
@@ -34,7 +36,7 @@ The API uses JSON Web Tokens signed with a secret defined in the environment var
 
 The JWT is transmitted in a `HttpOnly` cookie named `token`:
 
-- **Do NOT** use the `Authorization: Bearer <token>` header.
+- **Do NOT** use the `Authorization: Bearer <token>` header for the project's own JWTs (only the Google-token fallback described above).
 - The client **never** has access to the token (mitigates XSS).
 - Token extraction from cookie is configured in `JwtStrategy`.
 
@@ -45,7 +47,8 @@ The JWT is transmitted in a `HttpOnly` cookie named `token`:
 | **HttpOnly** | `true` | Prevents token access from JavaScript (mitigates XSS). |
 | **Secure** | `prod: true` / `dev: false` | In production the cookie is only sent over HTTPS. |
 | **SameSite** | `prod: 'none'` / `dev: 'lax'` | In production it allows secure cross-site requests (needed for Render). In development it avoids local CORS issues. |
-| **MaxAge** | 7 days | Session duration before expiration. |
+| **Partitioned** | `prod: true` / `dev: false` | Partitioned cookie (CHIPS): isolated per top-level site. |
+| **MaxAge** | 7 days | Cookie persistence on the client. **It does NOT define the JWT validity**: the token itself expires in `4h` (hardcoded `signOptions.expiresIn` in `auth.module.ts`), so a cookie older than 4h no longer authenticates; `JwtStrategy` rejects the token and `GqlAuthGuard` returns 401. |
 
 The cookie is set/cleared dynamically according to `NODE_ENV`.
 
@@ -55,8 +58,13 @@ The cookie is set/cleared dynamically according to `NODE_ENV`.
 - For the frontend to accept cookies, CORS must have `credentials: true`:
 
 ```typescript
+// main.ts - the origins are hardcoded; FRONTEND_URL is NOT read here
 app.enableCors({
-  origin: [process.env.FRONTEND_URL, 'http://localhost:4200'],
+  origin: [
+    'https://wave-fit-front.onrender.com',
+    'https://wave-fit.vercel.app',
+    'http://localhost:4200',
+  ],
   credentials: true,
 });
 ```
@@ -112,12 +120,13 @@ Local passwords are stored encrypted using **bcrypt**. Plain-text passwords are 
 2. `GoogleService` exchanges these values for official Google tokens.
 3. The user profile information is obtained from the Google APIs.
 4. The system looks up the user by email in our database:
-   - If it exists, the account is linked/updated.
+   - If it exists, the account is linked/updated (`googleId` set on creation).
    - If it does not exist, a new user is created with the Google information.
-5. A local Wave-Fit JWT is generated.
-6. **Response:**
+5. If the user has no avatar, the Google picture is downloaded and uploaded to Storage (`Avatars`, `StorageService.uploadFile`), storing `{ storageKey, url, source: 'google' }`.
+6. A local Wave-Fit JWT is generated.
+7. **Response:**
    - Sets the `token` cookie on the HTTP response.
-   - Returns the `user` object and (optionally) the `access_token` for compatibility.
+   - Returns **both** `{ user, access_token }` (the token is included for compatibility; the cookie is the authoritative session).
 
 ### Logout
 
@@ -129,11 +138,12 @@ To end the session, the server clears the `token` cookie via `clearCookie`, safe
 
 | Variable | Description |
 |---|---|
-| `JWT_SECRET` | Secret to sign the JWT |
-| `JWT_EXPIRATION` | Token duration (default `7d`) |
+| `JWT_SECRET` | Secret to sign the JWT (user and service JWTs). |
 | `GOOGLE_CLIENT_ID` | Google OAuth client ID |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
-| `FRONTEND_URL` | Frontend URL (CORS origin) |
+| `GOOGLE_REDIRECT_URI` | Google OAuth redirect URI (used by `GoogleService.getTokens`) |
+
+> **Not used (contrary to older docs):** `JWT_EXPIRATION` (the JWT duration is hardcoded `4h`) and `FRONTEND_URL` (the CORS origins are hardcoded in `main.ts`).
 
 ## Historical notes
 

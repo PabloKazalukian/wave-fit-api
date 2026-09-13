@@ -2,7 +2,7 @@
 
 > Part of the stable module documentation. Specs live under `sdd/`; this document describes the implemented system state.
 > **Status:** Current
-> **Last updated:** 2026-09-12
+> **Last updated:** 2026-09-13
 
 > **Warning: experimental module.** It has ~32 files with hexagonal architecture, but it is **not active in production** and by decision it is kept **out of the test suite** (0% coverage).
 
@@ -42,8 +42,6 @@ stats/
 ├── stats.resolver.ts                   # GraphQL Queries/Mutations and guards
 ├── stats.service.ts                    # Facade that delegates to the use cases
 ├── stats-event-publisher.ts            # Publishes events to SQS
-├── CONTRACT.md                         # Warning: document to update (API <-> worker contract)
-├── LAMBDA.md                           # Warning: written to implement the Lambda in Python
 ├── application/use-cases/              # Business logic (9 use cases)
 ├── domain/entities/                    # Domain entities + raw data interfaces
 ├── domain/interfaces/repositories/     # IStatsRepository interface + token
@@ -52,7 +50,7 @@ stats/
 └── presentation/dto/ + entities/       # GraphQL layer
 ```
 
-Note: `src/modules/stats/CONTRACT.md` (API <-> worker contract) and `src/modules/stats/LAMBDA.md` (Lambda implementation guide) exist together with the code. Their key content is folded into this document and they may be considered **obsolete relative to this code**.
+Note: the former `src/modules/stats/CONTRACT.md` (API <-> worker contract) and `src/modules/stats/LAMBDA.md` (Lambda implementation guide) were removed in the documentation migration; their content is fully folded into the "Worker contract" and "Lambda implementation guide" sections of this document.
 
 ## Internal architecture
 
@@ -149,7 +147,9 @@ If `STATS_SQS_QUEUE_URL` is configured, it publishes the message to SQS:
 
 > If the SQS URL is **not** configured, the publisher starts but **silently skips** the send (events keep firing internally). This allows the module to never block the main tracking flow.
 
-## Worker contract (from CONTRACT.md)
+The message is sent to a **FIFO queue**: `MessageGroupId: 'workout-session-group'` with a unique `MessageDeduplicationId` (timestamp + random), and a `triggerType` message attribute (String, same value as the body field).
+
+## Worker contract
 
 The contract between the NestJS API and the Stats worker/Lambda is defined here.
 
@@ -240,7 +240,7 @@ All 4 mutations require a service JWT and accept `userId` as a separate argument
 
 Each returns its result type (`TopExerciseStats`, `TopRoutineStats`, `PersonalRecordStats`, `AdherenceStats`) with `id`, `userId`, `computedAt` and the entries.
 
-## Lambda implementation guide (from LAMBDA.md)
+## Lambda implementation guide
 
 The Lambda is triggered by an SQS message. It:
 1. Authenticates to the NestJS API with a service JWT (stored in AWS Secrets Manager as `STATS_SERVICE_JWT`; if the API returns 401, the token is expired - alert/stop, do not generate tokens).
@@ -289,8 +289,8 @@ The Lambda is triggered by an SQS message. It:
 | `JWT_SECRET` | Yes | Shared secret to sign user and service JWTs |
 | `STATS_SQS_QUEUE_URL` | No | SQS queue URL. If not set, publishing is disabled (events still fire internally) |
 | `AWS_REGION` | No | AWS region for the SQS client. Default: `us-east-1` |
-| `AWS_ACCESS_KEY_ID` | Outside AWS | IAM credentials for SQS (not needed with an IAM role on EC2/ECS) |
-| `AWS_SECRET_ACCESS_KEY` | Outside AWS | IAM credentials for SQS |
+| `AWS_ACCESS_KEY` | Outside AWS | IAM credentials for SQS (`accessKeyId`; not needed with an IAM role on EC2/ECS). Names follow the code in `stats-event-publisher.ts`, not the AWS SDK defaults. |
+| `AWS_SECRET_KEY` | Outside AWS | IAM credentials for SQS (`secretAccessKey`) |
 
 ## Status / Roadmap
 
@@ -298,6 +298,6 @@ The Lambda is triggered by an SQS message. It:
 - **Implemented**: full resolver, 9 use cases, repository, 9 schemas, SQS publisher.
 - **Not active** in production.
 - **Out of the test suite** (0% coverage - experimental, low priority).
-- The worker contract (API <-> worker, "Lambda never writes to MongoDB directly") and the Lambda implementation guidance formerly in `CONTRACT.md` / `LAMBDA.md` are folded into this document (see the Worker Contract section) and may become obsolete relative to the code.
+- The worker contract (API <-> worker, "Lambda never writes to MongoDB directly") and the Lambda implementation guidance formerly in `CONTRACT.md` / `LAMBDA.md` are folded into this document (see the Worker Contract and Lambda Implementation Guide sections); those files were removed.
 
 > If the module is activated in the future, start with the pure use cases (`save-*`, `get-raw-data-for-worker`); see the draft spec `sdd/stats-tests.md`.
