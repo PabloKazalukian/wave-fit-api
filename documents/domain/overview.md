@@ -39,11 +39,20 @@ The Tracking branch records what the user actually did:
 | Model | Role |
 |---|---|
 | `WorkoutSession` | A completed training session. |
-| `WeekLog` | The weekly tracking summary. It contains and manages `WorkoutSession` and `ExtraSession` as sub-resources in its `days[]` array. |
-| `ExtraSession` | An additional session performed outside the plan, attachable to a week day (or to a `DayLog`). |
-| `DayLog` | A standalone training day, without a week, for ad-hoc training outside the weekly plan. |
+| `WeekLog` | The weekly tracking summary. Its `days[]` array (always 7 days) stores **references** to a `WorkoutSession` (`workoutSessionId`) and to `ExtraSession`s (`extraSessionIds[]`) — standalone collections, not embedded documents. |
+| `ExtraSession` | An additional session performed outside the plan, stored in its own collection and referenced by week days or by a `DayLog`. |
+| `DayLog` | A standalone training day, without a week, for ad-hoc training outside the weekly plan. It mirrors a week day: it owns a `workoutSessionId` and `extraSessionIds[]` (plus optional `planId`/`routineDayId`). |
 
-The central aggregate of tracking is the active `WeekLog`: a user typically has one active week, and each worked day inside it carries a `WorkoutSession`. An `ExtraSession` can be attached to any day. Because a `WeekLog` and a `DayLog` cannot be active at the same time, both aggregates coordinate through the `ActiveTracking` concept, and the unified `activeTracking` query tells the client which type is active (and its payload).
+The central aggregate of tracking is the active `WeekLog`: a user typically has one active week, and each worked day inside it references a `WorkoutSession`. Because a `WeekLog` and a `DayLog` cannot be active at the same time, both aggregates coordinate through the `active-tracking` module, and the unified `activeTracking` query tells the client which type is active (and its payload).
+
+### Active tracking (app entry point)
+
+The `active-tracking` module (`src/modules/routines/tracking/active-tracking/`) is the coordination point between `WeekLog` and `DayLog` and the **entry point the application boots against**:
+
+- It exposes the `activeTracking` query (protected with `GqlAuthGuard`), backed by `ActiveTrackingService.findActive`, which reads both week-log and day-log repositories without coupling the two aggregates.
+- The response (`ActiveTracking`) carries `hasActive` (boolean), `type` (`WEEK_LOG` | `DAY_LOG`), and the active `week` or `day` payload (`active-tracking.entity.ts`).
+- Exclusivity is a hard rule: `ActiveTrackingService` is injected into the week-log and day-log validators, which refuse to create an active tracker of the other type (`ConflictException`). The full rule is in `documents/domain/business-rules.md` (Active-tracking exclusivity).
+- When `hasActive` is `false` nothing is tracked, and the frontend renders the empty/onboarding state. This is what lets the client decide whether to show a week, a standalone day, or no tracking.
 
 `trainingCalendar` offers a calendar view over the tracking history of the user.
 
@@ -69,7 +78,12 @@ The `UserProfile` module holds the base biometric profile (birth date, height, w
 
 ## Stats and metrics
 
-The `stats` module covers per-user metrics (top exercises, top routines, personal records, adherence). It is experimental and not active in production: NestJS never computes statistics itself. It publishes events to SQS, offers raw data to an external worker, and upserts the computed results back.
+The `stats` module (`src/modules/stats/`) covers per-user metrics (top exercises, top routines, personal records, adherence). It is fully implemented on the backend but **asynchronous and worker-driven**: NestJS never computes statistics itself. The backend only triggers, exposes data, and stores results:
+
+- **Trigger** — the module listens to the domain events `workout-session.saved` and `week-log.finalized` and, through `StatsEventPublisher`, publishes a message to an SQS queue (FIFO: `MessageGroupId` + `MessageDeduplicationId`). Publishing is disabled with a warning when `STATS_SQS_QUEUE_URL` is not configured.
+- **Worker (external compute)** — the consumer (a Lambda) reads the raw data per user through `getRawDataForWorker` and returns the computed metrics through the `saveTopExercises`, `saveTopRoutines`, `savePersonalRecords`, and `saveAdherence` mutations, all protected with `ServiceAuthGuard` (service JWT).
+- **Reads** — the user-facing queries `getTopExercises`, `getTopRoutines`, `getPersonalRecords`, and `getAdherence` are protected with `GqlAuthGuard`.
+- **Status** — experimental and outside the production test gate (0% coverage); registered and implemented, but metrics only exist once the worker is deployed and producing results.
 
 ## Cross-cutting concerns
 
