@@ -23,9 +23,9 @@ Fail-open behavior: if `STATS_SQS_QUEUE_URL` is not configured, the publisher st
 
 ## Consequences
 
-- **Positive:** heavy aggregation is off the request path; the tracking flow is never blocked by stats infrastructure; the worker can be scaled independently and implemented outside NestJS (a Python Lambda is sketched in `LAMBDA.md`); a shared `STATS_SQS_QUEUE_URL` allows the pipeline to be toggled by configuration.
+- **Positive:** heavy aggregation is off the request path; the tracking flow is never blocked by stats infrastructure; the worker can be scaled independently and implemented outside NestJS (a Python Lambda is sketched in the "Lambda implementation guide" section of `documents/modules/stats.md`); a shared `STATS_SQS_QUEUE_URL` allows the pipeline to be toggled by configuration.
 - **Negatives:** an external dependency (SQS plus the worker) is required for stats to actually be computed; results are eventually consistent with the triggering writes; the service needs worker endpoints guarded by a second authentication style.
-- **Known gap — no DLQ:** if publishing to SQS fails, the error is only logged and the event is lost silently; there is no persistent record and no way to reprocess. A pending plan (`documents/plans/stats-dlq-audit-logs.md`) proposes reusing the audit-logs module as a persistent Dead Letter Queue.
+- **Known gap — no DLQ:** if publishing to SQS fails, the error is only logged and the event is lost silently; there is no persistent record and no way to reprocess. A pending plan (`documents/plans/stats-dlq/plan.md`) proposes reusing the audit-logs module as a persistent Dead Letter Queue.
 
 The module is implemented (resolver, use cases, repository, schemas, publisher) but **experimental**: not active in production and kept outside the test suite (0% coverage).
 

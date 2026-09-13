@@ -1,7 +1,7 @@
 # Engineering Architecture
 
 > **Status:** Current
-> **Last updated:** 2026-09-12
+> **Last updated:** 2026-09-13
 
 Stable, high-level architecture of the WaveFit API. This document describes how the system is built and how the pieces relate to each other. It deliberately avoids feature-specific implementation plans and spec content; those live in the corresponding specs (`sdd/`) and reference documents.
 
@@ -62,12 +62,12 @@ Resolver → Service → UseCase → Domain (interface) ← Infrastructure (impl
 
 The service delegates to use cases (each exposing `execute()`); the use cases depend only on a repository interface defined in the domain layer; the infrastructure layer implements that interface against Mongoose.
 
-Migration state:
+Module state:
 
 | Module | State | Layers implemented |
 |---|---|---|
-| week-log | Complete | presentation, application (5 use cases), domain, infrastructure |
-| day-log | Scaffold | presentation, application (use case stubs), domain (empty), infrastructure (empty) |
+| week-log | Complete | presentation, application (11 use cases), domain, infrastructure |
+| day-log | Complete | presentation, application (10 use cases), domain, infrastructure |
 | Rest of modules | Classic pattern | Resolver → Service → Schema |
 
 `ActiveTrackingService` (`activeTracking` query, phases of day-log) coordinates week-log/day-log state without direct coupling between the two modules.

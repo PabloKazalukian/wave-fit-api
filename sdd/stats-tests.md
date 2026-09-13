@@ -5,7 +5,7 @@
 
 ## Context
 
-The `stats` module (`src/modules/stats/`) is **experimental**: it has a hexagonal architecture (8 use cases in `application/use-cases/`, domain entities and repository interface, Mongoose infrastructure, presentation DTOs/entities), it is registered in `app.module.ts`, but it is **not active in production** and — by decision — it is **outside the test suite (0% coverage)**. See `documents/modules/stats.md`.
+The `stats` module (`src/modules/stats/`) is **experimental**: it has a hexagonal architecture (9 use cases in `application/use-cases/`, domain entities and repository interface, Mongoose infrastructure, presentation DTOs/entities), it is registered in `app.module.ts`, but it is **not active in production** and — by decision — it is **outside the test suite (0% coverage)**. See `documents/modules/stats.md`.
 
 This Spec adds unit tests for the **pure use cases** — the ones that can be tested without touching production behavior: the four `save-*` use cases and `get-raw-data-for-worker`. It adopts the mock patterns documented in `documents/engineering/testing.md` (section 6), keeping the tests outside the stats production activation decision.
 

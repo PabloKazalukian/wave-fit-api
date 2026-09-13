@@ -78,7 +78,7 @@ Coordination: ActiveTrackingService (hasActiveWeek / hasActiveDay / hasActiveTra
 - `src/modules/routines/tracking/day-log/infrastructure/schemas/day-log.schema.ts` (`DayLogSchema`, indices `{ userId, date }`, `{ userId, active }`, `{ workoutSessionId }`, `{ extraSessionIds }`)
 - `src/modules/routines/tracking/day-log/infrastructure/repositories/day-log.repository.ts`
 - `src/modules/routines/tracking/day-log/application/validators/day-log.validator.ts`
-- `src/modules/routines/tracking/day-log/application/use-cases/{create,find-all,find-one,find-active,update,update-day-status,assign-routine-day,remove,remove-workout-session,remove-extra-session}-day-log.use-case.ts`
+- `src/modules/routines/tracking/day-log/application/use-cases/` — `create-day-log`, `find-all-day-logs`, `find-one-day-log`, `find-active-day-log`, `update-day-log`, `update-day-status`, `assign-routine-day`, `remove-day-log`, `remove-workout-session`, `remove-extra-session` (all `*.use-case.ts`, plus the barrel `index.ts`)
 - `src/modules/routines/tracking/day-log/presentation/dto/{create-day-log.input.ts, update-day-log.input.ts, day-log-extra-session.input.ts}`
 - `src/modules/routines/tracking/day-log/presentation/entities/day-log.entity.ts`
 - `src/modules/routines/tracking/active-tracking/active-tracking.{module,service,resolver}.ts` (coordination)

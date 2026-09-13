@@ -177,4 +177,4 @@ Link the originating Plan/ADR when relevant (as reference, never as authority).
 | `stats-dlq.md` | draft | DLQ for stats SQS events via audit-logs + SQS publisher error handling |
 | `levenshtein-routine.md` | draft | Extend name-similarity control to RoutineDay/RoutinePlan |
 | `stats-tests.md` | draft | Unit tests for the pure stats use cases (currently 0% coverage) |
-| `docs-migration.md` | in_progress | This doc-migration effort (Spec-Anchored Development) |
+| `docs-migration.md` | done | This doc-migration effort (Spec-Anchored Development) |

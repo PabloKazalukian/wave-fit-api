@@ -1,7 +1,7 @@
 # Engineering Testing
 
 > **Status:** Current
-> **Last updated:** 2026-09-12
+> **Last updated:** 2026-09-13
 
 How the WaveFit API is tested: philosophy, commands, unit vs E2E split, mock patterns, coverage criteria and the current measured coverage. The operational details (where the suites live, how they are structured) are visible in the suites themselves (`test/e2e/*.spec.ts`, `src/**/*.spec.ts`).
 
@@ -10,7 +10,7 @@ How the WaveFit API is tested: philosophy, commands, unit vs E2E split, mock pat
 - Two independent suites: **unit** and **E2E**.
   - Unit tests (`src/**/*.spec.ts`) mock every dependency with Jest and run fast.
   - E2E tests (`test/e2e/*.spec.ts`) boot the full application (via `AppTestModule`) against an in-memory MongoDB (`mongodb-memory-server`) and exercise real GraphQL + HTTP through `supertest`.
-- Both suites must stay green. Current baseline: **62 unit suites / 626 unit tests**, **31 E2E suites / 154 E2E tests**.
+- Both suites must stay green. Current baseline: **65 unit suites / 652 unit tests**, **32 E2E suites / 158 E2E tests**.
 - Tests reflect the **current** behavior of the code, not historical contracts (see mock patterns, section 6).
 - Test-first methodology: when implementing a Spec, write the test for each layer before its implementation. A failing requirement or test is corrected against the Spec, not by improvising around it.
 
@@ -38,8 +38,8 @@ npm run test:cov:combined   # unit + e2e coverage + istanbul merge → coverage/
 
 | Suite | Location | Baseline | Command |
 |---|---|---|---|
-| **Unit** | `src/**/*.spec.ts` | 62 suites / 626 tests | `npm test` |
-| **E2E** | `test/e2e/*.spec.ts` | 31 suites / 154 tests | `npm run test:e2e` |
+| **Unit** | `src/**/*.spec.ts` | 65 suites / 652 tests | `npm test` |
+| **E2E** | `test/e2e/*.spec.ts` | 32 suites / 158 tests | `npm run test:e2e` |
 
 - Unit tests mock dependencies with Jest (see section 6).
 - E2E boots the app against in-memory MongoDB, with `cookie-parser` registered (the JWT travels in an HttpOnly cookie), GraphQL playground disabled, and the same modules as the real app.

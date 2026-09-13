@@ -7,7 +7,7 @@
 
 The experimental `stats` module publishes events to AWS SQS when a user completes a workout or finalizes a week-log (`StatsEventPublisher` subscribes to `workout-session.saved` and `week-log.finalized`). Today, when SQS fails, the error is only logged with `Logger.error()` and **the event is lost silently**: there is no persistent record of the failure, no queryable trace, and no way to reprocess failed events. No alerts exist for critical delivery errors.
 
-This Spec distills `documents/plans/stats-dlq-audit-logs.md` into an executable contract: use the existing `audit-logs` module as a persistent Dead Letter Queue (DLQ) and fix the SQS publisher error handling. The Plan is the originating reference; this Spec is the contract to implement.
+This Spec distills `documents/plans/stats-dlq/plan.md` into an executable contract: use the existing `audit-logs` module as a persistent Dead Letter Queue (DLQ) and fix the SQS publisher error handling. The Plan is the originating reference; this Spec is the contract to implement.
 
 Current failure path (`stats-event-publisher.ts`, around lines 97-101):
 
@@ -22,7 +22,7 @@ Current failure path (`stats-event-publisher.ts`, around lines 97-101):
 
 ### Functional Requirements
 
-- `FR-001` — On SQS publish failure, persist a DLQ record via `AuditLogsService.logAsync` with `action: 'SQS_PUBLISH_FAILED'`, `entity: 'StatsEventPublisher'`, `success: false`, `errorMessage`, and `metadata` containing `triggerType` (`'workout-session.saved' | 'week-log.finalized'`), `entityId`, `queueUrl` (from `STATS_SQS_QUEUE_URL`), full `stack`, and the original event `timestamp`.
+- `FR-001` — On SQS publish failure, persist a DLQ record via `AuditLogsService.logAsync` with `action: 'SQS_PUBLISH_FAILED'`, `entity: 'StatsEventPublisher'`, `success: false`, `errorMessage`, and `metadata` containing `triggerType` (`'WORKOUT_SESSION' | 'WEEK_LOG_FINALIZED'`, the values in the payload emitted by `workout-session.saved`/`week-log.finalized`), `entityId`, `queueUrl` (from `STATS_SQS_QUEUE_URL`), full `stack`, and the original event `timestamp`.
 - `FR-002` — On SQS publish success, log an optional audit record `action: 'SQS_PUBLISH_SUCCESS'`, `entity: 'StatsEventPublisher'`, `success: true`, with `triggerType`, `entityId`, `queueUrl` and the SQS `messageId` when available.
 - `FR-003` — If `STATS_SQS_QUEUE_URL` is not configured, warn and return early (event ignored); no DLQ record is written for the missing-config case.
 - `FR-004` — The original HTTP/GraphQL request making the event publish finishes successfully regardless of SQS state (`logAsync` is fire-and-forget and does not rethrow).
@@ -45,7 +45,7 @@ Current failure path (`stats-event-publisher.ts`, around lines 97-101):
 ## Constraints
 
 - Do not create a new DLQ collection or service; reuse `src/modules/audit-logs/audit-logs.service.ts` (`AuditLogsService.logAsync`).
-- Do not introduce a worker or email/cron alerting in this Spec (future work, see `documents/plans/stats-dlq-audit-logs.md` section 7); the reprocessing path is documented, not implemented as a background job.
+- Do not introduce a worker or email/cron alerting in this Spec (future work, see `documents/plans/stats-dlq/plan.md` section 7); the reprocessing path is documented, not implemented as a background job.
 - Do not change tracking modules (workout-session, week-log) or their event emissions.
 - Keep the publisher signature stable for its listeners.
 
