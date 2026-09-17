@@ -327,14 +327,14 @@ Audit Log created → MongoDB Change Stream → Lambda → SNS → Email
 
 ## 8. Implementation Checklist
 
-- [ ] Inject `AuditLogsService` in `StatsEventPublisher`
-- [ ] Add `AuditLogsModule` to `StatsModule` imports
-- [ ] Add success log in `publishToSQS`
-- [ ] Add failure log in `publishToSQS`
-- [ ] Fix `MessageGroupId` per user
-- [ ] Fix `MessageDeduplicationId` for real dedup
-- [ ] Create unit tests for `StatsEventPublisher`
-- [ ] Verify environment variables (`AWS_ACCESS_KEY` vs `AWS_ACCESS_KEY_ID`)
+- [x] Inject `AuditLogsService` in `StatsEventPublisher`
+- [x] Add `AuditLogsModule` to `StatsModule` imports
+- [x] Add success log in `publishToSQS`
+- [x] Add failure log in `publishToSQS`
+- [x] Fix `MessageGroupId` per user
+- [x] Fix `MessageDeduplicationId` for real dedup
+- [x] Create unit tests for `StatsEventPublisher`
+- [x] Verify environment variables (`AWS_ACCESS_KEY` vs `AWS_ACCESS_KEY_ID`): code keeps the names `AWS_ACCESS_KEY` / `AWS_SECRET_KEY`; no deployment-config change (per spec `NFR-004`)
 - [ ] Document in `documents/modules/stats.md`
 - [ ] (Optional) Implement cron job for email alerts
 
