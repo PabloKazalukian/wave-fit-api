@@ -58,4 +58,4 @@ See `documents/engineering/testing.md` for the full testing contract.
 
 - No custom lint rule sets beyond the ESLint/Prettier defaults configured in the repo.
 - No code-gen requirement beyond the NestJS CLI scaffolds used historically (the codebase follows the same conventions whether or not the files were generated).
-- No enforced CI gate (manual gate only — see `documents/engineering/ci-cd.md`).
+- No enforced coverage threshold; CI runs the quality gate (build, lint, unit, e2e) but coverage stays informational — see `documents/engineering/ci-cd.md`.

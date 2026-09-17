@@ -1,7 +1,7 @@
 # Engineering Testing
 
 > **Status:** Current
-> **Last updated:** 2026-09-13
+> **Last updated:** 2026-09-17
 
 How the WaveFit API is tested: philosophy, commands, unit vs E2E split, mock patterns, coverage criteria and the current measured coverage. The operational details (where the suites live, how they are structured) are visible in the suites themselves (`test/e2e/*.spec.ts`, `src/**/*.spec.ts`).
 
@@ -53,7 +53,7 @@ With more workers, `mongodb-memory-server` and the automated seeding race and pr
 
 ## 5. Coverage Gates
 
-The external quality gate today is **manual** — there is no CI pipeline and no automated coverage gate (see `documents/engineering/ci-cd.md`). The coverage criteria below define how coverage is measured and how reports are regenerated so two reports on different dates are comparable. The measurement values in this document are the current measured baseline.
+An automated CI pipeline (GitHub Actions) runs the four canonical commands on every pull request and push to `main`; see `documents/engineering/ci-cd.md`. Coverage is **not** part of that gate: there is no automated coverage threshold. The coverage criteria below define how coverage is measured and how reports are regenerated so two reports on different dates are comparable. The measurement values in this document are the current measured baseline.
 
 ### Measurement sources
 
@@ -126,4 +126,4 @@ Historical evolution (see Git history for the reports):
 
 ## 9. Test-First Methodology
 
-Per the Spec-driven development workflow (`sdd/README.md`): write the tests of a layer before its implementation; a failing requirement is fixed against the Spec. The final verification of a done Spec runs the full manual gate: `npm run build` · `npm run lint` · `npm test` · `npm run test:e2e`. There is **no automated quality gate** (no CI pipeline) — this gate is executed by the developer before merging; see `documents/engineering/ci-cd.md`. When a new module is born, unit specs should be written from day one.
+Per the Spec-driven development workflow (`sdd/README.md`): write the tests of a layer before its implementation; a failing requirement is fixed against the Spec. The final verification of a done Spec runs the full gate: `npm run build` · `npm run lint:ci` · `npm test` · `npm run test:e2e`. The same gate runs automatically in CI on every pull request and push to `main`; see `documents/engineering/ci-cd.md`. Locally, `npm run lint` (with `--fix`) may be used for convenience, but CI uses `lint:ci` (no `--fix`). When a new module is born, unit specs should be written from day one.

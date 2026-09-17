@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Build, lint and tests
+    runs-on: ubuntu-latest
+    env:
+      # Dummy, non-secret values so the test suites can boot modules whose
+      # providers validate env vars at construction time (GoogleStrategy,
+      # GroqProvider). Real secrets are never needed by the test suites.
+      GROQ_API_KEY: ci-dummy-groq-key
+      GOOGLE_CLIENT_ID: ci-dummy-google-client-id
+      GOOGLE_CLIENT_SECRET: ci-dummy-google-client-secret
+      JWT_SECRET: ci-dummy-jwt-secret
+      PREFERRED_AI_PROVIDER: groq
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Lint
+        run: npm run lint:ci
+
+      - name: Unit tests
+        run: npm test
+
+      - name: E2E tests
+        run: npm run test:e2e

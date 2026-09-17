@@ -98,11 +98,11 @@ A Spec that was archived keeps `> **Status:** done` only if it reflects implemen
 
 ## Canonical Verification Workflow
 
-The final gate of a `done` Spec is executed manually by the developer (there is no automated CI gate; see `documents/engineering/ci-cd.md`):
+The final gate of a `done` Spec is the same automated CI gate that runs on every pull request and push to `main` (see `documents/engineering/ci-cd.md`); run it locally with:
 
 ```bash
 npm run build
-npm run lint
+npm run lint:ci
 npm test
 npm run test:e2e
 ```
