@@ -1,14 +1,14 @@
 # Plan: DLQ for Stats using Audit-Logs
 
-> **Status:** Active / Pending
+> **Status:** Active / In progress
 > **Spec:** `sdd/stats-dlq.md`
 
 ## Status
 
-**NOT implemented.** Feature UNDER PLANNING / PENDING. This plan is the current, active guidance for a future implementation; the authoritative backlog contract is the Spec `sdd/stats-dlq.md`.
+**IN PROGRESS.** Implementation started on the `feat/stats-experimental` branch. The authoritative backlog contract is the Spec `sdd/stats-dlq.md`.
 
 **Date:** 2026-09-04
-**Status:** Pending
+**Status:** In progress
 **Affected modules:** `stats`, `audit-logs`
 
 ---
