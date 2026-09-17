@@ -127,7 +127,8 @@ Production is hosted on **Render**:
 
 - Frontend: `https://wave-fit-front.onrender.com` (CORS origin in `src/main.ts`)
 - API: `https://wave-fit-api.onrender.com` (Google OAuth redirect target)
-- Deployment is manual via Render dashboards; there is no CI pipeline (see `documents/engineering/ci-cd.md`).
+- Deployment is the **native Render auto-deploy**: a push to `main` builds and deploys automatically (configured on the Render dashboard).
+- CI runs on GitHub Actions (build, lint, unit and e2e) on every push to any branch and on pull requests targeting `main` — see `documents/engineering/ci-cd.md`.
 
 ## Documentation
 
