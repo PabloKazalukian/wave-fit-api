@@ -166,17 +166,20 @@ export class DayLogRepository implements IDayLogRepository {
     id: string,
     status: string,
     workoutSessionId: string | null,
+    completed?: boolean,
   ): Promise<void> {
+    const set: Record<string, unknown> = {
+      status,
+      workoutSessionId: workoutSessionId
+        ? new Types.ObjectId(workoutSessionId)
+        : null,
+    };
+    if (completed !== undefined) {
+      set.completed = completed;
+    }
     await this.dayLogModel.updateOne(
       { _id: new Types.ObjectId(id) },
-      {
-        $set: {
-          status,
-          workoutSessionId: workoutSessionId
-            ? new Types.ObjectId(workoutSessionId)
-            : null,
-        },
-      },
+      { $set: set },
     );
   }
 

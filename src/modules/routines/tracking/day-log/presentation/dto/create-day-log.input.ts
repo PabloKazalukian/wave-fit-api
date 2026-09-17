@@ -17,10 +17,12 @@ export class CreateDayLogInput {
   /**
    * Timezone IANA del usuario (ej: "America/Argentina/Buenos_Aires").
    * Se usa para convertir LocalDate a UTC al guardar en MongoDB.
+   * Si no se envía, se usa 'America/Argentina/Buenos_Aires' por defecto.
    */
-  @Field(() => String)
+  @Field(() => String, { nullable: true })
+  @IsOptional()
   @IsString()
-  timezone: string;
+  timezone?: string;
 
   @Field(() => ID, { nullable: true })
   @IsOptional()

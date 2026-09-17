@@ -19,6 +19,9 @@ export class WorkoutSession {
   @Prop({ type: Types.ObjectId, ref: 'WeekLog', default: null })
   weekLogId: Types.ObjectId | null;
 
+  @Prop({ type: Types.ObjectId, ref: 'DayLog', default: null })
+  dayLogId: Types.ObjectId | null;
+
   @Prop({ type: Date, required: true })
   date: Date;
 
@@ -50,3 +53,4 @@ export const WorkoutSessionSchema =
 WorkoutSessionSchema.index({ userId: 1, date: 1 });
 WorkoutSessionSchema.index({ userId: 1, routineDayId: 1 });
 WorkoutSessionSchema.index({ weekLogId: 1 });
+WorkoutSessionSchema.index({ dayLogId: 1 });

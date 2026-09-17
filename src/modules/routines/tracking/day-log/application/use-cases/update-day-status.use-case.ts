@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   forwardRef,
   Inject,
   Injectable,
@@ -26,7 +27,9 @@ export class UpdateDayStatusUseCase {
     userId: string,
   ): Promise<DayLogDomain | null> {
     if (!isValidLocalDate(date)) {
-      throw new Error(`date "${date}" must be in yyyy-MM-dd format`);
+      throw new BadRequestException(
+        `date "${date}" must be in yyyy-MM-dd format`,
+      );
     }
 
     const dayLog = await this.dayLogRepository.findActive(userId);
@@ -41,12 +44,17 @@ export class UpdateDayStatusUseCase {
       }
       dayLog.status = 'skipped';
       dayLog.workoutSessionId = null;
+      // Un día de descanso nunca está completado. El day-log sigue activo
+      // para poder volver a entrenar (isRest: false).
+      dayLog.completed = false;
     } else {
       dayLog.status = 'pending';
+      dayLog.completed = false;
       if (!dayLog.workoutSessionId) {
         const newSession = await this.workoutSessionService.create(
           {
             date,
+            dayLogId: dayLog.id,
             status: StatusWorkoutSessionEnum.NOT_STARTED,
             exercises: [],
             timezone: undefined,
@@ -69,6 +77,7 @@ export class UpdateDayStatusUseCase {
       dayLog.id,
       dayLog.status,
       dayLog.workoutSessionId,
+      false,
     );
 
     return this.dayLogRepository.findOne(dayLog.id, userId);

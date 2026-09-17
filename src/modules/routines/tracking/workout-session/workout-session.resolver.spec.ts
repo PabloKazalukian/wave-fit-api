@@ -17,6 +17,7 @@ describe('WorkoutSessionResolver', () => {
   const mockUserId = new Types.ObjectId().toString();
   const mockSessionId = new Types.ObjectId().toString();
   const mockWeekLogId = new Types.ObjectId().toString();
+  const mockDayLogId = new Types.ObjectId().toString();
   const mockRoutineDayId = new Types.ObjectId().toString();
 
   const mockSession = {
@@ -24,6 +25,7 @@ describe('WorkoutSessionResolver', () => {
     _id: mockSessionId,
     userId: mockUserId,
     weekLogId: mockWeekLogId,
+    dayLogId: mockDayLogId,
     date: new Date('2024-01-15'),
     routineDayId: mockRoutineDayId,
     exercises: [],
@@ -189,6 +191,31 @@ describe('WorkoutSessionResolver', () => {
         mockUserId,
       );
       expect(result).toBeDefined();
+    });
+
+    it('should create workout session with dayLogId', async () => {
+      const inputWithDayLog = {
+        ...validInput,
+        weekLogId: undefined,
+        dayLogId: mockDayLogId,
+      };
+
+      mockWorkoutSessionService.create.mockResolvedValue({
+        ...mockSession,
+        weekLogId: null,
+      });
+
+      const result = await resolver.createWorkoutSession(
+        inputWithDayLog,
+        mockContext(mockUserId),
+      );
+
+      expect(service.create).toHaveBeenCalledWith(
+        inputWithDayLog,
+        mockUserId,
+      );
+      expect(result).toBeDefined();
+      expect(result.dayLogId).toBe(mockDayLogId);
     });
 
     it('should create workout session with exercises', async () => {

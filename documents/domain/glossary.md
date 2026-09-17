@@ -1,5 +1,5 @@
 > **Status:** Current
-> **Last updated:** 2026-09-12
+> **Last updated:** 2026-09-16
 
 # Domain Glossary
 
@@ -12,7 +12,7 @@ Canonical vocabulary of the WaveFit domain. Code identifiers, paths, model and e
 | `Exercise` | Catalog of exercises used to build routines. Stored with a `normalizedName` for normalized searches; similar names are rejected on create/update with Levenshtein distance (`isSimilar()`). |
 | `RoutineDay` | One training day. A component of a `RoutinePlan` in the Template branch. |
 | `RoutinePlan` | A weekly plan template that contains `RoutineDay`s. Since the AI is implemented, template plans created from an AI plan carry `isAiGenerated: true`. |
-| `WorkoutSession` | A completed training session; the unit of tracking attached to a week day inside a `WeekLog` or to a `DayLog`. |
+| `WorkoutSession` | A completed training session; the unit of tracking attached to a week day inside a `WeekLog` or to a `DayLog`. It stores a nullable back-reference to its owning aggregate: `weekLogId` (week-log sessions) or `dayLogId` (day-log sessions); the other is `null`. |
 | `WeekLog` | The weekly tracking summary. It contains and manages `WorkoutSession` and `ExtraSession` as sub-resources in its `days[]` array. |
 | `ExtraSession` | An additional session performed outside the plan; attachable to week days and to a `DayLog`. |
 | `DayLog` | A standalone training day without a week, for ad-hoc training. It cannot coexist with an active `WeekLog`. |

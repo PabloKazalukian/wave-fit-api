@@ -23,11 +23,14 @@ export class RemoveWorkoutSessionUseCase {
     userId: string,
   ): Promise<DayLogDomain | null> {
     const dayLog = await this.dayLogRepository.findActive(userId);
+    console.log('[Daylog]', dayLog);
     if (!dayLog) {
       throw new NotFoundException(
-        `No se encontró un DayLog con el workoutSessionId "${workoutSessionId}"`,
+        `No se encontró un DayLog activo para el usuario "${userId}"`,
       );
     }
+
+    console.log('[dayLog.workoutSessionId]', dayLog.workoutSessionId);
 
     if (
       !dayLog.workoutSessionId ||
@@ -40,8 +43,9 @@ export class RemoveWorkoutSessionUseCase {
 
     dayLog.workoutSessionId = null;
     dayLog.status = 'pending';
+    dayLog.completed = false;
 
-    await this.dayLogRepository.updateStatus(dayLog.id, 'pending', null);
+    await this.dayLogRepository.updateStatus(dayLog.id, 'pending', null, false);
 
     await this.workoutSessionService.remove(workoutSessionId, userId);
 

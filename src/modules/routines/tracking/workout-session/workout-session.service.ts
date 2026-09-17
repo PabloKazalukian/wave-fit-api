@@ -14,6 +14,7 @@ import {
 import { Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { WeekLogService } from '../week-log/week-log.service';
+import { DayLogService } from '../day-log/day-log.service';
 import { WorkoutSessionValidator } from './workout-session.validator';
 import {
   WorkoutSessionCreationData,
@@ -36,6 +37,8 @@ export class WorkoutSessionService {
     private sessionModel: Model<WorkoutSession>,
     @Inject(forwardRef(() => WeekLogService))
     private weekLogService: WeekLogService,
+    @Inject(forwardRef(() => DayLogService))
+    private dayLogService: DayLogService,
     private readonly validator: WorkoutSessionValidator,
     private readonly eventEmitter: EventEmitter2,
   ) {}
@@ -61,6 +64,15 @@ export class WorkoutSessionService {
       }
     }
 
+    if (input.dayLogId) {
+      const dayLog = await this.dayLogService.findOne(input.dayLogId, userId);
+      if (!dayLog) {
+        throw new NotFoundException(
+          `Day log con ID "${input.dayLogId}" no encontrado`,
+        );
+      }
+    }
+
     // ✅ Normalizar date a UTC Date ANTES de la validación
     const dateUtc =
       typeof input.date === 'string'
@@ -82,6 +94,7 @@ export class WorkoutSessionService {
     const session = await this.sessionModel.create({
       userId: new Types.ObjectId(userId),
       weekLogId: input.weekLogId ? new Types.ObjectId(input.weekLogId) : null,
+      dayLogId: input.dayLogId ? new Types.ObjectId(input.dayLogId) : null,
       date: dateUtc, // �o. Date UTC normalizada
       routineDayId: input.routineDayId
         ? new Types.ObjectId(input.routineDayId)
@@ -120,6 +133,9 @@ export class WorkoutSessionService {
       _id: new Types.ObjectId(s._id),
       userId: new Types.ObjectId(s.userId),
       weekLogId: s.weekLogId ? new Types.ObjectId(s.weekLogId) : undefined,
+      dayLogId: (s as any).dayLogId
+        ? new Types.ObjectId((s as any).dayLogId)
+        : undefined,
       routineDayId: s.routineDayId
         ? new Types.ObjectId(s.routineDayId)
         : undefined,

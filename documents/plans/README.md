@@ -39,4 +39,8 @@ documents/plans/<feature>/plan.md
 | GraphQL name collisions in tracking | `documents/plans/graphql-collisions/plan.md` | Historical |
 | Modify AI-generated plan (`modifyPlan`) | `documents/plans/modify-plan/plan.md` | Historical |
 | Stats DLQ via Audit-Logs | `documents/plans/stats-dlq/plan.md` | Active / Pending |
+| Day-Log ↔ TrainingPlan gemelos (Spec ↔ Código) | `documents/plans/day-log-training-plan-twin-alignment/plan.md` | Historical / Non-Authoritative |
 | Documentation migration to Spec-Anchored Development | `documents/plans/docs-migration/plan.md` | Historical |
+| WorkoutSession.weekLogId nullable (GraphQL) | `documents/plans/workout-session-weeklogid-nullable/plan.md` | Historical / Non-Authoritative |
+| WorkoutSession.dayLogId back-reference | `documents/plans/workout-session-daylogid/plan.md` | Historical / Non-Authoritative |
+| Day-Log `active`/`completed`/`status` semantics + `workoutSession` block | `documents/plans/day-log-status-completed/plan.md` | Historical / Non-Authoritative |

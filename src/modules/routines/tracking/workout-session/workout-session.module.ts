@@ -11,6 +11,7 @@ import {
   ExercisePerformanceSchema,
 } from './schema/exercise-performance.schema';
 import { WeekLogModule } from '../week-log/week-log.module';
+import { DayLogModule } from '../day-log/day-log.module';
 import { AuditLogsModule } from 'src/modules/audit-logs/audit-logs.module';
 import { WorkoutSessionValidator } from './workout-session.validator';
 
@@ -21,6 +22,7 @@ import { WorkoutSessionValidator } from './workout-session.validator';
       { name: ExercisePerformance.name, schema: ExercisePerformanceSchema },
     ]),
     forwardRef(() => WeekLogModule),
+    forwardRef(() => DayLogModule),
     AuditLogsModule,
   ],
   providers: [

@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { IDayLogRepository } from '../../domain/interfaces/repositories/day-log.repository.interface';
 import { DAY_LOG_REPOSITORY } from '../../domain/interfaces/repositories/day-log.repository.interface';
 import { DayLogDomain } from '../../domain/entities/day-log.domain';
@@ -11,6 +11,13 @@ export class RemoveDayLogUseCase {
   ) {}
 
   async execute(id: string, userId: string): Promise<DayLogDomain | null> {
-    return this.dayLogRepository.findByIdAndSoftDelete(id, userId);
+    const removed = await this.dayLogRepository.findByIdAndSoftDelete(
+      id,
+      userId,
+    );
+    if (!removed) {
+      throw new NotFoundException('DayLog not found');
+    }
+    return removed;
   }
 }

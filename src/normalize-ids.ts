@@ -25,6 +25,7 @@ async function bootstrap() {
     'planId',
     'routineDayId',
     'weekLogId',
+    'dayLogId',
     'workoutSessionId',
   ];
 

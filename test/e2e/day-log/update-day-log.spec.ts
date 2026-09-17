@@ -142,4 +142,227 @@ describe('DayLog update (updateDayLog / updateDayLogStatus) (e2e)', () => {
     expect(pending.status).toBe('pending');
     expect(pending.workoutSessionId).toBeDefined();
   });
+
+  it('should create a WorkoutSession from the workoutSession block', async () => {
+    const dayResponse = await createDayLog(app, authCookie, {
+      date: todayLocalDate(),
+    });
+    const dayId = dayResponse.body.data.createDayLog.id;
+
+    const response = await request(app.getHttpServer())
+      .post('/graphql')
+      .set('Cookie', [authCookie])
+      .send({
+        query: `
+          mutation {
+            updateDayLog(input: {
+              id: "${dayId}",
+              workoutSession: {
+                status: "complete",
+                exercises: [
+                  {
+                    exerciseId: "507f1f77bcf86cd799439099",
+                    series: 1,
+                    sets: [{ reps: 10, weights: 40 }]
+                  }
+                ]
+              }
+            }) {
+              id
+              status
+              active
+              completed
+              workoutSessionId
+            }
+          }
+        `,
+      });
+
+    expect(response.status).toBe(200);
+    const day = response.body.data.updateDayLog;
+    expect(day.workoutSessionId).not.toBeNull();
+    expect(day.completed).toBe(false);
+    expect(day.active).toBe(true);
+  });
+
+  it('should finalize the day via updateDayLog (active false) and auto-create a WS, without touching status', async () => {
+    const dayResponse = await createDayLog(app, authCookie, {
+      date: todayLocalDate(),
+    });
+    const dayId = dayResponse.body.data.createDayLog.id;
+
+    const response = await request(app.getHttpServer())
+      .post('/graphql')
+      .set('Cookie', [authCookie])
+      .send({
+        query: `
+          mutation {
+            updateDayLog(input: { id: "${dayId}", completed: true }) {
+              id
+              status
+              active
+              completed
+              workoutSessionId
+            }
+          }
+        `,
+      });
+
+    expect(response.status).toBe(200);
+    const day = response.body.data.updateDayLog;
+    expect(day.completed).toBe(true);
+    expect(day.active).toBe(false);
+    expect(day.status).toBe('pending');
+    expect(day.workoutSessionId).not.toBeNull();
+  });
+
+  it('should persist status="complete" as a front-only field (completed stays false, day stays active)', async () => {
+    const dayResponse = await createDayLog(app, authCookie, {
+      date: todayLocalDate(),
+    });
+    const dayId = dayResponse.body.data.createDayLog.id;
+
+    const response = await request(app.getHttpServer())
+      .post('/graphql')
+      .set('Cookie', [authCookie])
+      .send({
+        query: `
+          mutation {
+            updateDayLog(input: { id: "${dayId}", status: "complete" }) {
+              id
+              status
+              active
+              completed
+              workoutSessionId
+            }
+          }
+        `,
+      });
+
+    expect(response.status).toBe(200);
+    const day = response.body.data.updateDayLog;
+    expect(day.status).toBe('complete');
+    expect(day.completed).toBe(false);
+    expect(day.active).toBe(true);
+  });
+
+  it('should persist status="skipped" without removing the WS or changing completed/active', async () => {
+    const dayResponse = await createDayLog(app, authCookie, {
+      date: todayLocalDate(),
+    });
+    const dayId = dayResponse.body.data.createDayLog.id;
+
+    const wsResponse = await request(app.getHttpServer())
+      .post('/graphql')
+      .set('Cookie', [authCookie])
+      .send({
+        query: `
+          mutation {
+            updateDayLog(input: {
+              id: "${dayId}",
+              workoutSession: { status: "not_started", exercises: [] }
+            }) {
+              workoutSessionId
+            }
+          }
+        `,
+      });
+    const wsId = wsResponse.body.data.updateDayLog.workoutSessionId;
+    expect(wsId).not.toBeNull();
+
+    const response = await request(app.getHttpServer())
+      .post('/graphql')
+      .set('Cookie', [authCookie])
+      .send({
+        query: `
+          mutation {
+            updateDayLog(input: { id: "${dayId}", status: "skipped" }) {
+              id
+              status
+              active
+              completed
+              workoutSessionId
+            }
+          }
+        `,
+      });
+
+    expect(response.status).toBe(200);
+    const day = response.body.data.updateDayLog;
+    expect(day.status).toBe('skipped');
+    expect(day.completed).toBe(false);
+    expect(day.active).toBe(true);
+    expect(day.workoutSessionId).toBe(wsId);
+  });
+
+  it('should keep the day active and not completed when set as rest', async () => {
+    const dayResponse = await createDayLog(app, authCookie, {
+      date: todayLocalDate(),
+    });
+    const dayId = dayResponse.body.data.createDayLog.id;
+
+    const response = await request(app.getHttpServer())
+      .post('/graphql')
+      .set('Cookie', [authCookie])
+      .send({
+        query: `
+          mutation {
+            updateDayLogStatus(date: "${todayLocalDate()}", isRest: true) {
+              id
+              status
+              active
+              completed
+              workoutSessionId
+            }
+          }
+        `,
+      });
+
+    expect(response.status).toBe(200);
+    const day = response.body.data.updateDayLogStatus;
+    expect(day.id).toBe(dayId);
+    expect(day.status).toBe('skipped');
+    expect(day.completed).toBe(false);
+    expect(day.active).toBe(true);
+    expect(day.workoutSessionId).toBeNull();
+  });
+
+  it('should toggle back from rest to pending keeping completed=false', async () => {
+    const dayResponse = await createDayLog(app, authCookie, {
+      date: todayLocalDate(),
+    });
+    const dayId = dayResponse.body.data.createDayLog.id;
+
+    await request(app.getHttpServer())
+      .post('/graphql')
+      .set('Cookie', [authCookie])
+      .send({
+        query: `mutation { updateDayLogStatus(date: "${todayLocalDate()}", isRest: true) { id } }`,
+      });
+
+    const response = await request(app.getHttpServer())
+      .post('/graphql')
+      .set('Cookie', [authCookie])
+      .send({
+        query: `
+          mutation {
+            updateDayLogStatus(date: "${todayLocalDate()}", isRest: false) {
+              id
+              status
+              active
+              completed
+              workoutSessionId
+            }
+          }
+        `,
+      });
+
+    expect(response.status).toBe(200);
+    const day = response.body.data.updateDayLogStatus;
+    expect(day.id).toBe(dayId);
+    expect(day.status).toBe('pending');
+    expect(day.completed).toBe(false);
+    expect(day.active).toBe(true);
+    expect(day.workoutSessionId).not.toBeNull();
+  });
 });

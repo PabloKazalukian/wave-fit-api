@@ -13,6 +13,9 @@ export class WorkoutSession extends Document {
   @Prop({ type: Types.ObjectId, ref: 'WeekLog', default: null })
   weekLogId: Types.ObjectId | null;
 
+  @Prop({ type: Types.ObjectId, ref: 'DayLog', default: null })
+  dayLogId: Types.ObjectId | null;
+
   @Prop({ type: Date, required: true })
   date: Date;
 

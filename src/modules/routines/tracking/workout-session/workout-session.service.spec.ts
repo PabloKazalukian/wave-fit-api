@@ -3,6 +3,7 @@ import { getModelToken } from '@nestjs/mongoose';
 import { WorkoutSessionService } from './workout-session.service';
 import { WorkoutSession } from './schema/workout-session.schema';
 import { WeekLogService } from '../week-log/week-log.service';
+import { DayLogService } from '../day-log/day-log.service';
 import { WorkoutSessionValidator } from './workout-session.validator';
 import { NotFoundException } from '@nestjs/common';
 import { Types } from 'mongoose';
@@ -15,6 +16,7 @@ describe('WorkoutSessionService', () => {
   const mockUserId = new Types.ObjectId().toString();
   const mockSessionId = new Types.ObjectId().toString();
   const mockWeekLogId = new Types.ObjectId().toString();
+  const mockDayLogId = new Types.ObjectId().toString();
   const mockRoutineDayId = new Types.ObjectId().toString();
 
   const mockWorkoutSession = {
@@ -32,6 +34,7 @@ describe('WorkoutSessionService', () => {
 
   let mockSessionModel: any;
   let mockWeekLogService: any;
+  let mockDayLogService: any;
   let mockValidator: any;
 
   beforeEach(async () => {
@@ -44,6 +47,10 @@ describe('WorkoutSessionService', () => {
     };
 
     mockWeekLogService = {
+      findOne: jest.fn(),
+    };
+
+    mockDayLogService = {
       findOne: jest.fn(),
     };
 
@@ -62,6 +69,10 @@ describe('WorkoutSessionService', () => {
         {
           provide: WeekLogService,
           useValue: mockWeekLogService,
+        },
+        {
+          provide: DayLogService,
+          useValue: mockDayLogService,
         },
         {
           provide: WorkoutSessionValidator,
@@ -120,6 +131,54 @@ describe('WorkoutSessionService', () => {
       await expect(service.create(validInput, mockUserId)).rejects.toThrow(
         NotFoundException,
       );
+    });
+
+    it('should create a workout session with dayLogId', async () => {
+      mockWeekLogService.findOne.mockResolvedValue({ _id: mockWeekLogId });
+      mockDayLogService.findOne.mockResolvedValue({ id: mockDayLogId });
+      mockSessionModel.create.mockResolvedValue({
+        ...mockWorkoutSession,
+        dayLogId: mockDayLogId,
+      });
+
+      const result = await service.create(
+        { ...validInput, dayLogId: mockDayLogId },
+        mockUserId,
+      );
+
+      expect(mockDayLogService.findOne).toHaveBeenCalledWith(
+        mockDayLogId,
+        mockUserId,
+      );
+      expect(mockSessionModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({ dayLogId: new Types.ObjectId(mockDayLogId) }),
+      );
+      expect(result).toEqual({
+        ...mockWorkoutSession,
+        dayLogId: mockDayLogId,
+      });
+    });
+
+    it('should create session without dayLogId', async () => {
+      mockWeekLogService.findOne.mockResolvedValue({ _id: mockWeekLogId });
+      mockSessionModel.create.mockResolvedValue({
+        ...mockWorkoutSession,
+        dayLogId: null,
+      });
+
+      const result = await service.create(validInput, mockUserId);
+
+      expect(result).toBeDefined();
+      expect(mockDayLogService.findOne).not.toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException if dayLogId is provided but not found', async () => {
+      mockWeekLogService.findOne.mockResolvedValue({ _id: mockWeekLogId });
+      mockDayLogService.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.create({ ...validInput, dayLogId: mockDayLogId }, mockUserId),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw if validator fails', async () => {

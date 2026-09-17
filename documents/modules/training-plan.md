@@ -77,7 +77,7 @@ Points a new module should replicate: a validator, a prompt builder, a parser, a
 
 ```
 src/modules/training-plan/
-├── training-plan.module.ts            # Module wiring (exports ConfirmPlanService)
+├── training-plan.module.ts            # Module wiring (exports TrainingPlanService)
 ├── training-plan.resolver.ts          # GraphQL Queries/Mutations (JWT guard)
 ├── training-plan.service.ts           # Facade: generate (lock userId+comment) + findAll/findOne/update/remove
 ├── schema/

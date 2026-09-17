@@ -54,6 +54,12 @@ export class CreateWorkoutSessionInput {
   @IsMongoId()
   weekLogId?: string;
 
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  @IsMongoId()
+  dayLogId?: string;
+
   @Field()
   @IsNotEmpty()
   @IsDateString()

@@ -81,6 +81,31 @@ describe('DayLog workout-session & extra-session removal (e2e)', () => {
     return day;
   }
 
+  it('should expose the dayLogId back-reference and a null weekLogId on the day-log session', async () => {
+    const day = await createDayWithWorkoutSession();
+
+    const sessionResponse = await request(app.getHttpServer())
+      .post('/graphql')
+      .set('Cookie', [authCookie])
+      .send({
+        query: `
+          query {
+            workoutSessionFindOne(id: "${day.workoutSessionId}") {
+              id
+              weekLogId
+              dayLogId
+            }
+          }
+        `,
+      });
+
+    expect(sessionResponse.status).toBe(200);
+    expect(sessionResponse.body.errors).toBeUndefined();
+    const session = sessionResponse.body.data.workoutSessionFindOne;
+    expect(session.dayLogId).toBe(day.id);
+    expect(session.weekLogId).toBeNull();
+  });
+
   it('should remove the workout session from the active day-log', async () => {
     const day = await createDayWithWorkoutSession();
 

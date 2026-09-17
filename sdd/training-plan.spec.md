@@ -63,7 +63,7 @@ Key idempotency layers: `TrainingPlanService.generating` (`userId::comment`) and
 
 ## Files
 
-- `src/modules/training-plan/training-plan.module.ts` (wiring, exports `ConfirmPlanService`)
+- `src/modules/training-plan/training-plan.module.ts` (wiring, exports `TrainingPlanService`)
 - `src/modules/training-plan/training-plan.resolver.ts` (GraphQL, `GqlAuthGuard`)
 - `src/modules/training-plan/training-plan.service.ts` (facade: `generate` lock `userId::comment` + `findAll`/`findOne`/`update`/`remove`)
 - `src/modules/training-plan/schema/training-plan.schema.ts` (`TrainingPlan`, enums `PlanStatus`, `PlanFocus`, `PlanConfirmationAction`, `normalizePlanFocus`)

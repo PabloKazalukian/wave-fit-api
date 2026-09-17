@@ -26,5 +26,6 @@ export interface IDayLogRepository {
     id: string,
     status: string,
     workoutSessionId: string | null,
+    completed?: boolean,
   ): Promise<void>;
 }

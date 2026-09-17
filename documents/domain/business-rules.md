@@ -1,5 +1,5 @@
 > **Status:** Current
-> **Last updated:** 2026-09-12
+> **Last updated:** 2026-09-16
 
 # Business Rules
 
@@ -13,6 +13,23 @@ A user can have exactly one active tracker at a time, chosen between `WeekLog` a
 - `DayLogValidator.validateNoActiveWeek` throws `ConflictException` (`'Already active week-log'`) if an active `WeekLog` exists.
 - Coordination lives in `ActiveTrackingService` (`hasActiveWeek`, `hasActiveDay`, `hasActiveTracking`), which is injected into both week-log and day-log — the two aggregates have no direct coupling.
 - Related consequence: confirming a plan with action `create_week_log` fails with `409 Conflict` when the user already has an active week.
+
+## Tracking state semantics (`active` / `completed` / `status`)
+
+The tracking branch uses three distinct concepts that must not be conflated:
+
+| Concept | `WeekLog` | `DayLog` | Meaning |
+|---|---|---|---|
+| `active` | root | root | Identifies the **current tracking resource**. At most one active tracker per user (see exclusivity above). `completed = true` forces `active = false`. |
+| `completed` | root | root | **Adherence**: did the user complete the training? For a week, the whole week was completed; for a day, the day was trained. |
+| `status` | per `WeekLogDay` (`pending \| complete \| skipped`) | on the day-log itself (`pending \| complete \| skipped`) | **Display state** for the frontend: `complete` = trained, `pending` = not yet, `skipped` = rest / not worked. |
+
+Rules:
+
+- Completing a training (`completed = true`) **finalizes** it: `active` is forced to `false` (and a `WorkoutSession` is guaranteed for a `DayLog`, auto-created empty if it was missing). `completed` is independent from `status`; it never modifies the display status. This holds for both `WeekLog` and `DayLog`.
+- `status` is a **display-only** field owned by the frontend. The backend stores whatever the client sends (`updateDayLog`'s `status` or week-log's per-day `status`) and never infers it from `completed`, from the presence of a `WorkoutSession`, or from session blocks. `status = 'complete'`/`'skipped'` therefore do **not** change `completed`, `active` or the linked `WorkoutSession`.
+- A rest day (via the dedicated `updateDayLogStatus(date, isRest: true)`) is `status = 'skipped'`, `completed = false`, and it **keeps `active = true`** so the user can switch it back to training (`isRest: false`). Skipping does **not** close the day-log: the day only stops being the active resource when `completed = true`, removed, or superseded by another tracker.
+- In `WeekLog` the root has no `status`; the per-day `status` lives on `WeekLogDay` (a week has 7 days). In `DayLog` a single day is tracked, so both `status` and `completed` live on the day-log itself.
 
 ## Empty day becomes rest (soft input, hard normalization)
 

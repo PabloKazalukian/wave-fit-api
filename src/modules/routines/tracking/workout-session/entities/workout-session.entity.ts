@@ -32,8 +32,11 @@ export class WorkoutSession {
   @Field(() => ID)
   userId: string;
 
-  @Field(() => ID)
-  weekLogId: string;
+  @Field(() => ID, { nullable: true })
+  weekLogId?: string;
+
+  @Field(() => ID, { nullable: true })
+  dayLogId?: string;
 
   @Field()
   date: Date;

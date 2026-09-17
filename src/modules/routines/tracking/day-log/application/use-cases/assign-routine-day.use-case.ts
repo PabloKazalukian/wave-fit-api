@@ -70,6 +70,7 @@ export class AssignRoutineDayUseCase {
       if (existingSession) {
         existingSession.exercises = exercises as any;
         existingSession.routineDayId = new Types.ObjectId(routineDayId) as any;
+        existingSession.dayLogId = new Types.ObjectId(dayLog.id) as any;
         existingSession.status = 'not_started';
         existingSession.edited = false;
         await (existingSession as any).save();
@@ -79,6 +80,7 @@ export class AssignRoutineDayUseCase {
           {
             date,
             routineDayId,
+            dayLogId: dayLog.id,
             exercises,
             status: StatusWorkoutSessionEnum.NOT_STARTED,
             notes: '',
@@ -94,6 +96,7 @@ export class AssignRoutineDayUseCase {
         {
           date,
           routineDayId,
+          dayLogId: dayLog.id,
           exercises,
           status: StatusWorkoutSessionEnum.NOT_STARTED,
           notes: '',
