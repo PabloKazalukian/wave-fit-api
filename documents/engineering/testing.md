@@ -10,7 +10,7 @@ How the WaveFit API is tested: philosophy, commands, unit vs E2E split, mock pat
 - Two independent suites: **unit** and **E2E**.
   - Unit tests (`src/**/*.spec.ts`) mock every dependency with Jest and run fast.
   - E2E tests (`test/e2e/*.spec.ts`) boot the full application (via `AppTestModule`) against an in-memory MongoDB (`mongodb-memory-server`) and exercise real GraphQL + HTTP through `supertest`.
-- Both suites must stay green. Current baseline: **65 unit suites / 652 unit tests**, **32 E2E suites / 158 E2E tests**.
+- Both suites must stay green. Current baseline: **73 unit suites / 703 unit tests**, **32 E2E suites / 169 E2E tests**.
 - Tests reflect the **current** behavior of the code, not historical contracts (see mock patterns, section 6).
 - Test-first methodology: when implementing a Spec, write the test for each layer before its implementation. A failing requirement or test is corrected against the Spec, not by improvising around it.
 
@@ -38,8 +38,8 @@ npm run test:cov:combined   # unit + e2e coverage + istanbul merge → coverage/
 
 | Suite | Location | Baseline | Command |
 |---|---|---|---|
-| **Unit** | `src/**/*.spec.ts` | 65 suites / 652 tests | `npm test` |
-| **E2E** | `test/e2e/*.spec.ts` | 32 suites / 158 tests | `npm run test:e2e` |
+| **Unit** | `src/**/*.spec.ts` | 73 suites / 703 tests | `npm test` |
+| **E2E** | `test/e2e/*.spec.ts` | 32 suites / 169 tests | `npm run test:e2e` |
 
 - Unit tests mock dependencies with Jest (see section 6).
 - E2E boots the app against in-memory MongoDB, with `cookie-parser` registered (the JWT travels in an HttpOnly cookie), GraphQL playground disabled, and the same modules as the real app.
@@ -112,7 +112,7 @@ Additional lessons: assert ObjectId-sensitive arguments by capturing received ar
 Observations from the same report:
 
 - E2E contributes most in week-log (use cases 82–100%, resolver ~94%, repository ~70%) and auth.
-- Cold areas: `stats` (experimental, out of scope), `google.service` (requires real OAuth or contract tests).
+- Cold areas: `stats` (experimental; the pure use cases, `get-raw-data-for-worker` and the SQS publisher are now covered, but the `get-*` use cases, service, resolver and repository remain uncovered), `google.service` (requires real OAuth or contract tests).
 - `npm run test:cov:combined` is the single command that regenerates the measured numbers.
 
 Historical evolution (see Git history for the reports):

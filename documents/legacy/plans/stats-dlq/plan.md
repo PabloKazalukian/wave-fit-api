@@ -1,14 +1,15 @@
 # Plan: DLQ for Stats using Audit-Logs
 
-> **Status:** Active / In progress
+> **Status:** Historical / Non-Authoritative
+> **Executed on branch:** `feat/stats-experimental`
 > **Spec:** `sdd/stats-dlq.md`
+> **Closed:** 2026-09-17 — implemented and validated; the current behavior is defined by the Spec (`status: done`) and the code.
 
 ## Status
 
-**IN PROGRESS.** Implementation started on the `feat/stats-experimental` branch. The authoritative backlog contract is the Spec `sdd/stats-dlq.md`.
+**Implemented and archived.** Historical, non-authoritative. See the Spec `sdd/stats-dlq.md` for the current contract.
 
 **Date:** 2026-09-04
-**Status:** In progress
 **Affected modules:** `stats`, `audit-logs`
 
 ---

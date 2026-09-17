@@ -1,12 +1,13 @@
 # Plan: Pure Use-Case Unit Tests for Experimental Stats
 
-> **Status:** Active / In progress
+> **Status:** Historical / Non-Authoritative
+> **Executed on branch:** `feat/stats-experimental`
 > **Spec:** `sdd/stats-tests.md`
+> **Closed:** 2026-09-17 — implemented and validated; the current behavior is defined by the Spec (`status: done`) and the code.
 
 ## Status
 
-Test-only effort over the existing hexagonal `stats` module. The authoritative
-contract is the Spec `sdd/stats-tests.md`.
+**Implemented and archived.** Historical, non-authoritative. See the Spec `sdd/stats-tests.md` for the current contract.
 
 **Date:** 2026-09-17
 **Affected module:** `stats`

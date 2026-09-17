@@ -4,7 +4,7 @@
 > **Status:** Current
 > **Last updated:** 2026-09-13
 
-> **Warning: experimental module.** It has ~32 files with hexagonal architecture, but it is **not active in production** and by decision it is kept **out of the test suite** (0% coverage).
+> **Warning: experimental module.** It has ~32 files with hexagonal architecture, but it is **not active in production**. Its pure use cases (`save-*`, `get-raw-data-for-worker`) and the SQS publisher now have unit tests under `src/modules/stats/`; the `get-*` use cases, service, resolver and repository remain uncovered.
 
 ## Purpose
 
@@ -56,7 +56,7 @@ Note: the former `src/modules/stats/CONTRACT.md` (API <-> worker contract) and `
 
 ### `stats.module.ts`
 
-- Imports `MongooseModule.forFeature` with the **9 schemas**:
+- Imports `AuditLogsModule` (for the SQS publisher DLQ) and `MongooseModule.forFeature` with the **9 schemas**:
   - 4 output (results): `UserTopExercise`, `UserTopRoutine`, `UserPersonalRecord`, `UserAdherence`
   - 5 reference (raw-data reads): `WorkoutSession`, `WeekLog`, `Exercise`, `RoutinePlan`, `UserStrengthMetric`
 - Registers `StatsResolver`, `StatsService`, `StatsEventPublisher`, the 9 use cases (`STAT_USE_CASES`) and the `StatsRepository` under the token `STATS_REPOSITORY`.
@@ -145,9 +145,14 @@ If `STATS_SQS_QUEUE_URL` is configured, it publishes the message to SQS:
 }
 ```
 
-> If the SQS URL is **not** configured, the publisher starts but **silently skips** the send (events keep firing internally). This allows the module to never block the main tracking flow.
+> If the SQS URL is **not** configured, the publisher warns and **skips** the send (events keep firing internally). This allows the module to never block the main tracking flow. No DLQ record is written for the missing-config case.
 
-The message is sent to a **FIFO queue**: `MessageGroupId: 'workout-session-group'` with a unique `MessageDeduplicationId` (timestamp + random), and a `triggerType` message attribute (String, same value as the body field).
+The message is sent to a **FIFO queue**: `MessageGroupId: 'stats-${userId}'` (per user, so users are not serialized) with `MessageDeduplicationId: '<userId>-<triggerType>-<entityId>'` (deduplicates identical events), and a `triggerType` message attribute (String, same value as the body field).
+
+The publisher logs every delivery through `AuditLogsService.logAsync` (fire-and-forget, never blocks the originating request):
+
+- **Success**: audit log `action: 'SQS_PUBLISH_SUCCESS'`, `entity: 'StatsEventPublisher'`, metadata `{ triggerType, entityId, queueUrl, messageId }`.
+- **Failure**: persistent DLQ record `action: 'SQS_PUBLISH_FAILED'`, `entity: 'StatsEventPublisher'`, `success: false`, `errorMessage`, metadata `{ triggerType, entityId, queueUrl, stack, timestamp }`. Failed events are queryable via the GraphQL query `auditLogs({ action: 'SQS_PUBLISH_FAILED', success: false })` and can be reprocessed out-of-band from that metadata (the event is never lost silently).
 
 ## Worker contract
 
@@ -295,9 +300,9 @@ The Lambda is triggered by an SQS message. It:
 ## Status / Roadmap
 
 - **Registered** in `app.module.ts`.
-- **Implemented**: full resolver, 9 use cases, repository, 9 schemas, SQS publisher.
+- **Implemented**: full resolver, 9 use cases, repository, 9 schemas, SQS publisher with DLQ via `audit-logs`.
 - **Not active** in production.
-- **Out of the test suite** (0% coverage - experimental, low priority).
+- **Tests**: unit suites under `src/modules/stats/` (the 4 `save-*` use cases, `get-raw-data-for-worker`, and `StatsEventPublisher`) follow the mock patterns of `documents/engineering/testing.md` section 6 and run with `npx jest --config jest.config.js src/modules/stats`.
 - The worker contract (API <-> worker, "Lambda never writes to MongoDB directly") and the Lambda implementation guidance formerly in `CONTRACT.md` / `LAMBDA.md` are folded into this document (see the Worker Contract and Lambda Implementation Guide sections); those files were removed.
 
-> If the module is activated in the future, start with the pure use cases (`save-*`, `get-raw-data-for-worker`); see the draft spec `sdd/stats-tests.md`.
+> If the module is activated in the future, the unit tests for the pure use cases already exist (`sdd/stats-tests.md` is `done`); the `get-*` use cases, service, resolver and repository still need coverage.
