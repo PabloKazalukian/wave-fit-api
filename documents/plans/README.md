@@ -27,20 +27,15 @@ documents/plans/<feature>/plan.md
 |--------|---------|
 | **In Progress** | The plan describes work currently being executed. |
 | **Active / Pending** | The feature is planned but not yet implemented; the plan remains useful guidance for a future execution. |
-| **Historical / Non-Authoritative** | The feature was implemented (or superseded); the plan is kept only for traceability and historical review. The authoritative source of truth is the Spec and the Code. |
+| **Historical / Non-Authoritative** | The feature was implemented (or superseded); the plan is archived to `documents/legacy/plans/` and kept only for traceability and historical review. The authoritative source of truth is the Spec and the Code. |
+
+## Archived plans
+
+Implemented (historic) plans are archived under `documents/legacy/plans/<feature>/plan.md`.
+See the status lifecycle above; archives are never authoritative.
 
 ## Index
 
 | Feature | Folder | Status |
 |---------|--------|--------|
-| Day-Log (tracking) | `documents/plans/day-log/plan.md` | Historical |
-| TrainingPlan module update (IA) | `documents/plans/training-plan-update/plan.md` | Historical |
-| AI idempotency + rate limit + retry | `documents/plans/ai-idempotency-retry/plan.md` | Historical |
-| GraphQL name collisions in tracking | `documents/plans/graphql-collisions/plan.md` | Historical |
-| Modify AI-generated plan (`modifyPlan`) | `documents/plans/modify-plan/plan.md` | Historical |
 | Stats DLQ via Audit-Logs | `documents/plans/stats-dlq/plan.md` | Active / Pending |
-| Day-Log ↔ TrainingPlan gemelos (Spec ↔ Código) | `documents/plans/day-log-training-plan-twin-alignment/plan.md` | Historical / Non-Authoritative |
-| Documentation migration to Spec-Anchored Development | `documents/plans/docs-migration/plan.md` | Historical |
-| WorkoutSession.weekLogId nullable (GraphQL) | `documents/plans/workout-session-weeklogid-nullable/plan.md` | Historical / Non-Authoritative |
-| WorkoutSession.dayLogId back-reference | `documents/plans/workout-session-daylogid/plan.md` | Historical / Non-Authoritative |
-| Day-Log `active`/`completed`/`status` semantics + `workoutSession` block | `documents/plans/day-log-status-completed/plan.md` | Historical / Non-Authoritative |

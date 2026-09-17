@@ -137,7 +137,8 @@ Production is hosted on **Render**:
 - **`documents/modules/`** — implemented, validated module state.
 - **`documents/decisions/`** — ADRs (decision rationale).
 - **`sdd/`** — feature specs (feature contracts, authoritative alongside the code).
-- **`documents/plans/`** — historical/non-authoritative execution plans.
+- **`documents/plans/`** — active/pending implementation plans.
+- **`documents/legacy/plans/`** — historical/non-authoritative execution plans (archived after implementation).
 
 ## Tests
 

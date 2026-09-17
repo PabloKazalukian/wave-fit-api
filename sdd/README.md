@@ -85,7 +85,8 @@ A Spec that was archived keeps `> **Status:** done` only if it reflects implemen
 | `documents/domain/` | Domain vocabulary, shared business rules | Stable reference |
 | `documents/modules/` | Implemented, validated module state | Stable reference |
 | `documents/decisions/` | ADRs — decision rationale | Historical reference |
-| `documents/plans/` | Execution artifacts (per-feature `plan.md` folders) | Historical / non-authoritative, except active backlog plans |
+| `documents/plans/` | Execution artifacts (per-feature `plan.md` folders) | Active / pending plans only |
+| `documents/legacy/plans/` | Implemented (historic) plans, archived | Historical / non-authoritative |
 | The template below | Canonical spec structure | Replaces the legacy RFC 2119 `_TEMPLATE.md` (removed) |
 
 ## Demand Tests for Every Requirement

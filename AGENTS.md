@@ -51,6 +51,8 @@ Plans live in:
 
 `documents/plans/<feature>/plan.md`
 
+Implemented plans are archived to `documents/legacy/plans/<feature>/plan.md` (historical, non-authoritative).
+
 Plans are implementation artifacts and never define current behavior.
 
 ## Implementation
@@ -97,4 +99,5 @@ Do not use Plans as current documentation.
 - `documents/domain/` — stable domain knowledge
 - `documents/decisions/` — ADRs
 - `sdd/` — feature Specs
-- `documents/plans/` — implementation plans/history
+- `documents/plans/` — implementation plans (active/pending)
+- `documents/legacy/plans/` — implemented plans (archived history)
