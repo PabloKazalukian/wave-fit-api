@@ -1,6 +1,6 @@
 # Stats SQS DLQ via Audit-Logs
 
-> **Status:** Draft
+> **Status:** done
 > **Priority:** low
 
 ## Context

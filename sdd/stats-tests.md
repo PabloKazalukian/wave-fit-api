@@ -1,6 +1,6 @@
 # Stats Pure Use-Case Unit Tests
 
-> **Status:** Draft
+> **Status:** done
 > **Priority:** low
 
 ## Context

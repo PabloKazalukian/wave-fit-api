@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { AuditLogsModule } from '../audit-logs/audit-logs.module';
 import { StatsService } from './stats.service';
 import { StatsResolver } from './stats.resolver';
 import { StatsEventPublisher } from './stats-event-publisher';
@@ -18,6 +19,7 @@ import { STAT_USE_CASES } from './application/use-cases';
 
 @Module({
   imports: [
+    AuditLogsModule,
     MongooseModule.forFeature([
       { name: UserTopExercise.name, schema: UserTopExerciseSchema },
       { name: UserTopRoutine.name, schema: UserTopRoutineSchema },

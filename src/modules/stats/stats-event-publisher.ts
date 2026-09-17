@@ -5,6 +5,7 @@ import {
   SendMessageCommand,
 } from '@aws-sdk/client-sqs';
 import { OnEvent } from '@nestjs/event-emitter';
+import { AuditLogsService } from '../audit-logs/audit-logs.service';
 
 export interface StatsTriggerEvent {
   userId: string;
@@ -18,7 +19,10 @@ export class StatsEventPublisher implements OnModuleInit {
   private sqsClient: SQSClient;
   private queueUrl: string;
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly auditLogsService: AuditLogsService,
+  ) {}
 
   onModuleInit() {
     const region = this.configService.get<string>('AWS_REGION') || 'us-east-1';
@@ -62,8 +66,9 @@ export class StatsEventPublisher implements OnModuleInit {
   private async publishToSqs(payload: StatsTriggerEvent) {
     if (!this.sqsClient || !this.queueUrl) {
       this.logger.warn(
-        `[stats] No se pudo entregar la estadística al worker/Lambda (aún no disponible/no configurado). ` +
-          `Evento ${payload.triggerType} para usuario ${payload.userId} (entityId ${payload.entityId}) no fue procesado. ` +
+        `[stats] STATS_SQS_QUEUE_URL not configured. ` +
+          `Evento ${payload.triggerType} para usuario ${payload.userId} ` +
+          `(entityId ${payload.entityId}) no fue procesado. ` +
           `Configura STATS_SQS_QUEUE_URL y despliega el Lambda para habilitar el cómputo de métricas.`,
       );
       return;
@@ -77,12 +82,12 @@ export class StatsEventPublisher implements OnModuleInit {
     };
 
     try {
-      await this.sqsClient.send(
+      const result = await this.sqsClient.send(
         new SendMessageCommand({
           QueueUrl: this.queueUrl,
           MessageBody: JSON.stringify(message),
-          MessageGroupId: 'workout-session-group',
-          MessageDeduplicationId: `${Date.now()}-${Math.random()}`,
+          MessageGroupId: `stats-${payload.userId}`,
+          MessageDeduplicationId: `${payload.userId}-${payload.triggerType}-${payload.entityId}`,
           MessageAttributes: {
             triggerType: {
               DataType: 'String',
@@ -91,12 +96,45 @@ export class StatsEventPublisher implements OnModuleInit {
           },
         }),
       );
+
+      this.auditLogsService.logAsync({
+        action: 'SQS_PUBLISH_SUCCESS',
+        entity: 'StatsEventPublisher',
+        userId: payload.userId,
+        success: true,
+        metadata: {
+          triggerType: payload.triggerType,
+          entityId: payload.entityId,
+          queueUrl: this.queueUrl,
+          messageId: result?.MessageId,
+        },
+      });
+
       this.logger.log(
         `Published ${payload.triggerType} event for user ${payload.userId}`,
       );
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
+      this.auditLogsService.logAsync({
+        action: 'SQS_PUBLISH_FAILED',
+        entity: 'StatsEventPublisher',
+        userId: payload.userId,
+        success: false,
+        errorMessage,
+        metadata: {
+          triggerType: payload.triggerType,
+          entityId: payload.entityId,
+          queueUrl: this.queueUrl,
+          stack: error instanceof Error ? error.stack : undefined,
+          timestamp: Date.now(),
+        },
+      });
+
       this.logger.error(
-        `Failed to publish ${payload.triggerType} to SQS: ${error.message}`,
+        `Failed to publish ${payload.triggerType} to SQS: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
       );
     }
   }

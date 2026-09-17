@@ -1,14 +1,15 @@
 # Plan: DLQ for Stats using Audit-Logs
 
-> **Status:** Active / Pending
+> **Status:** Historical / Non-Authoritative
+> **Executed on branch:** `feat/stats-experimental`
 > **Spec:** `sdd/stats-dlq.md`
+> **Closed:** 2026-09-17 — implemented and validated; the current behavior is defined by the Spec (`status: done`) and the code.
 
 ## Status
 
-**NOT implemented.** Feature UNDER PLANNING / PENDING. This plan is the current, active guidance for a future implementation; the authoritative backlog contract is the Spec `sdd/stats-dlq.md`.
+**Implemented and archived.** Historical, non-authoritative. See the Spec `sdd/stats-dlq.md` for the current contract.
 
 **Date:** 2026-09-04
-**Status:** Pending
 **Affected modules:** `stats`, `audit-logs`
 
 ---
@@ -327,14 +328,14 @@ Audit Log created → MongoDB Change Stream → Lambda → SNS → Email
 
 ## 8. Implementation Checklist
 
-- [ ] Inject `AuditLogsService` in `StatsEventPublisher`
-- [ ] Add `AuditLogsModule` to `StatsModule` imports
-- [ ] Add success log in `publishToSQS`
-- [ ] Add failure log in `publishToSQS`
-- [ ] Fix `MessageGroupId` per user
-- [ ] Fix `MessageDeduplicationId` for real dedup
-- [ ] Create unit tests for `StatsEventPublisher`
-- [ ] Verify environment variables (`AWS_ACCESS_KEY` vs `AWS_ACCESS_KEY_ID`)
+- [x] Inject `AuditLogsService` in `StatsEventPublisher`
+- [x] Add `AuditLogsModule` to `StatsModule` imports
+- [x] Add success log in `publishToSQS`
+- [x] Add failure log in `publishToSQS`
+- [x] Fix `MessageGroupId` per user
+- [x] Fix `MessageDeduplicationId` for real dedup
+- [x] Create unit tests for `StatsEventPublisher`
+- [x] Verify environment variables (`AWS_ACCESS_KEY` vs `AWS_ACCESS_KEY_ID`): code keeps the names `AWS_ACCESS_KEY` / `AWS_SECRET_KEY`; no deployment-config change (per spec `NFR-004`)
 - [ ] Document in `documents/modules/stats.md`
 - [ ] (Optional) Implement cron job for email alerts
 
