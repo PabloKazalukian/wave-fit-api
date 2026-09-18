@@ -38,4 +38,5 @@ See the status lifecycle above; archives are never authoritative.
 
 | Feature | Folder | Status |
 |---------|--------|--------|
-| Stats DLQ via Audit-Logs | `documents/plans/stats-dlq/plan.md` | Active / Pending |
+| Stats DLQ via Audit-Logs | `documents/legacy/plans/stats-dlq/plan.md` | Historical / Non-Authoritative |
+| Stats Pure Use-Case Unit Tests | `documents/legacy/plans/stats-tests/plan.md` | Historical / Non-Authoritative |
