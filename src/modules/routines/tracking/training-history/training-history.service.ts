@@ -1,8 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { WeekLog } from '../week-log/infrastructure/schemas/week-log.schema';
+import { DayLog } from '../day-log/infrastructure/schemas/day-log.schema';
 import {
+  LocalDate,
   utcToLocalDate,
   localDateToUtc,
   addDaysToLocalDate,
@@ -22,6 +24,8 @@ export class TrainingHistoryService {
   constructor(
     @InjectModel(WeekLog.name)
     private readonly weekLogModel: Model<WeekLog>,
+    @InjectModel(DayLog.name)
+    private readonly dayLogModel: Model<DayLog>,
   ) {}
 
   async getTrainingCalendar(
@@ -30,10 +34,13 @@ export class TrainingHistoryService {
     month: number,
     timezone: string = DEFAULT_TIMEZONE,
   ): Promise<TrainingCalendarResponse> {
-    const monthStart = `${year}-${String(month).padStart(2, '0')}-01`;
-    const monthEndLocal = addDaysToLocalDate(
+    this.validateInput(year, month, timezone);
+
+    const monthStart: LocalDate = `${year}-${String(month).padStart(2, '0')}-01`;
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const monthEndLocal: LocalDate = addDaysToLocalDate(
       monthStart,
-      new Date(year, month, 0).getDate() - 1,
+      daysInMonth - 1,
     );
 
     const rangeStartUtc = localDateToUtc(monthStart, timezone);
@@ -53,7 +60,15 @@ export class TrainingHistoryService {
       .populate('days.extraSessionIds')
       .exec();
 
-    const calendarDays: CalendarDay[] = [];
+    const dayLogs = await this.dayLogModel
+      .find({
+        userId: new Types.ObjectId(userId),
+        deleted: { $ne: true },
+        date: { $gte: rangeStartUtc, $lt: rangeEndUtc },
+      })
+      .exec();
+
+    const daysByDate = new Map<string, CalendarDay>();
 
     for (const weekLog of weekLogs) {
       const ref: WeekLogReference = {
@@ -69,7 +84,7 @@ export class TrainingHistoryService {
         const dayLocalDate = utcToLocalDate(day.date, timezone);
 
         if (dayLocalDate >= monthStart && dayLocalDate <= monthEndLocal) {
-          calendarDays.push({
+          daysByDate.set(dayLocalDate, {
             date: dayLocalDate,
             type: DayType.WEEK_LOG,
             status: this.mapDayStatus(day),
@@ -83,9 +98,42 @@ export class TrainingHistoryService {
       }
     }
 
-    calendarDays.sort((a, b) => a.date.localeCompare(b.date));
+    for (const dayLog of dayLogs) {
+      const dayLocalDate = utcToLocalDate(dayLog.date, timezone);
 
-    return { year, month, days: calendarDays };
+      if (daysByDate.has(dayLocalDate)) continue;
+
+      daysByDate.set(dayLocalDate, {
+        date: dayLocalDate,
+        type: DayType.DAY_LOG,
+        status: dayLog.status as TrainingStatus,
+        workoutSessionId: this.resolveId(dayLog.workoutSessionId) ?? undefined,
+        extraSessionIds: (dayLog.extraSessionIds ?? [])
+          .map((id: any) => this.resolveId(id))
+          .filter((id): id is string => id !== null),
+        dayLogId: (dayLog._id as Types.ObjectId).toString(),
+      });
+    }
+
+    const days = Array.from(daysByDate.values()).sort((a, b) =>
+      a.date.localeCompare(b.date),
+    );
+
+    return { year, month, days };
+  }
+
+  private validateInput(year: number, month: number, timezone: string): void {
+    if (!Number.isInteger(month) || month < 1 || month > 12) {
+      throw new BadRequestException(`Invalid month: ${month}`);
+    }
+    if (!Number.isInteger(year) || year <= 0) {
+      throw new BadRequestException(`Invalid year: ${year}`);
+    }
+    try {
+      new Intl.DateTimeFormat('en-US', { timeZone: timezone });
+    } catch {
+      throw new BadRequestException(`Invalid timezone: ${timezone}`);
+    }
   }
 
   private mapDayStatus(day: any): TrainingStatus {

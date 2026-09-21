@@ -15,6 +15,7 @@ import { WeekLogModule } from '../../src/modules/routines/tracking/week-log/week
 import { DayLogModule } from '../../src/modules/routines/tracking/day-log/day-log.module';
 import { ActiveTrackingModule } from '../../src/modules/routines/tracking/active-tracking/active-tracking.module';
 import { ExtraSessionModule } from '../../src/modules/routines/tracking/extra-session/extra-session.module';
+import { TrainingHistoryModule } from '../../src/modules/routines/tracking/training-history/training-history.module';
 import { GoogleModule } from '../../src/modules/auth/google/google.module';
 import { AuditLogsModule } from '../../src/modules/audit-logs/audit-logs.module';
 import { TrainingPlanModule } from '../../src/modules/training-plan/training-plan.module';
@@ -50,6 +51,7 @@ import { GraphQLExceptionFilter } from '../../src/common/filters/gql-exception.f
     DayLogModule,
     ActiveTrackingModule,
     ExtraSessionModule,
+    TrainingHistoryModule,
     GoogleModule,
     AuditLogsModule,
     TrainingPlanModule,

@@ -185,3 +185,4 @@ Link the originating Plan/ADR when relevant (as reference, never as authority).
 | `levenshtein-routine.md` | draft | Extend name-similarity control to RoutineDay/RoutinePlan |
 | `stats-tests.spec.md` | done | Unit tests for the pure stats use cases (currently 0% coverage → pure use cases + publisher covered; promoted `.spec` 2026-09-21) |
 | `docs-migration.md` | done | This doc-migration effort (Spec-Anchored Development) |
+| `training-history.spec.md` | done | Monthly calendar over tracking history (`trainingCalendar`): extends existing query to `DAY_LOG` + `dayLogId` (promoted `.spec` 2026-09-21) |
