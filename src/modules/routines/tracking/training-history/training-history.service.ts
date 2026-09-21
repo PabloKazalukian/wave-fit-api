@@ -148,7 +148,15 @@ export class TrainingHistoryService {
   private resolveExtraSessions(sessions: any[]): ExtraSession[] {
     return (sessions ?? [])
       .map((session: any): ExtraSession | null => {
-        if (!session || typeof session !== 'object' || !session._id) return null;
+        if (
+          !session ||
+          typeof session !== 'object' ||
+          !session._id ||
+          session.category === undefined ||
+          session.discipline === undefined
+        ) {
+          return null;
+        }
         return {
           id: session._id.toString(),
           userId: session.userId?.toString() ?? '',

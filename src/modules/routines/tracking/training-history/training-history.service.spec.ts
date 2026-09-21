@@ -290,6 +290,68 @@ describe('TrainingHistoryService', () => {
     expect(collision.dayLogId).toBeUndefined();
   });
 
+  it('TEST-008 dangling extra-session refs: bare ObjectIds stay in extraSessionIds but are filtered from extraSessions (both entry types)', async () => {
+    const populatedWeekEs = {
+      _id: new Types.ObjectId(),
+      userId,
+      workoutSessionId: new Types.ObjectId(),
+      category: 'cardio',
+      date: localDateToUtc('2026-01-10', TZ),
+      discipline: 'swimming',
+      duration: 60,
+      intensityLevel: 4,
+      calories: null,
+      notes: '',
+    };
+    const danglingWeekEs = new Types.ObjectId();
+    const danglingDayLogEs = new Types.ObjectId();
+
+    weekLogQuery.exec.mockResolvedValue([
+      {
+        _id: new Types.ObjectId() as any,
+        startDate: localDateToUtc('2026-01-10', TZ),
+        endDate: localDateToUtc('2026-01-16', TZ),
+        completed: false,
+        active: false,
+        notes: '',
+        days: [
+          buildDay(4, '2026-01-10', {
+            status: 'complete',
+            workoutSessionId: null,
+            extraSessionIds: [populatedWeekEs, danglingWeekEs],
+          }),
+        ],
+      },
+    ]);
+    dayLogQuery.exec.mockResolvedValue([
+      {
+        _id: new Types.ObjectId() as any,
+        date: localDateToUtc('2026-01-15', TZ),
+        status: 'complete',
+        workoutSessionId: null,
+        extraSessionIds: [danglingDayLogEs as any],
+      },
+    ]);
+
+    const result = await service.getTrainingCalendar(userId, 2026, 1);
+
+    const weekDay = result.days.find((d) => d.date === '2026-01-10');
+    expect(weekDay.extraSessionIds).toEqual([
+      populatedWeekEs._id.toString(),
+      danglingWeekEs.toString(),
+    ]);
+    expect(weekDay.extraSessions).toEqual([
+      expect.objectContaining({
+        id: populatedWeekEs._id.toString(),
+        discipline: 'swimming',
+      }),
+    ]);
+
+    const dayLogDay = result.days.find((d) => d.date === '2026-01-15');
+    expect(dayLogDay.extraSessionIds).toEqual([danglingDayLogEs.toString()]);
+    expect(dayLogDay.extraSessions).toEqual([]);
+  });
+
   it('TEST-005 validation: invalid month, year and timezone reject with BadRequestException', async () => {
     await expect(service.getTrainingCalendar(userId, 2026, 0)).rejects.toThrow(
       BadRequestException,

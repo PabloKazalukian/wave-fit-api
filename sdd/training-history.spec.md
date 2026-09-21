@@ -93,6 +93,7 @@ TrainingCalendarResponse { year, month, days }
 - `TEST-003` — Unit: month window and timezone boundaries — UTC range derived with and without an explicit timezone; a `WeekLog` overlapping the month edge and a `DayLog` at `rangeEndUtc` boundary are excluded correctly. Proves `FR-002`, `FR-006`, `FR-009`.
 - `TEST-004` — Unit: merge, sort and precedence — mixed entries are merged and sorted ascending by local date; on a date collision the `DAY_LOG` entry is dropped. Proves `FR-010`, `BR-002`.
 - `TEST-005` — Unit: input validation — `month` 0/13, `year` 0 and an invalid `timezone` reject with `400 BAD_REQUEST`. Proves `FR-011`.
+- `TEST-008` — Unit: dangling extra-session refs — an `extraSessionId` that is a bare `ObjectId` (not materializable via populate) stays in `extraSessionIds` but is filtered from `extraSessions`, for both `WEEK_LOG` days and `DAY_LOG` entries, while populated refs map to full objects. Proves `FR-007`.
 - `TEST-006` — E2E (`test/e2e/training-history/training-calendar.spec.ts`): seed a `WeekLog` and a `DayLog` in the same month for the authenticated user — each carrying a real `ExtraSession` — and assert the response returns the expected `WEEK_LOG` + `DAY_LOG` calendar days sorted by date with the documented shapes, including full `extraSessions` objects on both entry types. Proves `FR-001`, `FR-003`, `FR-004`, `FR-006`, `FR-007`, `FR-010`.
 - `TEST-007` — E2E: soft-deleted `WeekLog`/`DayLog` are excluded; another user's data is not visible (isolation); invalid input returns `400`. Proves `BR-001`, `FR-011`, `NFR-003`.
 
