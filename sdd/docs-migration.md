@@ -64,7 +64,7 @@ The goal is a Spec-Anchored documentation architecture: Spec + Code authoritativ
 │   ├── training-plan.spec.md
 │   ├── stats-dlq.spec.md
 │   ├── levenshtein-routine.md
-│   └── stats-tests.md
+│   └── stats-tests.spec.md
 ├── documents/
 │   ├── engineering/              # charter, architecture, testing, coding-standards, git-workflow, ci-cd, seed
 │   ├── domain/                   # overview, glossary, business-rules
