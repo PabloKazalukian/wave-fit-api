@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { WeekLog } from '../week-log/infrastructure/schemas/week-log.schema';
 import { DayLog } from '../day-log/infrastructure/schemas/day-log.schema';
+import { ExtraSession } from '../extra-session/entities/extra-session.entity';
 import {
   LocalDate,
   utcToLocalDate,
@@ -66,6 +67,7 @@ export class TrainingHistoryService {
         deleted: { $ne: true },
         date: { $gte: rangeStartUtc, $lt: rangeEndUtc },
       })
+      .populate('extraSessionIds')
       .exec();
 
     const daysByDate = new Map<string, CalendarDay>();
@@ -92,6 +94,7 @@ export class TrainingHistoryService {
             extraSessionIds: (day.extraSessionIds ?? [])
               .map((id: any) => this.resolveId(id))
               .filter((id): id is string => id !== null),
+            extraSessions: this.resolveExtraSessions(day.extraSessionIds),
             weekLogReference: ref,
           });
         }
@@ -111,6 +114,7 @@ export class TrainingHistoryService {
         extraSessionIds: (dayLog.extraSessionIds ?? [])
           .map((id: any) => this.resolveId(id))
           .filter((id): id is string => id !== null),
+        extraSessions: this.resolveExtraSessions(dayLog.extraSessionIds),
         dayLogId: (dayLog._id as Types.ObjectId).toString(),
       });
     }
@@ -139,6 +143,29 @@ export class TrainingHistoryService {
   private mapDayStatus(day: any): TrainingStatus {
     if (day.isRest) return TrainingStatus.REST;
     return day.status as TrainingStatus;
+  }
+
+  private resolveExtraSessions(sessions: any[]): ExtraSession[] {
+    return (sessions ?? [])
+      .map((session: any): ExtraSession | null => {
+        if (!session || typeof session !== 'object' || !session._id) return null;
+        return {
+          id: session._id.toString(),
+          userId: session.userId?.toString() ?? '',
+          workoutSessionId: session.workoutSessionId?.toString() ?? '',
+          category: session.category,
+          date: session.date,
+          discipline: session.discipline,
+          duration: session.duration,
+          intensityLevel: session.intensityLevel,
+          calories: session.calories ?? undefined,
+          notes:
+            session.notes !== undefined && session.notes !== ''
+              ? session.notes
+              : undefined,
+        };
+      })
+      .filter((session): session is ExtraSession => session !== null);
   }
 
   private resolveId(value: any): string | null {

@@ -19,6 +19,7 @@ import { getCookieWithToken } from '../helpers/week-log.helper';
 import { WeekLog } from '../../../src/modules/routines/tracking/week-log/infrastructure/schemas/week-log.schema';
 import { DayLog } from '../../../src/modules/routines/tracking/day-log/infrastructure/schemas/day-log.schema';
 import { WorkoutSession } from '../../../src/modules/routines/tracking/workout-session/schema/workout-session.schema';
+import { ExtraSession } from '../../../src/modules/routines/tracking/extra-session/schema/extra-session.schema';
 import { localDateToUtc } from '../../../src/common/utils/date.utils';
 import cookieParser from 'cookie-parser';
 
@@ -35,6 +36,15 @@ const CALENDAR_QUERY = `
         dayLogId
         workoutSessionId
         extraSessionIds
+        extraSessions {
+          id
+          category
+          discipline
+          duration
+          intensityLevel
+          calories
+          notes
+        }
         weekLogReference {
           id
           startDate
@@ -60,6 +70,9 @@ describe('TrainingHistory Calendar (e2e)', () => {
     const workoutSessionModel = app.get<Model<WorkoutSession>>(
       getModelToken(WorkoutSession.name),
     );
+    const extraSessionModel = app.get<Model<ExtraSession>>(
+      getModelToken(ExtraSession.name),
+    );
 
     const wsWeek = await workoutSessionModel.create({
       userId,
@@ -72,6 +85,29 @@ describe('TrainingHistory Calendar (e2e)', () => {
       date: localDateToUtc('2026-01-15', TZ),
       exercises: [],
       status: 'complete',
+    });
+
+    const esWeek = await extraSessionModel.create({
+      userId,
+      workoutSessionId: wsWeek._id,
+      category: 'cardio',
+      date: localDateToUtc('2026-01-01', TZ),
+      discipline: 'running',
+      duration: 30,
+      intensityLevel: 3,
+      calories: 320,
+      notes: '',
+    });
+    const esDay = await extraSessionModel.create({
+      userId,
+      workoutSessionId: wsDay._id,
+      category: 'cardio',
+      date: localDateToUtc('2026-01-15', TZ),
+      discipline: 'cycling',
+      duration: 45,
+      intensityLevel: 4,
+      calories: null,
+      notes: 'cooldown',
     });
 
     const weekLogId = new Types.ObjectId();
@@ -97,7 +133,7 @@ describe('TrainingHistory Calendar (e2e)', () => {
         date: localDateToUtc(d, TZ),
         isRest: d === '2026-01-02',
         workoutSessionId: i === 0 ? wsWeek._id : null,
-        extraSessionIds: [],
+        extraSessionIds: i === 0 ? [esWeek._id] : [],
         status: i === 0 ? 'complete' : 'pending',
       })),
     });
@@ -138,7 +174,7 @@ describe('TrainingHistory Calendar (e2e)', () => {
       date: localDateToUtc('2026-01-15', TZ),
       status: 'skipped',
       workoutSessionId: wsDay._id,
-      extraSessionIds: [],
+      extraSessionIds: [esDay._id],
     });
 
     await dayLogModel.create({
@@ -166,6 +202,8 @@ describe('TrainingHistory Calendar (e2e)', () => {
       wsWeekId: (wsWeek._id as Types.ObjectId).toString(),
       wsDayId: (wsDay._id as Types.ObjectId).toString(),
       dayLogId: dayLogId.toString(),
+      esWeekId: (esWeek._id as Types.ObjectId).toString(),
+      esDayId: (esDay._id as Types.ObjectId).toString(),
     };
   }
 
@@ -246,6 +284,18 @@ describe('TrainingHistory Calendar (e2e)', () => {
     expect(weekDay.status).toBe('complete');
     expect(weekDay.workoutSessionId).toBe(ids.wsWeekId);
     expect(weekDay.dayLogId).toBeNull();
+    expect(weekDay.extraSessionIds).toEqual([ids.esWeekId]);
+    expect(weekDay.extraSessions).toEqual([
+      {
+        id: ids.esWeekId,
+        category: 'CARDIO',
+        discipline: 'running',
+        duration: 30,
+        intensityLevel: 3,
+        calories: 320,
+        notes: null,
+      },
+    ]);
     expect(weekDay.weekLogReference.id).toBe(ids.weekLogId);
     expect(weekDay.weekLogReference.startDate).toBe('2026-01-01T03:00:00.000Z');
     expect(weekDay.weekLogReference.endDate).toBe('2026-01-07T03:00:00.000Z');
@@ -262,6 +312,18 @@ describe('TrainingHistory Calendar (e2e)', () => {
     expect(dayLogDay.status).toBe('skipped');
     expect(dayLogDay.dayLogId).toBe(ids.dayLogId);
     expect(dayLogDay.workoutSessionId).toBe(ids.wsDayId);
+    expect(dayLogDay.extraSessionIds).toEqual([ids.esDayId]);
+    expect(dayLogDay.extraSessions).toEqual([
+      {
+        id: ids.esDayId,
+        category: 'CARDIO',
+        discipline: 'cycling',
+        duration: 45,
+        intensityLevel: 4,
+        calories: null,
+        notes: 'cooldown',
+      },
+    ]);
     expect(dayLogDay.weekLogReference).toBeNull();
   });
 

@@ -1,4 +1,5 @@
 import { ObjectType, Field, ID, Int, registerEnumType } from '@nestjs/graphql';
+import { ExtraSession } from '../../../extra-session/entities/extra-session.entity';
 
 export enum DayType {
   WEEK_LOG = 'WEEK_LOG',
@@ -52,6 +53,9 @@ export class CalendarDay {
 
   @Field(() => [ID], { nullable: true })
   extraSessionIds?: string[];
+
+  @Field(() => [ExtraSession])
+  extraSessions?: ExtraSession[];
 
   @Field(() => ID, { nullable: true })
   dayLogId?: string;

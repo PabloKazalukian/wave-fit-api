@@ -39,6 +39,7 @@ describe('TrainingHistoryService', () => {
     exec: jest.fn(),
   };
   const dayLogQuery = {
+    populate: jest.fn().mockReturnThis(),
     exec: jest.fn(),
   };
 
@@ -80,7 +81,20 @@ describe('TrainingHistoryService', () => {
         buildDay(2, '2026-01-06', {
           status: 'complete',
           workoutSessionId: { _id: wsId },
-          extraSessionIds: [{ _id: esId }],
+          extraSessionIds: [
+            {
+              _id: esId,
+              userId,
+              workoutSessionId: wsId,
+              category: 'cardio',
+              date: localDateToUtc('2026-01-06', TZ),
+              discipline: 'running',
+              duration: 30,
+              intensityLevel: 3,
+              calories: 320,
+              notes: '',
+            },
+          ],
         }),
         buildDay(3, '2026-02-01', { status: 'complete' }),
       ],
@@ -101,12 +115,27 @@ describe('TrainingHistoryService', () => {
     expect(restDay.status).toBe(TrainingStatus.REST);
     expect(restDay.workoutSessionId).toBeUndefined();
     expect(restDay.dayLogId).toBeUndefined();
+    expect(restDay.extraSessions).toEqual([]);
 
     const trainedDay = result.days[1];
     expect(trainedDay.date).toBe('2026-01-06');
     expect(trainedDay.status).toBe(TrainingStatus.COMPLETE);
     expect(trainedDay.workoutSessionId).toBe(wsId.toString());
     expect(trainedDay.extraSessionIds).toEqual([esId.toString()]);
+    expect(trainedDay.extraSessions).toEqual([
+      {
+        id: esId.toString(),
+        userId,
+        workoutSessionId: wsId.toString(),
+        category: 'cardio',
+        date: localDateToUtc('2026-01-06', TZ),
+        discipline: 'running',
+        duration: 30,
+        intensityLevel: 3,
+        calories: 320,
+        notes: undefined,
+      },
+    ]);
     expect(trainedDay.weekLogReference).toEqual({
       id: weekLogId.toString(),
       startDate,
@@ -131,7 +160,20 @@ describe('TrainingHistoryService', () => {
         date: localDateToUtc('2026-01-15', TZ),
         status: 'skipped',
         workoutSessionId: wsId as any,
-        extraSessionIds: [esId as any],
+        extraSessionIds: [
+          {
+            _id: esId,
+            userId,
+            workoutSessionId: wsId,
+            category: 'cardio',
+            date: localDateToUtc('2026-01-15', TZ),
+            discipline: 'cycling',
+            duration: 45,
+            intensityLevel: 4,
+            calories: null,
+            notes: 'cooldown',
+          },
+        ],
       },
     ]);
 
@@ -145,6 +187,20 @@ describe('TrainingHistoryService', () => {
     expect(day.dayLogId).toBe(dayLogId.toString());
     expect(day.workoutSessionId).toBe(wsId.toString());
     expect(day.extraSessionIds).toEqual([esId.toString()]);
+    expect(day.extraSessions).toEqual([
+      {
+        id: esId.toString(),
+        userId,
+        workoutSessionId: wsId.toString(),
+        category: 'cardio',
+        date: localDateToUtc('2026-01-15', TZ),
+        discipline: 'cycling',
+        duration: 45,
+        intensityLevel: 4,
+        calories: undefined,
+        notes: 'cooldown',
+      },
+    ]);
     expect(day.weekLogReference).toBeUndefined();
   });
 
