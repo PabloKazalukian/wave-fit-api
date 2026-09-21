@@ -50,6 +50,12 @@ Requirements, tests and acceptance criteria carry explicit identifiers that link
 - Identifiers are unique within a Spec file and are never reused after a requirement is removed.
 - Code identifiers, file paths, enum values, module/command names inside a Spec are written exactly as they appear in the sources.
 
+## Filename Conventions
+
+- A Spec is written as `sdd/<feature>.md` while it is a backlog outline (`draft` or `in_progress`).
+- When a Spec is reviewed, passes its canonical verification and is marked `done`, it is **promoted** to `sdd/<feature>.spec.md`. The `.spec` suffix marks a canonical, referenceable feature contract: subsequent work on the feature builds on it (module docs link it as `Feature contract`).
+- The promotion is an explicit, deliberate rename recorded in the Backlog table — it is not an automatic consequence of the status header. Specs that are `done` but not yet promoted keep `*.md` until their promotion is performed.
+
 ## Lifecycle
 
 ```
@@ -175,7 +181,7 @@ Link the originating Plan/ADR when relevant (as reference, never as authority).
 |------|--------|-------|
 | `day-log.spec.md` | done | Standalone training day, fully implemented hexagonal module (Fase A–D) |
 | `training-plan.spec.md` | done | AI plan generation + confirmation pipeline, implemented and validated |
-| `stats-dlq.md` | done | DLQ for stats SQS events via audit-logs + SQS publisher error handling |
+| `stats-dlq.spec.md` | done | DLQ for stats SQS events via audit-logs + SQS publisher error handling (promoted `.spec` 2026-09-21) |
 | `levenshtein-routine.md` | draft | Extend name-similarity control to RoutineDay/RoutinePlan |
 | `stats-tests.spec.md` | done | Unit tests for the pure stats use cases (currently 0% coverage → pure use cases + publisher covered; promoted `.spec` 2026-09-21) |
 | `docs-migration.md` | done | This doc-migration effort (Spec-Anchored Development) |
