@@ -44,14 +44,17 @@ export class CalendarDay {
   @Field(() => DayType)
   type: DayType;
 
-  @Field(() => TrainingStatus)
-  status: TrainingStatus;
+  @Field()
+  status: string;
 
   @Field(() => ID, { nullable: true })
   workoutSessionId?: string;
 
   @Field(() => [ID], { nullable: true })
   extraSessionIds?: string[];
+
+  @Field(() => ID, { nullable: true })
+  dayLogId?: string;
 
   @Field(() => WeekLogReference, { nullable: true })
   weekLogReference?: WeekLogReference;

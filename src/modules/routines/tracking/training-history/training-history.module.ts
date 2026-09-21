@@ -6,21 +6,13 @@ import {
   WeekLog,
   WeekLogSchema,
 } from '../week-log/infrastructure/schemas/week-log.schema';
-import {
-  WorkoutSession,
-  WorkoutSessionSchema,
-} from '../workout-session/schema/workout-session.schema';
-import {
-  ExtraSession,
-  ExtraSessionSchema,
-} from '../extra-session/schema/extra-session.schema';
+import { DayLog, DayLogSchema } from '../day-log/infrastructure/schemas/day-log.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: WeekLog.name, schema: WeekLogSchema },
-      { name: WorkoutSession.name, schema: WorkoutSessionSchema },
-      { name: ExtraSession.name, schema: ExtraSessionSchema },
+      { name: DayLog.name, schema: DayLogSchema },
     ]),
   ],
   providers: [TrainingHistoryResolver, TrainingHistoryService],

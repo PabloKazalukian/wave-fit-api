@@ -54,7 +54,7 @@ The `active-tracking` module (`src/modules/routines/tracking/active-tracking/`) 
 - Exclusivity is a hard rule: `ActiveTrackingService` is injected into the week-log and day-log validators, which refuse to create an active tracker of the other type (`ConflictException`). The full rule is in `documents/domain/business-rules.md` (Active-tracking exclusivity).
 - When `hasActive` is `false` nothing is tracked, and the frontend renders the empty/onboarding state. This is what lets the client decide whether to show a week, a standalone day, or no tracking.
 
-`trainingCalendar` offers a calendar view over the tracking history of the user.
+`trainingCalendar` offers a read-only monthly calendar over the tracking history of the user, aggregating `WEEK_LOG` and `DAY_LOG` entries (see `sdd/training-history.spec.md`).
 
 ## User profile and its bounded contexts
 

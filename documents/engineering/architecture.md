@@ -144,7 +144,7 @@ Tracking:
 - DayLog: `createDayLog`, `dayLogFindAll`, `dayLogFindOne`, `activeDayLog`, `updateDayLog`, `updateDayLogStatus`, `assignRoutineToDayLog`, `removeWorkoutSessionFromDayLog`, `removeExtraSessionFromDayLog`, `removeDayLog`
 - ActiveTracking: `activeTracking` → `ActiveTracking` (`hasActive`, `type WEEK_LOG|DAY_LOG`, `week?`, `day?`)
 - ExtraSession: `extraSessionCatalog`, `createExtraSession`, `extraSessionFindAll`, `extraSessionFindOne`, `extraSessionsByIds`, `extraSessionsByWorkoutSession`, `updateExtraSession`, `removeExtraSession` → Boolean
-- TrainingHistory: `trainingCalendar`
+- TrainingHistory: `trainingCalendar` (read-only monthly calendar over `WEEK_LOG` + `DAY_LOG` tracking history)
 
 AI and TrainingPlan:
 
