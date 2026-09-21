@@ -22,7 +22,7 @@ The goal is a Spec-Anchored documentation architecture: Spec + Code authoritativ
 - `FR-002` — Create the domain documents under `documents/domain/`: `overview.md`, `glossary.md`, `business-rules.md`, in English, without duplicating feature requirements that belong in Specs.
 - `FR-003` — Create `documents/decisions/README.md` and ADR documents (`ADR-0001` .. `ADR-0007`) capturing engineering decision rationale (cookie auth strategy, GraphQL, MongoDB/Mongoose incl. the ObjectId lesson, hexagonal tracking, Google OAuth PKCE, AI provider strategy, stats SQS worker). Do not lose valuable historical reasoning.
 - `FR-004` — Create module state documents under `documents/modules/` (`ai.md`, `training-plan.md`, `stats.md`, `user-profile.md`, `auth.md`) describing the implemented, validated state of each module, and remove the module README files from `src/modules/` (including `auth/Readme.md`, which contradicts the code).
-- `FR-005` — Reorganize `sdd/` as the Spec home using the canonical spec structure (`Context`, `Requirements`, `Constraints`, `Architecture`, `Files`, `Tests`, `Acceptance Criteria`), with a spec README that embeds the template and identifier conventions (`FR-*`, `BR-*`, `NFR-*`, `TEST-*`, `AC-*`). Migrate `sdd/day-log.md` to `sdd/day-log.spec.md` reflecting implemented behavior, and add `sdd/training-plan.spec.md` plus the backlog specs `stats-dlq.md`, `levenshtein-routine.md`, `stats-tests.md`, and `docs-migration.md` (this spec).
+- `FR-005` — Reorganize `sdd/` as the Spec home using the canonical spec structure (`Context`, `Requirements`, `Constraints`, `Architecture`, `Files`, `Tests`, `Acceptance Criteria`), with a spec README that embeds the template and identifier conventions (`FR-*`, `BR-*`, `NFR-*`, `TEST-*`, `AC-*`). Migrate `sdd/day-log.md` to `sdd/day-log.spec.md` reflecting implemented behavior, and add `sdd/training-plan.spec.md` plus the backlog specs `stats-dlq.md`, `levenshtein-routine.md`, `stats-tests.spec.md`, and `docs-migration.md` (this spec).
 - `FR-006` — Reorganize plans under `documents/plans/<feature>/plan.md`. Migrate the five existing plans in `documents/plans/*.md` and the `plans/ai/modifate/` tree into per-feature folders. Completed plans must be marked `Status: Historical / Non-Authoritative`. The executed plan for this migration lives at `documents/legacy/plans/docs-migration/plan.md`.
 - `FR-007` — Rewrite the root `AGENTS.md` in English as the AI entry point: navigation and rules, referencing canonical documents instead of duplicating them. It must instruct: read the Charter, read relevant engineering/domain docs and ADRs, identify the relevant Spec, plan before implementing, execute one task at a time, tests first, validate after each task, update stable documentation only after validation, never treat Plans as authoritative, treat Spec + Code as the authoritative implementation state, update the Spec before changing behavior, follow English language rules for code and technical docs, and keep developer-facing communication in the developer's requested language.
 - `FR-008` — Rewrite the root `README.md` in English, focused on purpose, setup, development, basic usage, and links to the canonical documentation.
@@ -64,7 +64,7 @@ The goal is a Spec-Anchored documentation architecture: Spec + Code authoritativ
 │   ├── training-plan.spec.md
 │   ├── stats-dlq.md
 │   ├── levenshtein-routine.md
-│   └── stats-tests.md
+│   └── stats-tests.spec.md
 ├── documents/
 │   ├── engineering/              # charter, architecture, testing, coding-standards, git-workflow, ci-cd, seed
 │   ├── domain/                   # overview, glossary, business-rules
@@ -91,7 +91,7 @@ The goal is a Spec-Anchored documentation architecture: Spec + Code authoritativ
 - `documents/domain/business-rules.md` (created)
 - `documents/decisions/README.md` + `ADR-0001.md` .. `ADR-0007.md` (created)
 - `documents/modules/ai.md`, `training-plan.md`, `stats.md`, `user-profile.md`, `auth.md` (created)
-- `sdd/README.md` (rewritten), `sdd/day-log.spec.md`, `sdd/training-plan.spec.md`, `sdd/stats-dlq.md`, `sdd/levenshtein-routine.md`, `sdd/stats-tests.md`, `sdd/docs-migration.md` (created/updated)
+- `sdd/README.md` (rewritten), `sdd/day-log.spec.md`, `sdd/training-plan.spec.md`, `sdd/stats-dlq.md`, `sdd/levenshtein-routine.md`, `sdd/stats-tests.spec.md`, `sdd/docs-migration.md` (created/updated)
 - `documents/plans/README.md` + per-feature plan folders (created/moved); implemented plans later archived under `documents/legacy/plans/`
 - `AGENTS.md`, `README.md` (rewritten)
 - Deleted: module READMEs under `src/modules/`, `documents/config/`, `documents/reports/`, `documents/analysis/`, `documents/fix.md`, `documents/interfaces/`, `documents/prompt.md`, root `plans/`, and the old `documents/plans/*.md` files after migration.

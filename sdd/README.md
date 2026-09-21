@@ -177,5 +177,5 @@ Link the originating Plan/ADR when relevant (as reference, never as authority).
 | `training-plan.spec.md` | done | AI plan generation + confirmation pipeline, implemented and validated |
 | `stats-dlq.md` | done | DLQ for stats SQS events via audit-logs + SQS publisher error handling |
 | `levenshtein-routine.md` | draft | Extend name-similarity control to RoutineDay/RoutinePlan |
-| `stats-tests.md` | done | Unit tests for the pure stats use cases (currently 0% coverage → pure use cases + publisher covered) |
+| `stats-tests.spec.md` | done | Unit tests for the pure stats use cases (currently 0% coverage → pure use cases + publisher covered; promoted `.spec` 2026-09-21) |
 | `docs-migration.md` | done | This doc-migration effort (Spec-Anchored Development) |

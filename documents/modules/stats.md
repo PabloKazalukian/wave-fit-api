@@ -305,4 +305,4 @@ The Lambda is triggered by an SQS message. It:
 - **Tests**: unit suites under `src/modules/stats/` (the 4 `save-*` use cases, `get-raw-data-for-worker`, and `StatsEventPublisher`) follow the mock patterns of `documents/engineering/testing.md` section 6 and run with `npx jest --config jest.config.js src/modules/stats`.
 - The worker contract (API <-> worker, "Lambda never writes to MongoDB directly") and the Lambda implementation guidance formerly in `CONTRACT.md` / `LAMBDA.md` are folded into this document (see the Worker Contract and Lambda Implementation Guide sections); those files were removed.
 
-> If the module is activated in the future, the unit tests for the pure use cases already exist (`sdd/stats-tests.md` is `done`); the `get-*` use cases, service, resolver and repository still need coverage.
+> If the module is activated in the future, the unit tests for the pure use cases already exist (`sdd/stats-tests.spec.md` is `done`); the `get-*` use cases, service, resolver and repository still need coverage.

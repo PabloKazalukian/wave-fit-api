@@ -5,7 +5,7 @@
 
 ## Context
 
-The `stats` module (`src/modules/stats/`) is **experimental**: it has a hexagonal architecture (9 use cases in `application/use-cases/`, domain entities and repository interface, Mongoose infrastructure, presentation DTOs/entities), it is registered in `app.module.ts`, but it is **not active in production** and — by decision — it is **outside the test suite (0% coverage)**. See `documents/modules/stats.md`.
+The `stats` module (`src/modules/stats/`) is **experimental**: it has a hexagonal architecture (9 use cases in `application/use-cases/`, domain entities and repository interface, Mongoose infrastructure, presentation DTOs/entities), it is registered in `app.module.ts`, but it is **not active in production**. By decision it stays outside the stats production activation gate; before this Spec the module had **0% coverage** (no suites existed). See `documents/modules/stats.md`.
 
 This Spec adds unit tests for the **pure use cases** — the ones that can be tested without touching production behavior: the four `save-*` use cases and `get-raw-data-for-worker`. It adopts the mock patterns documented in `documents/engineering/testing.md` (section 6), keeping the tests outside the stats production activation decision.
 
@@ -17,12 +17,12 @@ This Spec adds unit tests for the **pure use cases** — the ones that can be te
 - `FR-002` — Unit test `SaveTopRoutinesUseCase`: same contract for the top-routines domain mapping and `statsRepository.upsertTopRoutines`.
 - `FR-003` — Unit test `SavePersonalRecordsUseCase`: maps `personalRecords[]` into the personal-records domain and calls `statsRepository.upsertPersonalRecords`.
 - `FR-004` — Unit test `SaveAdherenceUseCase`: maps adherence data into the adherence domain and calls `statsRepository.upsertAdherence`.
-- `FR-005` — Unit test `GetRawDataForWorkerUseCase`: with mocked mongoose models (see `NFR-001`), it queries `WorkoutSession` (only non-deleted, `status: 'complete'`, sorted by `date` ascending), `WeekLog` (non-deleted, sorted by `startDate`), `Exercise`, `RoutinePlan` (scoped `createdBy`) and `UserStrengthMetric` (sorted by `measuredAt`), and maps documents to `WorkerRawDataDomain` with the documented field conversions (ObjectId → string, `sets` → `reps`/`weights`).
+- `FR-005` — Unit test `GetRawDataForWorkerUseCase`: with mocked mongoose models (see `NFR-001`), it queries `WorkoutSession` (only non-deleted, `status: 'complete'`, sorted by `date` ascending), `WeekLog` (non-deleted, sorted by `startDate`), `Exercise`, `RoutinePlan` (scoped `createdBy`) and `UserStrengthMetric` (sorted by `measuredAt`), and maps documents to `WorkerRawDataDomain` with the documented field conversions (ObjectId → string; each `sets[]` element is mapped to a `{ reps, weights }` object, keeping the `sets` field name).
 - `FR-006` — Each spec asserts behavior against a mocked `IStatsRepository` (injected under the `STATS_REPOSITORY` token) or mocked model tokens, never against the real database or SQS.
 
 ### Non-Functional Requirements
 
-- `NFR-001` — Follow `documents/engineering/testing.md` mock patterns: provide mongoose model tokens with `{ provide: getModelToken(X.name), useValue: modelMock }` (token by class name, not schema object name); provide `EventEmitter2` as `{ emit: jest.fn() }` where a resolver/service emits events; mock use-case `.execute()` chains rather than model chains.
+- `NFR-001` — Follow `documents/engineering/testing.md` mock patterns: provide mongoose model tokens with `{ provide: getModelToken(X.name), useValue: modelMock }` (token by class name, not schema object name). Only pure use cases are tested, so dependencies are `jest.fn()` value objects (e.g. `STATS_REPOSITORY` as `{ upsertTopExercises: jest.fn(), ... }`); the service/resolver `EventEmitter2` and `.execute()` mock-chain patterns do not apply to this Spec.
 - `NFR-002` — Tests live under `src/modules/stats/**/*.spec.ts` and run with `npx jest --config jest.config.js src/modules/stats`.
 - `NFR-003` — Tests reflect **current** behavior only (per `documents/engineering/testing.md` section 6); if an evolved contract is discovered, the spec is updated, not the code.
 - `NFR-004` — This Spec is test-only: it must not activate the module in production, change any behavior, schema, resolver, API or deployment configuration. Re-run `npm run test:cov` after the change to confirm only the intended files are covered.
