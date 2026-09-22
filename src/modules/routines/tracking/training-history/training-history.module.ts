@@ -7,12 +7,17 @@ import {
   WeekLogSchema,
 } from '../week-log/infrastructure/schemas/week-log.schema';
 import { DayLog, DayLogSchema } from '../day-log/infrastructure/schemas/day-log.schema';
+import {
+  ExtraSession,
+  ExtraSessionSchema,
+} from '../extra-session/schema/extra-session.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: WeekLog.name, schema: WeekLogSchema },
       { name: DayLog.name, schema: DayLogSchema },
+      { name: ExtraSession.name, schema: ExtraSessionSchema },
     ]),
   ],
   providers: [TrainingHistoryResolver, TrainingHistoryService],

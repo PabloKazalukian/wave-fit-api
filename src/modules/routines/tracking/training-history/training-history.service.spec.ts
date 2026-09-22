@@ -39,6 +39,7 @@ describe('TrainingHistoryService', () => {
     exec: jest.fn(),
   };
   const dayLogQuery = {
+    populate: jest.fn().mockReturnThis(),
     exec: jest.fn(),
   };
 
@@ -80,7 +81,20 @@ describe('TrainingHistoryService', () => {
         buildDay(2, '2026-01-06', {
           status: 'complete',
           workoutSessionId: { _id: wsId },
-          extraSessionIds: [{ _id: esId }],
+          extraSessionIds: [
+            {
+              _id: esId,
+              userId,
+              workoutSessionId: wsId,
+              category: 'cardio',
+              date: localDateToUtc('2026-01-06', TZ),
+              discipline: 'running',
+              duration: 30,
+              intensityLevel: 3,
+              calories: 320,
+              notes: '',
+            },
+          ],
         }),
         buildDay(3, '2026-02-01', { status: 'complete' }),
       ],
@@ -101,12 +115,27 @@ describe('TrainingHistoryService', () => {
     expect(restDay.status).toBe(TrainingStatus.REST);
     expect(restDay.workoutSessionId).toBeUndefined();
     expect(restDay.dayLogId).toBeUndefined();
+    expect(restDay.extraSessions).toEqual([]);
 
     const trainedDay = result.days[1];
     expect(trainedDay.date).toBe('2026-01-06');
     expect(trainedDay.status).toBe(TrainingStatus.COMPLETE);
     expect(trainedDay.workoutSessionId).toBe(wsId.toString());
     expect(trainedDay.extraSessionIds).toEqual([esId.toString()]);
+    expect(trainedDay.extraSessions).toEqual([
+      {
+        id: esId.toString(),
+        userId,
+        workoutSessionId: wsId.toString(),
+        category: 'cardio',
+        date: localDateToUtc('2026-01-06', TZ),
+        discipline: 'running',
+        duration: 30,
+        intensityLevel: 3,
+        calories: 320,
+        notes: undefined,
+      },
+    ]);
     expect(trainedDay.weekLogReference).toEqual({
       id: weekLogId.toString(),
       startDate,
@@ -131,7 +160,20 @@ describe('TrainingHistoryService', () => {
         date: localDateToUtc('2026-01-15', TZ),
         status: 'skipped',
         workoutSessionId: wsId as any,
-        extraSessionIds: [esId as any],
+        extraSessionIds: [
+          {
+            _id: esId,
+            userId,
+            workoutSessionId: wsId,
+            category: 'cardio',
+            date: localDateToUtc('2026-01-15', TZ),
+            discipline: 'cycling',
+            duration: 45,
+            intensityLevel: 4,
+            calories: null,
+            notes: 'cooldown',
+          },
+        ],
       },
     ]);
 
@@ -145,6 +187,20 @@ describe('TrainingHistoryService', () => {
     expect(day.dayLogId).toBe(dayLogId.toString());
     expect(day.workoutSessionId).toBe(wsId.toString());
     expect(day.extraSessionIds).toEqual([esId.toString()]);
+    expect(day.extraSessions).toEqual([
+      {
+        id: esId.toString(),
+        userId,
+        workoutSessionId: wsId.toString(),
+        category: 'cardio',
+        date: localDateToUtc('2026-01-15', TZ),
+        discipline: 'cycling',
+        duration: 45,
+        intensityLevel: 4,
+        calories: undefined,
+        notes: 'cooldown',
+      },
+    ]);
     expect(day.weekLogReference).toBeUndefined();
   });
 
@@ -232,6 +288,68 @@ describe('TrainingHistoryService', () => {
     const collision = result.days.find((d) => d.date === '2026-01-10');
     expect(collision.type).toBe(DayType.WEEK_LOG);
     expect(collision.dayLogId).toBeUndefined();
+  });
+
+  it('TEST-008 dangling extra-session refs: bare ObjectIds stay in extraSessionIds but are filtered from extraSessions (both entry types)', async () => {
+    const populatedWeekEs = {
+      _id: new Types.ObjectId(),
+      userId,
+      workoutSessionId: new Types.ObjectId(),
+      category: 'cardio',
+      date: localDateToUtc('2026-01-10', TZ),
+      discipline: 'swimming',
+      duration: 60,
+      intensityLevel: 4,
+      calories: null,
+      notes: '',
+    };
+    const danglingWeekEs = new Types.ObjectId();
+    const danglingDayLogEs = new Types.ObjectId();
+
+    weekLogQuery.exec.mockResolvedValue([
+      {
+        _id: new Types.ObjectId() as any,
+        startDate: localDateToUtc('2026-01-10', TZ),
+        endDate: localDateToUtc('2026-01-16', TZ),
+        completed: false,
+        active: false,
+        notes: '',
+        days: [
+          buildDay(4, '2026-01-10', {
+            status: 'complete',
+            workoutSessionId: null,
+            extraSessionIds: [populatedWeekEs, danglingWeekEs],
+          }),
+        ],
+      },
+    ]);
+    dayLogQuery.exec.mockResolvedValue([
+      {
+        _id: new Types.ObjectId() as any,
+        date: localDateToUtc('2026-01-15', TZ),
+        status: 'complete',
+        workoutSessionId: null,
+        extraSessionIds: [danglingDayLogEs as any],
+      },
+    ]);
+
+    const result = await service.getTrainingCalendar(userId, 2026, 1);
+
+    const weekDay = result.days.find((d) => d.date === '2026-01-10');
+    expect(weekDay.extraSessionIds).toEqual([
+      populatedWeekEs._id.toString(),
+      danglingWeekEs.toString(),
+    ]);
+    expect(weekDay.extraSessions).toEqual([
+      expect.objectContaining({
+        id: populatedWeekEs._id.toString(),
+        discipline: 'swimming',
+      }),
+    ]);
+
+    const dayLogDay = result.days.find((d) => d.date === '2026-01-15');
+    expect(dayLogDay.extraSessionIds).toEqual([danglingDayLogEs.toString()]);
+    expect(dayLogDay.extraSessions).toEqual([]);
   });
 
   it('TEST-005 validation: invalid month, year and timezone reject with BadRequestException', async () => {
