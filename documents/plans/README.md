@@ -40,5 +40,6 @@ See the status lifecycle above; archives are never authoritative.
 |---------|--------|--------|
 | Stats DLQ via Audit-Logs | `documents/legacy/plans/stats-dlq/plan.md` | Historical / Non-Authoritative |
 | Stats Pure Use-Case Unit Tests | `documents/legacy/plans/stats-tests/plan.md` | Historical / Non-Authoritative |
+| Stats Charts (date-range on-the-fly calculations) | `documents/legacy/plans/stats-charts/plan.md` | Historical / Non-Authoritative |
 | Training History Calendar | `documents/legacy/plans/training-history/plan.md` | Historical / Non-Authoritative |
 | Training History — Full Extra Sessions | `documents/legacy/plans/training-history-extra-sessions/plan.md` | Historical / Non-Authoritative |

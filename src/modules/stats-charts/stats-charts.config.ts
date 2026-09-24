@@ -1,0 +1,7 @@
+export const STATS_CHARTS_MAX_RANGE_DAYS = 120;
+export const STATS_CHARTS_DEFAULT_TIMEZONE = 'America/Argentina/Buenos_Aires';
+export const STATS_CHARTS_DELOAD_THRESHOLD_PCT = -30;
+export const STATS_CHARTS_TREND_THRESHOLD_PCT = 2;
+export const STATS_CHARTS_MIN_TREND_WEEKS = 3;
+export const STATS_CHARTS_MIN_SETS_PER_WEEK = 2;
+export const STATS_CHARTS_MAX_1RM_REPS = 12;

@@ -28,6 +28,7 @@ import { TrainingPlanModule } from './modules/training-plan/training-plan.module
 import { AiModule } from './modules/ai/ai.module';
 import { TrainingHistoryModule } from './modules/routines/tracking/training-history/training-history.module';
 import { ActiveTrackingModule } from './modules/routines/tracking/active-tracking/active-tracking.module';
+import { StatsChartsModule } from './modules/stats-charts/stats-charts.module';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import { ActiveTrackingModule } from './modules/routines/tracking/active-trackin
     AiModule,
     TrainingHistoryModule,
     ActiveTrackingModule,
+    StatsChartsModule,
   ],
   controllers: [AppController],
   providers: [

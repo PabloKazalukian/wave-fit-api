@@ -184,5 +184,6 @@ Link the originating Plan/ADR when relevant (as reference, never as authority).
 | `stats-dlq.spec.md` | done | DLQ for stats SQS events via audit-logs + SQS publisher error handling (promoted `.spec` 2026-09-21) |
 | `levenshtein-routine.md` | draft | Extend name-similarity control to RoutineDay/RoutinePlan |
 | `stats-tests.spec.md` | done | Unit tests for the pure stats use cases (currently 0% coverage → pure use cases + publisher covered; promoted `.spec` 2026-09-21) |
+| `stats-charts.spec.md` | done | On-the-fly date-range chart calculations (CQRS read-only `stats-charts` module); 6 `getStats*` queries, module gate green (promoted `.spec` 2026-09-23) |
 | `docs-migration.md` | done | This doc-migration effort (Spec-Anchored Development) |
 | `training-history.spec.md` | done | Monthly calendar over tracking history (`trainingCalendar`): extends existing query to `DAY_LOG` + `dayLogId` (promoted `.spec` 2026-09-21) |

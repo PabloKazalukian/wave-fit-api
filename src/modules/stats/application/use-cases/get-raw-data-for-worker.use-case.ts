@@ -78,7 +78,7 @@ export class GetRawDataForWorkerUseCase {
 
     return {
       workoutSessions: workoutSessions.map((ws) => ({
-        _id: ws._id.toString(),
+        id: ws._id.toString(),
         userId: ws.userId.toString(),
         date: ws.date,
         routineDayId: ws.routineDayId?.toString(),
@@ -94,7 +94,7 @@ export class GetRawDataForWorkerUseCase {
       })),
 
       weekLogs: weekLogs.map((wl) => ({
-        _id: wl._id.toString(),
+        id: wl._id.toString(),
         userId: wl.userId.toString(),
         startDate: wl.startDate,
         endDate: wl.endDate,
@@ -109,21 +109,21 @@ export class GetRawDataForWorkerUseCase {
       })),
 
       exercises: exercises.map((e) => ({
-        _id: e._id.toString(),
+        id: e._id.toString(),
         name: e.name,
         category: e.category,
         usesWeight: e.usesWeight,
       })),
 
       routinePlans: routinePlans.map((rp) => ({
-        _id: rp._id.toString(),
+        id: rp._id.toString(),
         name: rp.name,
         description: rp.description,
         createdBy: rp.createdBy?.toString(),
       })),
 
       strengthMetrics: strengthMetrics.map((sm) => ({
-        _id: sm._id.toString(),
+        id: sm._id.toString(),
         exerciseKey: sm.exerciseKey,
         oneRmKg: sm.oneRmKg,
         measuredAt: sm.measuredAt,

@@ -199,7 +199,7 @@ describe('GetRawDataForWorkerUseCase', () => {
 
     const result: WorkerRawDataDomain = await useCase.execute(userId);
 
-    expect(result.workoutSessions[0]._id).toBe(
+    expect(result.workoutSessions[0].id).toBe(
       '507f1f77bcf86cd7994390a1',
     );
     expect(result.workoutSessions[0].userId).toBe(userId);
@@ -219,7 +219,7 @@ describe('GetRawDataForWorkerUseCase', () => {
       { reps: 8, weights: 100 },
     ]);
 
-    expect(result.weekLogs[0]._id).toBe('507f1f77bcf86cd7994390b1');
+    expect(result.weekLogs[0].id).toBe('507f1f77bcf86cd7994390b1');
     expect(result.weekLogs[0].userId).toBe(userId);
     expect(result.weekLogs[0].startDate).toEqual(
       new Date('2026-08-03T00:00:00.000Z'),
@@ -239,21 +239,21 @@ describe('GetRawDataForWorkerUseCase', () => {
     ]);
 
     expect(result.exercises[0]).toEqual({
-      _id: '507f1f77bcf86cd7994390c1',
+      id: '507f1f77bcf86cd7994390c1',
       name: 'Squat',
       category: 'legs',
       usesWeight: true,
     });
 
     expect(result.routinePlans[0]).toEqual({
-      _id: '507f1f77bcf86cd7994390d1',
+      id: '507f1f77bcf86cd7994390d1',
       name: 'Full Body A',
       description: 'Plan A',
       createdBy: userId,
     });
 
     expect(result.strengthMetrics[0]).toEqual({
-      _id: '507f1f77bcf86cd7994390e1',
+      id: '507f1f77bcf86cd7994390e1',
       exerciseKey: 'Sentadilla',
       oneRmKg: 140,
       measuredAt: new Date('2026-08-10T10:00:00.000Z'),
