@@ -23,7 +23,7 @@ export class RemoveWorkoutSessionUseCase {
     userId: string,
   ): Promise<DayLogDomain | null> {
     const dayLog = await this.dayLogRepository.findActive(userId);
-    console.log('[Daylog]', dayLog);
+    // console.log('[Daylog]', dayLog);
     if (!dayLog) {
       throw new NotFoundException(
         `No se encontró un DayLog activo para el usuario "${userId}"`,

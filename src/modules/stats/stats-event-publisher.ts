@@ -87,7 +87,7 @@ export class StatsEventPublisher implements OnModuleInit {
           QueueUrl: this.queueUrl,
           MessageBody: JSON.stringify(message),
           MessageGroupId: `stats-${payload.userId}`,
-          MessageDeduplicationId: `${payload.userId}-${payload.triggerType}-${payload.entityId}`,
+          MessageDeduplicationId: `${payload.userId}-${payload.triggerType}-${payload.entityId}-${Date.now()}`,
           MessageAttributes: {
             triggerType: {
               DataType: 'String',

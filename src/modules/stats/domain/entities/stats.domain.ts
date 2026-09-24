@@ -83,7 +83,7 @@ export class UserAdherenceDomain {
 }
 
 export interface RawWorkoutSessionData {
-  _id: string;
+  id: string;
   userId: string;
   date: Date;
   routineDayId?: string;
@@ -96,7 +96,7 @@ export interface RawWorkoutSessionData {
 }
 
 export interface RawWeekLogData {
-  _id: string;
+  id: string;
   userId: string;
   startDate: Date;
   endDate: Date;
@@ -111,21 +111,21 @@ export interface RawWeekLogData {
 }
 
 export interface RawExerciseData {
-  _id: string;
+  id: string;
   name: string;
   category: string;
   usesWeight: boolean;
 }
 
 export interface RawRoutinePlanData {
-  _id: string;
+  id: string;
   name: string;
   description: string;
   createdBy?: string;
 }
 
 export interface RawStrengthMetricData {
-  _id: string;
+  id: string;
   exerciseKey: string;
   oneRmKg: number;
   measuredAt: Date;

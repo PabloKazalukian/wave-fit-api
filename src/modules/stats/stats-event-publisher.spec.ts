@@ -76,8 +76,10 @@ describe('StatsEventPublisher', () => {
       const command = sqsSendMock.mock.calls[0][0];
       expect(command.input.QueueUrl).toBe(queueUrl);
       expect(command.input.MessageGroupId).toBe(`stats-${payload.userId}`);
-      expect(command.input.MessageDeduplicationId).toBe(
-        `${payload.userId}-${payload.triggerType}-${payload.entityId}`,
+      expect(command.input.MessageDeduplicationId).toMatch(
+        new RegExp(
+          `^${payload.userId}-${payload.triggerType}-${payload.entityId}-\\d+$`,
+        ),
       );
 
       const messageBody = JSON.parse(command.input.MessageBody);
