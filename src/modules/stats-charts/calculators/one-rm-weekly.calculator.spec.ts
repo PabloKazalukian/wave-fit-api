@@ -1,8 +1,10 @@
 import { OneRmWeeklyCalculator } from './one-rm-weekly.calculator';
 import { localDateToUtc, LocalDate } from '../../../common/utils/date.utils';
 import { ChartWorkoutSession } from '../shared/chart.types';
+import { Types } from 'mongoose';
 
 const TIMEZONE = 'America/Argentina/Buenos_Aires';
+const USER_ID = '507f1f77bcf86cd799439011';
 
 function chainMock(resolvedValue: unknown) {
   const exec = jest.fn<any>().mockResolvedValue(resolvedValue);
@@ -26,7 +28,7 @@ function session(
 ): ChartWorkoutSession {
   return {
     _id: id,
-    userId: 'user1',
+    userId: USER_ID,
     date: localDateToUtc(date, TIMEZONE),
     status: 'complete',
     exercises: exercises.map((e) => ({
@@ -58,7 +60,7 @@ describe('OneRmWeeklyCalculator (stats-charts)', () => {
       ]),
     ]);
 
-    const result = await calculator.execute('user1', '2026-09-01', '2026-09-06', TIMEZONE);
+    const result = await calculator.execute(USER_ID, '2026-09-01', '2026-09-06', TIMEZONE);
 
     expect(result).toHaveLength(1);
     expect(result[0]).toMatchObject({
@@ -86,7 +88,7 @@ describe('OneRmWeeklyCalculator (stats-charts)', () => {
       ]),
     ]);
 
-    const result = await calculator.execute('user1', '2026-09-01', '2026-09-06', TIMEZONE);
+    const result = await calculator.execute(USER_ID, '2026-09-01', '2026-09-06', TIMEZONE);
 
     expect(result[0].weeks[0]).toMatchObject({ best1RM: 176, weightUsed: 160, reps: 3 });
   });
@@ -106,7 +108,7 @@ describe('OneRmWeeklyCalculator (stats-charts)', () => {
       ]),
     ]);
 
-    const result = await calculator.execute('user1', '2026-09-01', '2026-09-06', TIMEZONE);
+    const result = await calculator.execute(USER_ID, '2026-09-01', '2026-09-06', TIMEZONE);
 
     expect(result).toHaveLength(1);
     expect(result[0].weeks[0]).toMatchObject({ weightUsed: 60, reps: 8, participated: true });
@@ -120,7 +122,7 @@ describe('OneRmWeeklyCalculator (stats-charts)', () => {
       ]),
     ]);
 
-    const result = await calculator.execute('user1', '2026-09-01', '2026-09-21', TIMEZONE);
+    const result = await calculator.execute(USER_ID, '2026-09-01', '2026-09-21', TIMEZONE);
 
     expect(result[0].weeks.map((w) => w.weekKey)).toEqual([
       '2026-W36',
@@ -141,7 +143,7 @@ describe('OneRmWeeklyCalculator (stats-charts)', () => {
       ]),
     ]);
 
-    const result = await calculator.execute('user1', '2026-09-01', '2026-09-06', TIMEZONE);
+    const result = await calculator.execute(USER_ID, '2026-09-01', '2026-09-06', TIMEZONE);
 
     expect(result).toHaveLength(0);
   });
@@ -149,10 +151,14 @@ describe('OneRmWeeklyCalculator (stats-charts)', () => {
   it('queries only complete, non-deleted sessions within the window bounds', async () => {
     workoutMock.exec.mockResolvedValue([]);
 
-    await calculator.execute('user1', '2026-09-01', '2026-09-06', TIMEZONE);
+    await calculator.execute(USER_ID, '2026-09-01', '2026-09-06', TIMEZONE);
 
     const query = workoutMock.find.mock.calls[0][0];
-    expect(query.userId.toString()).toBe('user1');
+    // ADR-0003: the calculator is the persistence boundary, so the string
+    // coming from `extractUserId` must be cast explicitly. A string would not
+    // match the ObjectId stored in Mongo.
+    expect(query.userId).toBeInstanceOf(Types.ObjectId);
+    expect(query.userId.toString()).toBe(USER_ID);
     expect(query.deleted).toEqual({ $ne: true });
     expect(query.status).toBe('complete');
     expect(query.date.$gte.toISOString()).toBe('2026-09-01T03:00:00.000Z');
@@ -168,7 +174,7 @@ describe('OneRmWeeklyCalculator (stats-charts)', () => {
       ]),
     ]);
 
-    const result = await calculator.execute('user1', '2026-09-01', '2026-09-06', TIMEZONE);
+    const result = await calculator.execute(USER_ID, '2026-09-01', '2026-09-06', TIMEZONE);
 
     expect(result.map((r) => r.name)).toEqual(['Bench Press', 'Squat']);
   });

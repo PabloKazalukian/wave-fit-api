@@ -1,8 +1,9 @@
 import { CaloriesCalculator } from './calories.calculator';
 import { localDateToUtc, LocalDate } from '../../../common/utils/date.utils';
+import { Types } from 'mongoose';
 
 const TIMEZONE = 'America/Argentina/Buenos_Aires';
-const USER_ID = 'user1';
+const USER_ID = '507f1f77bcf86cd799439011';
 
 function leanChainMock(resolvedValue: unknown) {
   const exec = jest.fn<any>().mockResolvedValue(resolvedValue);
@@ -146,15 +147,21 @@ describe('CaloriesCalculator (stats-charts)', () => {
     await calculator.execute(USER_ID, '2026-09-01', '2026-09-06', TIMEZONE);
 
     const extraQuery = extraMock.find.mock.calls[0][0];
+    // ADR-0003: this calculator is the persistence boundary, so the string
+    // coming from `extractUserId` must be cast explicitly on every query. A
+    // raw string would not match the ObjectId stored in Mongo.
+    expect(extraQuery.userId).toBeInstanceOf(Types.ObjectId);
     expect(extraQuery.userId.toString()).toBe(USER_ID);
     expect(extraQuery.date.$gte.toISOString()).toBe('2026-09-01T03:00:00.000Z');
     expect(extraQuery.date.$lt.toISOString()).toBe('2026-09-07T03:00:00.000Z');
 
     const weightQuery = weightMock.find.mock.calls[0][0];
+    expect(weightQuery.userId).toBeInstanceOf(Types.ObjectId);
     expect(weightQuery.userId.toString()).toBe(USER_ID);
     expect(weightQuery.loggedAt.$lte.toISOString()).toBe('2026-09-07T03:00:00.000Z');
 
     const profileQuery = profileMock.findOne.mock.calls[0][0];
+    expect(profileQuery.userId).toBeInstanceOf(Types.ObjectId);
     expect(profileQuery.userId.toString()).toBe(USER_ID);
   });
 });

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { LocalDate } from '../../../common/utils/date.utils';
 import { buildWeekKeys, isoWeekKeyFor, rangeUtcBounds } from '../common/range.utils';
 
@@ -51,18 +51,21 @@ export class CaloriesCalculator {
     const [extras, weightLogs, profile] = await Promise.all([
       this.extraSessionModel
         .find({
-          userId: userId as any,
+          userId: new Types.ObjectId(userId),
           deleted: { $ne: true },
           date: { $gte: fromUtc, $lt: toUtc },
         })
         .lean()
         .exec(),
       this.weightLogModel
-        .find({ userId: userId as any, loggedAt: { $lte: toUtc } })
+        .find({ userId: new Types.ObjectId(userId), loggedAt: { $lte: toUtc } })
         .sort({ loggedAt: 1 })
         .lean()
         .exec(),
-      this.userProfileModel.findOne({ userId: userId as any }).lean().exec(),
+      this.userProfileModel
+        .findOne({ userId: new Types.ObjectId(userId) })
+        .lean()
+        .exec(),
     ]);
 
     const sortedLogs = [...weightLogs].sort(

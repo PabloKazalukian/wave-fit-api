@@ -1,8 +1,10 @@
 import { VolumeTotalWeeklyCalculator } from './volume-total.calculator';
 import { localDateToUtc, LocalDate } from '../../../common/utils/date.utils';
 import { ChartWorkoutSession } from '../shared/chart.types';
+import { Types } from 'mongoose';
 
 const TIMEZONE = 'America/Argentina/Buenos_Aires';
+const USER_ID = '507f1f77bcf86cd799439011';
 
 function chainMock(resolvedValue: unknown) {
   const exec = jest.fn<any>().mockResolvedValue(resolvedValue);
@@ -19,7 +21,7 @@ function session(
 ): ChartWorkoutSession {
   return {
     _id: id,
-    userId: 'user1',
+    userId: USER_ID,
     date: localDateToUtc(date, TIMEZONE),
     status: 'complete',
     exercises: exercises.map((e) => ({
@@ -49,7 +51,7 @@ describe('VolumeTotalWeeklyCalculator (stats-charts)', () => {
       ]),
     ]);
 
-    const result = await calculator.execute('user1', '2026-09-01', '2026-09-13', TIMEZONE);
+    const result = await calculator.execute(USER_ID, '2026-09-01', '2026-09-13', TIMEZONE);
 
     expect(result).toEqual([
       { weekKey: '2026-W36', totalVolume: 2000, deltaPct: null, possibleDeload: false },
@@ -67,7 +69,7 @@ describe('VolumeTotalWeeklyCalculator (stats-charts)', () => {
       ]),
     ]);
 
-    const result = await calculator.execute('user1', '2026-09-01', '2026-09-20', TIMEZONE);
+    const result = await calculator.execute(USER_ID, '2026-09-01', '2026-09-20', TIMEZONE);
 
     // W36 = 2000, W37 sin data (0) → delta = (0-2000)/2000*100 = -100, W38 prev = 0 → null
     expect(result).toEqual([
@@ -87,7 +89,7 @@ describe('VolumeTotalWeeklyCalculator (stats-charts)', () => {
       ]),
     ]);
 
-    const result = await calculator.execute('user1', '2026-09-01', '2026-09-13', TIMEZONE);
+    const result = await calculator.execute(USER_ID, '2026-09-01', '2026-09-13', TIMEZONE);
 
     // W36 = 2000, W37 = 700 → delta = (700-2000)/2000*100 = -65 ≤ -30
     expect(result[1]).toMatchObject({ weekKey: '2026-W37', totalVolume: 700, possibleDeload: true });
@@ -106,7 +108,7 @@ describe('VolumeTotalWeeklyCalculator (stats-charts)', () => {
       ]),
     ]);
 
-    const result = await calculator.execute('user1', '2026-09-01', '2026-09-13', TIMEZONE);
+    const result = await calculator.execute(USER_ID, '2026-09-01', '2026-09-13', TIMEZONE);
 
     // W36 = 1000, W37 = 700 → delta = -30 exacto
     expect(result[1]).toMatchObject({ totalVolume: 700, possibleDeload: true });
@@ -116,10 +118,14 @@ describe('VolumeTotalWeeklyCalculator (stats-charts)', () => {
   it('queries only completed sessions within the window', async () => {
     workoutMock.exec.mockResolvedValue([]);
 
-    await calculator.execute('user1', '2026-09-01', '2026-09-13', TIMEZONE);
+    await calculator.execute(USER_ID, '2026-09-01', '2026-09-13', TIMEZONE);
 
     const query = workoutMock.find.mock.calls[0][0];
-    expect(query.userId.toString()).toBe('user1');
+    // ADR-0003: the calculator is the persistence boundary, so the string
+    // coming from `extractUserId` must be cast explicitly. A string would not
+    // match the ObjectId stored in Mongo.
+    expect(query.userId).toBeInstanceOf(Types.ObjectId);
+    expect(query.userId.toString()).toBe(USER_ID);
     expect(query.deleted).toEqual({ $ne: true });
     expect(query.status).toBe('complete');
     expect(query.date.$lt.toISOString()).toBe('2026-09-14T03:00:00.000Z');
