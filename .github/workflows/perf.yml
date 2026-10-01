@@ -1,0 +1,33 @@
+name: Performance (stats-charts)
+
+on:
+  schedule:
+    - cron: '0 3 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  perf:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start MongoDB
+        uses: supercharge/mongodb-github-action@1.10.0
+        with:
+          mongodb-version: '6.0'
+
+      - name: Run deterministic in-process perf benchmarks
+        run: npx jest --config test/jest-perf.json --maxWorkers=1 --no-coverage
+        env:
+          CI: true
