@@ -1,22 +1,23 @@
 # Engineering Testing
 
 > **Status:** Current
-> **Last updated:** 2026-09-17
+> **Last updated:** 2026-10-01
 
-How the WaveFit API is tested: philosophy, commands, unit vs E2E split, mock patterns, coverage criteria and the current measured coverage. The operational details (where the suites live, how they are structured) are visible in the suites themselves (`test/e2e/*.spec.ts`, `src/**/*.spec.ts`).
+How the WaveFit API is tested: philosophy, commands, unit vs E2E vs performance split, mock patterns, coverage criteria and the current measured coverage. The operational details (where the suites live, how they are structured) are visible in the suites themselves (`test/e2e/*.spec.ts`, `src/**/*.spec.ts`, `test/perf/*.spec.ts`).
 
 ## 1. Testing Philosophy
 
-- Two independent suites: **unit** and **E2E**.
+- Three independent layers: **unit**, **E2E** and **performance**.
   - Unit tests (`src/**/*.spec.ts`) mock every dependency with Jest and run fast.
   - E2E tests (`test/e2e/*.spec.ts`) boot the full application (via `AppTestModule`) against an in-memory MongoDB (`mongodb-memory-server`) and exercise real GraphQL + HTTP through `supertest`.
-- Both suites must stay green. Current baseline: **73 unit suites / 703 unit tests**, **32 E2E suites / 169 E2E tests**.
+  - Performance tests (`test/perf/*.spec.ts`) measure a module's query shape against real MongoDB and assert deterministic budgets. They never gate a pull request.
+- The unit and E2E suites must stay green. Current baseline: **83 unit suites / 786 unit tests**, **33 E2E suites / 173 E2E tests**.
 - Tests reflect the **current** behavior of the code, not historical contracts (see mock patterns, section 6).
 - Test-first methodology: when implementing a Spec, write the test for each layer before its implementation. A failing requirement or test is corrected against the Spec, not by improvising around it.
 
 ## 2. Commands
 
-Jest configuration is unified in `jest.config.js` — the single source of truth. The `jest` key was removed from `package.json`; **there is no dual Jest configuration**. `npm test` runs `jest`, which auto-detects `jest.config.js`. When invoking `jest` directly, always pass `--config jest.config.js` explicitly.
+Jest configuration is unified in `jest.config.js` — the single source of truth for the unit layer. The `jest` key was removed from `package.json`; **there is no dual Jest configuration**. `npm test` runs `jest`, which auto-detects `jest.config.js`. When invoking `jest` directly, always pass `--config jest.config.js` explicitly.
 
 ```bash
 # Unit (source: src/)
@@ -29,17 +30,23 @@ npm run test:cov                                  # unit coverage (jest --config
 npm run test:e2e                                  # full suite (jest --config ./test/jest-e2e.json --maxWorkers=2)
 npx jest --config ./test/jest-e2e.json test/e2e/auth/login.spec.ts   # single file
 
+# Performance (source: test/perf/)
+npm run test:perf                                 # in-process bench (jest --config test/jest-perf.json --maxWorkers=1)
+npm run perf:seed                                 # standalone bulk seed, for the k6 layer
+npm run test:perf:k6                              # k6 against a live POST /graphql
+
 # Combined coverage (unit + e2e)
 npm run test:e2e:cov        # e2e-only with coverage (--maxWorkers=2 --coverage) → coverage/e2e/
 npm run test:cov:combined   # unit + e2e coverage + istanbul merge → coverage/combined/ and console summary
 ```
 
-## 3. Unit vs E2E Split
+## 3. Unit vs E2E vs Performance Split
 
 | Suite | Location | Baseline | Command |
 |---|---|---|---|
-| **Unit** | `src/**/*.spec.ts` | 73 suites / 703 tests | `npm test` |
-| **E2E** | `test/e2e/*.spec.ts` | 32 suites / 169 tests | `npm run test:e2e` |
+| **Unit** | `src/**/*.spec.ts` | 83 suites / 786 tests | `npm test` |
+| **E2E** | `test/e2e/*.spec.ts` | 33 suites / 173 tests | `npm run test:e2e` |
+| **Performance** | `test/perf/*.spec.ts` | 5 suites / 114 tests | `npm run test:perf` |
 
 - Unit tests mock dependencies with Jest (see section 6).
 - E2E boots the app against in-memory MongoDB, with `cookie-parser` registered (the JWT travels in an HttpOnly cookie), GraphQL playground disabled, and the same modules as the real app.
@@ -47,13 +54,34 @@ npm run test:cov:combined   # unit + e2e coverage + istanbul merge → coverage/
 - `test/fixtures/user.fixture.ts` provides the shared test user (`test@wavefit.com` / `password123`, role `USER`).
 - E2E helpers (`test/e2e/helpers/`) provide cookie extraction (`getCookieWithToken`), week-log/day-log creation, active-week queries and a complete-and-create helper for historical data.
 
+### The performance layer is scoped out of the other two
+
+`test/perf/` has its own Jest config, `test/jest-perf.json`, and is deliberately unreachable from the other layers:
+
+| Config | Scope | Collects `test/perf/`? |
+|---|---|---|
+| `jest.config.js` | `rootDir: 'src'`, `testRegex: '.*\.spec\.ts$'` | no — the files are outside `rootDir` |
+| `test/jest-e2e.json` | `testRegex: 'test/e2e/.*\.spec\.ts$'` | no — the pattern does not match |
+| `test/jest-perf.json` | `testRegex: 'test/perf/.*\.spec\.ts$'`, `maxWorkers: 1` | yes |
+
+That separation is asserted, not assumed: `test/perf/perf-artifacts.spec.ts` reads all three configs and fails if either of the first two can collect a perf file. `maxWorkers: 1` is required because all five perf suites share one in-memory MongoDB.
+
+Two consequences worth knowing:
+
+- **`npm run build` and `npm run lint:ci` do not see this layer at all.** `tsconfig.build.json` excludes `test` and `scripts`, and `lint:ci` is scoped to `src/**/*.ts`. The perf code is type-checked only when `ts-jest` compiles it during `npm run test:perf`. Run that suite before considering a change here validated.
+- **It does not move the coverage baseline.** Both coverage commands collect from `src/`, so nothing under `test/` or `scripts/` is ever counted.
+
+Performance assertions are on exact integer counts (`queries`, `docsReturned` — how many MongoDB commands the code issued and how many documents it materialized), never on wall-clock time, because duration on a shared runner describes the machine rather than the code. Timing is reported and only enforced under `PERF_ENFORCE_TIMING=1`. See `sdd/stats-charts-performance.md` and `documents/modules/stats-charts.md`.
+
 ## 4. Why `--maxWorkers=2` in E2E
 
 With more workers, `mongodb-memory-server` and the automated seeding race and produce cross-suite data. The limit is pinned to `--maxWorkers=2` in the `test:e2e` and `test:e2e:cov` scripts.
 
+The performance layer goes further and pins `--maxWorkers=1` in `test:perf`: all five of its suites share a single in-memory MongoDB and separate their datasets by `userId`, so any parallelism risks cross-talk between them.
+
 ## 5. Coverage Gates
 
-An automated CI pipeline (GitHub Actions) runs the four canonical commands on every pull request and push to `main`; see `documents/engineering/ci-cd.md`. Coverage is **not** part of that gate: there is no automated coverage threshold. The coverage criteria below define how coverage is measured and how reports are regenerated so two reports on different dates are comparable. The measurement values in this document are the current measured baseline.
+An automated CI pipeline (GitHub Actions) runs the four canonical commands on every pull request and push to `main`; see `documents/engineering/ci-cd.md`. A **separate** workflow (`.github/workflows/perf.yml`) runs the performance layer on a nightly schedule and on demand, never on a pull request. Coverage is **not** part of either gate: there is no automated coverage threshold. The coverage criteria below define how coverage is measured and how reports are regenerated so two reports on different dates are comparable. The measurement values in this document are the current measured baseline.
 
 ### Measurement sources
 
