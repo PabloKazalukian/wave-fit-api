@@ -5,6 +5,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { buildMongoUri } from './config/mongo.config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
@@ -36,9 +37,7 @@ import { StatsChartsModule } from './modules/stats-charts/stats-charts.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    MongooseModule.forRoot(
-      `mongodb+srv://kazalukianpablo_db_user:${process.env.DB_MONGO_PASSWORD}@wavefit.ofapyei.mongodb.net/ `,
-    ),
+    MongooseModule.forRoot(buildMongoUri()),
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: true,

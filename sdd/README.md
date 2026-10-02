@@ -187,3 +187,4 @@ Link the originating Plan/ADR when relevant (as reference, never as authority).
 | `stats-charts.spec.md` | done | On-the-fly date-range chart calculations (CQRS read-only `stats-charts` module); 6 `getStats*` queries, module gate green (promoted `.spec` 2026-09-23) |
 | `docs-migration.md` | done | This doc-migration effort (Spec-Anchored Development) |
 | `training-history.spec.md` | done | Monthly calendar over tracking history (`trainingCalendar`): extends existing query to `DAY_LOG` + `dayLogId` (promoted `.spec` 2026-09-21) |
+| `mongo-connection-config.spec.md` | done | Configurable Mongo connection (`MONGO_URL`) + isolated local Mongo via Docker; unblocked the stats-charts perf layer's `AC-005` (promoted `.spec` 2026-10-02) |

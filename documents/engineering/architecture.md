@@ -182,6 +182,7 @@ On app bootstrap, `SeedService` (`src/database/seed-runner.ts`, implements `OnAp
 | Environment variables | `AGENTS.md` |
 | Authentication | `documents/modules/auth.md` + ADR-0001 / ADR-0005 |
 | Seeding | `documents/engineering/seed.md` |
+| Database target and isolated local environment | `documents/engineering/local-environments.md` + `sdd/mongo-connection-config.spec.md` |
 | AI module | `documents/modules/ai.md` + ADR-0006 |
 | TrainingPlan module | `documents/modules/training-plan.md` + `sdd/training-plan.spec.md` |
 | UserProfile module | `documents/modules/user-profile.md` |

@@ -44,6 +44,7 @@ npm run test:cov:combined   # unit + e2e coverage + istanbul merge → coverage/
 - Unit tests mock dependencies with Jest (see section 6).
 - E2E boots the app against in-memory MongoDB, with `cookie-parser` registered (the JWT travels in an HttpOnly cookie), GraphQL playground disabled, and the same modules as the real app.
 - `test/utils/db-handler.ts` provides `rootMongooseTestModule()`, `closeInMongodConnection()` and `clearDatabase()` (clears only data collections between tests, not system collections/indices — clearing everything caused intermittent failures).
+- The automated suites supply their own connection and never read `MONGO_URL`; a disposable in-memory server is the right tool for a hermetic suite. Ad-hoc runs that need a real database of their own use the isolated container instead — see `documents/engineering/local-environments.md`.
 - `test/fixtures/user.fixture.ts` provides the shared test user (`test@wavefit.com` / `password123`, role `USER`).
 - E2E helpers (`test/e2e/helpers/`) provide cookie extraction (`getCookieWithToken`), week-log/day-log creation, active-week queries and a complete-and-create helper for historical data.
 
