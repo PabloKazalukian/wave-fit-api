@@ -93,9 +93,9 @@ The three topologies differ only in the URI they resolve to. The E2E layer keeps
 
 ## Files
 
-- `sdd/mongo-connection-config.md` (new — this Spec; promoted to `.spec.md` when it reaches `done`)
+- `sdd/mongo-connection-config.spec.md` (new — this Spec, authored as `mongo-connection-config.md` and promoted to `.spec.md` on reaching `done`)
 - `sdd/README.md` (modify: Backlog row)
-- `documents/plans/mongo-connection-config/plan.md` (new — implementation Plan, Active)
+- `documents/legacy/plans/mongo-connection-config/plan.md` (new — implementation Plan, authored under `documents/plans/` and archived as Historical on completion)
 - `src/config/mongo.config.ts` (new — `buildMongoUri`)
 - `src/config/mongo.config.spec.ts` (new — `TEST-001`, `TEST-002`, `TEST-003`, `TEST-004`)
 - `src/app.module.ts` (modify: use `buildMongoUri()`, drop the hardcoded literal)

@@ -7,7 +7,7 @@
  * source. `docker-compose.yml` and `MONGO_URL` are documented in
  * `documents/engineering/local-environments.md`.
  *
- * See `sdd/mongo-connection-config.md`. The rules this file must keep:
+ * See `sdd/mongo-connection-config.spec.md`. The rules this file must keep:
  *   - `BR-001` the default is byte-identical to the URI it replaced.
  *   - `BR-002` no password lives here; it is read from the environment.
  *   - `BR-005` a blank `MONGO_URL` is a missing `MONGO_URL`.
