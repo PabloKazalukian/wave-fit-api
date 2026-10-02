@@ -132,6 +132,14 @@ export async function seed(
     await connection.collection('users').deleteMany({ email });
     const hashed = await bcrypt.hash(password, 10);
     await UserModel.create({
+      // Pinned to the dataset's user id, not left to Mongo.
+      //
+      // `login` puts `user._id` in the JWT (`sub`), the guard resolves it to this
+      // document, and `extractUserId()` hands its `_id` to every calculator. A
+      // random `_id` would therefore authenticate a user that owns none of the
+      // seeded documents, and every chart would answer `[]` with HTTP 200 and no
+      // GraphQL error — a green k6 run that measured an empty database.
+      _id: new Types.ObjectId(dataset.userId),
       name: 'Perf StatsCharts',
       email,
       password: hashed,

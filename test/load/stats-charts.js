@@ -77,6 +77,9 @@ export const options = {
   thresholds: {
     http_req_duration: ['p(95)<2000'],
     http_req_failed: ['rate<0.01'],
+    // Without a `checks` threshold a failing `check()` still leaves the run
+    // green, which would let an empty database pass as a fast one.
+    checks: ['rate>0.99'],
   },
 };
 
@@ -226,12 +229,52 @@ function postQuery(tokenCookie, query, variables) {
   });
 }
 
+/**
+ * Which response field carries each chart's data, and whether it must be
+ * non-empty.
+ *
+ * Every chart but `forgottenMuscles` is guaranteed non-empty by the seeded
+ * dataset, which always plants sessions inside the window, so an empty array
+ * there means the authenticated user owns nothing — the defect these checks
+ * exist to catch. `forgottenMuscles` is exempt from the non-empty rule because
+ * its result depends on which muscles the active plan happens to schedule.
+ */
+const EXPECTED_FIELDS = {
+  oneRmWeekly: { getStats1RmWeekly: true },
+  volumeWeekly: { getStatsVolumeWeekly: true },
+  volumeTotalWeekly: { getStatsVolumeTotalWeekly: true },
+  caloriesWeekly: { getStatsCaloriesWeekly: true },
+  forgottenMuscles: { getStatsForgottenMuscles: false },
+  exerciseTrend: { getStatsExerciseTrend: true },
+  dashboard: {
+    getStats1RmWeekly: true,
+    getStatsVolumeWeekly: true,
+    getStatsVolumeTotalWeekly: true,
+    getStatsCaloriesWeekly: true,
+    getStatsForgottenMuscles: false,
+    getStatsExerciseTrend: true,
+  },
+};
+
 function checkOk(res, label) {
+  const expected = EXPECTED_FIELDS[label];
   check(res, {
     [`${label} 200`]: (r) => r.status === 200,
     [`${label} no GraphQL errors`]: (r) => {
       const body = JSON.parse(r.body);
       return !body.errors || body.errors.length === 0;
+    },
+    // A 200 with no errors is not proof the run measured anything: an
+    // authenticated user who owns no documents answers `[]` everywhere. Timing
+    // that would report a fast, meaningless run, so the payload is checked too.
+    [`${label} returned the seeded data`]: (r) => {
+      const data = JSON.parse(r.body)?.data;
+      if (!data || !expected) return false;
+      return Object.entries(expected).every(([field, mustBeNonEmpty]) => {
+        const value = data[field];
+        if (!Array.isArray(value)) return false;
+        return mustBeNonEmpty ? value.length > 0 : true;
+      });
     },
   });
 }

@@ -31,6 +31,7 @@ Two further blocks make the module unmeasurable today: `StatsChartsModule` is no
 | Timing is never budgeted | Wall-clock on a shared CI runner is noise. k6 thresholds are loose sanity checks; real numbers come from `--summary-export` for manual comparison against the stored baseline. |
 | Gate | Nightly (`schedule`) + `workflow_dispatch` only. **Never on `pull_request`.** The PR gate stays exactly `build` → `lint:ci` → `test` → `test:e2e`. |
 | Dataset | Bulk seed via `insertMany` over the aliased `StatsChartsModule` models + `Model.init()` (real schema indexes, schema-valid docs, no hydration). Deterministic PRNG, fixed anchor date, no `Math.random()` and no `new Date()`, so two runs are byte-comparable. |
+| Authenticated identity | The seeded user's `_id` is **pinned** to the dataset's `userId`, and the k6 script asserts that the charts actually return the seeded data (`checks: ['rate>0.99']`). A run that measures an empty database is not a measurement: `login` puts `user._id` in the JWT, the calculators query by that id, and a user that owns nothing answers `[]` with HTTP 200 and no GraphQL error. |
 | Isolation | Three dataset sizes share **one** in-memory MongoDB, separated by `userId`. |
 | Storage | `test/perf/` with its own `test/jest-perf.json`, so neither `jest.config.js` (`rootDir: src`) nor `test/jest-e2e.json` can collect it. |
 | Credentials | Perf user credentials come from environment variables. No credential is committed (the `auth-smoke.js` anti-pattern is not repeated). |
@@ -53,9 +54,9 @@ Two further blocks make the module unmeasurable today: `StatsChartsModule` is no
   - **Driver detail (corrects an earlier draft of this Spec):** `docsReturned` reads `reply.nReturned` when the driver populates it, and falls back to `reply.cursor.firstBatch.length` when it does not. MongoDB driver 6.x no longer populates `nReturned` on `find` command replies, so a collector that read `nReturned` alone would report `0` documents for every measured read; reading the cursor batch is what makes the metric meaningful. Both paths are implemented and both are covered by `TEST-003`, because either can appear depending on the command. `getMore` is counted in `roundTrips` but contributes no `docsReturned`, which is correct here because every measured read is bounded well below the 101-document default batch size.
 - `FR-006` — `test/perf/stats-charts.bench.spec.ts` measures all six calculators for all three sizes against a real MongoDB and asserts `queries` and `docsReturned` against a budget table declared in `test/perf/stats-charts.budget.ts`. It also reports a `dashboard` aggregate (the six queries executed together, the real frontend pattern) and `elapsedMs` per calculator.
 - `FR-007` — Budget table: exact integers, established from a measured baseline. Because they are counts and not durations, they hold on any machine. Expected `queries`: `getStatsVolumeTotalWeekly` 1, `getStats1RmWeekly` / `getStatsVolumeWeekly` / `getStatsExerciseTrend` 2 each, `getStatsCaloriesWeekly` 3, `getStatsForgottenMuscles` 6; dashboard 16.
-- `FR-008` — A standalone bulk seed `scripts/perf/seed-stats-charts.ts` for the k6 layer: connects to `--uri`, creates (or reuses) the perf user with a bcrypt password from `PERF_USER_PASSWORD`, and writes the dataset for `--size`. It deletes **only** the previous data of that perf user (never the whole database), so it is safe against a dedicated performance database. `PERF_USER_EMAIL` and `PERF_USER_PASSWORD` are **required with no default**: the script exits non-zero with a clear message when either is missing, because a committed fallback password would be a leak the moment the script is pointed at a non-throwaway database (`NFR-006`).
-- `FR-009` — A k6 script `test/load/stats-charts.js` with seven scenarios: one per chart query plus `dashboard` (all six in a **single** GraphQL request, the worst case: Apollo resolves sibling query fields in parallel, so six concurrent Mongo reads compete for the connection pool). Authentication uses the HttpOnly cookie, extracting `token=` from `set-cookie` exactly as `test/load/smoke.js` does (`ADR-0001`). Credentials come from `__ENV`.
-- `FR-010` — k6 thresholds are loose sanity checks only: `http_req_duration: p(95) < 2000` and `http_req_failed: rate < 0.01`. Real figures are exported to `test/perf/results/k6-summary.json` via `--summary-export`, wired into the `test:perf:k6` npm script so the export cannot be forgotten; the output directory is git-ignored. The target endpoint comes from `__ENV.BASE_URL` (default `http://localhost:3000/graphql`) and every k6 option is overridable with `-e`.
+- `FR-008` — A standalone bulk seed `scripts/perf/seed-stats-charts.ts` for the k6 layer: connects to `--uri`, creates (or reuses) the perf user with a bcrypt password from `PERF_USER_PASSWORD`, and writes the dataset for `--size`. It deletes **only** the previous data of that perf user (never the whole database), so it is safe against a dedicated performance database. `PERF_USER_EMAIL` and `PERF_USER_PASSWORD` are **required with no default**: the script exits non-zero with a clear message when either is missing, because a committed fallback password would be a leak the moment the script is pointed at a non-throwaway database (`NFR-006`). The created user is created with an explicit `_id` equal to the dataset's `userId`, never left to Mongo: the dataset's documents are owned by that id, and `login` authenticates by `user._id`, so a random `_id` would hand every chart a user that owns nothing. See "Relationship to the authenticated perf user" below.
+- `FR-009` — A k6 script `test/load/stats-charts.js` with seven scenarios: one per chart query plus `dashboard` (all six in a **single** GraphQL request, the worst case: Apollo resolves sibling query fields in parallel, so six concurrent Mongo reads compete for the connection pool). Authentication uses the HttpOnly cookie, extracting `token=` from `set-cookie` exactly as `test/load/smoke.js` does (`ADR-0001`). Credentials come from `__ENV`. Every scenario additionally checks that the response carries the seeded data, so a run against a mis-authenticated or unseeded database fails loudly instead of reporting a fast, meaningless result.
+- `FR-010` — k6 thresholds are loose sanity checks only: `http_req_duration: p(95) < 2000` and `http_req_failed: rate < 0.01`. A third, `checks: rate > 0.99`, is the one that can fail for a correctness reason rather than a performance one, and it exists because without a `checks` threshold even a failing `check()` leaves the run green. Real figures are exported to `test/perf/results/k6-summary.json` via `--summary-export`, wired into the `test:perf:k6` npm script so the export cannot be forgotten; the output directory is git-ignored. The target endpoint comes from `__ENV.BASE_URL` (default `http://localhost:3000/graphql`) and every k6 option is overridable with `-e`.
 - `FR-011` — npm scripts: `test:perf` (in-process bench), `test:perf:k6` (k6), `perf:seed` (standalone seed). `package.json` gains no dependency: k6 is an external binary, and the in-process layer uses the already-present `mongodb-memory-server`.
 - `FR-012` — `.github/workflows/perf.yml` runs on `schedule` + `workflow_dispatch` and asserts **only** the deterministic budgets. Timing is printed for manual comparison and never fails the job.
 
@@ -160,8 +161,8 @@ Metric semantics, all from the driver rather than from Mongoose internals:
 - `TEST-003` — `query-metrics.spec.ts`: against a fake client emitter, `start()`/`stop()` bracket only the measured window, `getMore` and `killCursors` are excluded from `queries` but included in `roundTrips`, `docsReturned` sums the per-command document count across several `commandSucceeded` events (cursor batches) from **both** `reply.nReturned` and the `reply.cursor.firstBatch` fallback, and a command with neither contributes `0`. Proves `FR-005`.
 - `TEST-004` — `stats-charts.bench.spec.ts`: for each of the three sizes, the six calculators plus the dashboard aggregate are measured against real MongoDB and asserted against `test/perf/stats-charts.budget.ts` on `queries` and `docsReturned`. Reports `elapsedMs` / `roundTrips` and writes `test/perf/results/in-process.json`. Proves `FR-006`, `FR-007`.
 - `TEST-005` — `getStatsCaloriesWeekly` is the only query whose cost grows with history length rather than window length: `docsReturned` for `large` strictly exceeds `medium` while `getStatsVolumeTotalWeekly` is identical for both. Records `BR-007` as a measured, documented characteristic.
-- `TEST-006` — `seed-stats-charts.ts` run twice against a throwaway URI is idempotent: the second run leaves the same document counts, and no document outside the perf user's id is touched. Proves `FR-008`, `NFR-007`.
-- `TEST-007` — k6 script contract: parses with `k6 inspect` and the seven scenarios plus the two sanity thresholds are present; the script reads credentials from `__ENV` and contains no literal password. A companion assertion covers the **seed** script for the same rule, since it is the component that actually writes a bcrypt login. Proves `FR-009`, `FR-010`, `NFR-006`.
+- `TEST-006` — `seed-stats-charts.ts` run twice against a throwaway URI is idempotent: the second run leaves the same document counts, and no document outside the perf user's id is touched. Additionally, the created user document's `_id` **is** the dataset's `userId`, and every seeded collection has documents owned by it — an identity mismatch is what makes a k6 run measure an empty database while reporting green. Proves `FR-008`, `NFR-007`.
+- `TEST-007` — k6 script contract: parses with `k6 inspect` and the seven scenarios plus the thresholds are present; the script reads credentials from `__ENV` and contains no literal password; and it declares both the per-scenario data check and the `checks` threshold that makes an empty response fail the run. A companion assertion covers the **seed** script for the credential rule, since it is the component that actually writes a bcrypt login. A missing `k6` binary skips only the inspect-based assertion — a script k6 refuses to parse must fail the test, since treating any failure as a skip would make a broken script green. Proves `FR-009`, `FR-010`, `NFR-006`.
 - `TEST-008` — `npm run test:perf` green and re-runnable (twice in a row) with no timing assertion active. Proves `NFR-001`, `NFR-002`, `BR-002`.
 - `TEST-009` — Regression gate: `npm run build`, `npm run lint:ci`, `npm test`, `npm run test:e2e` unchanged, and `npm test` / `npm run test:e2e` collect no `test/perf` file. Proves `BR-004`, `AC-004`.
 - `TEST-010` — `.github/workflows/perf.yml` declares `schedule` and `workflow_dispatch` and **no** `pull_request` / `push`; `.github/workflows/ci.yml` is byte-identical to its pre-Spec content. Proves `FR-012`, `BR-004`.
@@ -172,7 +173,7 @@ Metric semantics, all from the driver rather than from Mongoose internals:
 - `AC-002` — A query-shape change in any calculator turns the bench red. Verified negatively during validation by temporarily adding one extra read and observing the failure, then reverting.
 - `AC-003` — `npm run test:perf` passes twice in a row with no timing assertion enabled.
 - `AC-004` — The canonical PR gate is untouched: `npm run build`, `npm run lint:ci`, `npm test`, `npm run test:e2e` behave exactly as before, and neither collects a `test/perf` file.
-- `AC-005` — `npm run perf:seed` plus `npm run test:perf:k6` measures all six queries and the dashboard aggregate end-to-end against a real `POST /graphql`, exporting a summary to `test/perf/results/`.
+- `AC-005` — `npm run perf:seed` plus `npm run test:perf:k6` measures all six queries and the dashboard aggregate end-to-end against a real `POST /graphql`, exporting a summary to `test/perf/results/`. A green run additionally proves the data check passed: the charts answered with the seeded documents, so the timings describe real calculations rather than empty responses.
 - `AC-006` — `.github/workflows/perf.yml` runs on a schedule and on demand, asserts only the deterministic budgets, and is never triggered by a pull request. `.github/workflows/ci.yml` is unchanged.
 - `AC-007` — No application file is modified **by this Spec**: no calculator, service, resolver, schema or module. The diff of this Spec touches only `test/`, `scripts/perf/`, `.github/workflows/perf.yml`, `package.json` scripts, `.gitignore` and documentation. `BR-001` and `BR-007` hold.
 - `AC-008` — The four measured hotspots of `BR-007` and the `medium` vs `large` divergence of `TEST-005` are documented in `documents/modules/stats-charts.md` as the input to a future optimization Spec, with no remediation in this one.
@@ -207,3 +208,33 @@ Two consequences for this Spec:
    the cast correction. Had they been frozen from the defective state, they would have
    encoded `docsReturned: 0` as the expected behavior. The budget table's values are
    therefore asserted against real, non-empty data — see `TEST-005` and `AC-008`.
+
+## Relationship to the authenticated perf user
+
+The same identity defect, in the seed rather than in the calculators, would have made the
+k6 layer meaningless. The seed created its login user with `UserModel.create({ ... })` and
+no `_id`, so Mongo assigned a random one on every run, while the dataset's documents are
+owned by the deterministic `stableObjectId('user:' + size)`. Since `login` puts
+`user._id` in the JWT payload (`sub`), the guard resolves that document and
+`extractUserId()` hands its `_id` to every calculator, the k6 session authenticated as a
+user that owned none of the seeded data.
+
+Every chart would have answered `[]` — HTTP 200, no GraphQL error — and the run would have
+reported green while timing an empty database. The k6 script did not catch it either:
+`checkOk` asserted only status and absence of `errors`, and with no `checks` threshold even
+a failing `check()` left the run green.
+
+Resolved as a change to this Spec (`FR-008`, `FR-009`, `FR-010`, `TEST-006`, `TEST-007`),
+delivered with the tests that would have caught it:
+
+1. The seed pins the user's `_id` to the dataset's `userId`, so the authenticated
+   identity and the data owner are the same id by construction.
+2. `TEST-006` asserts that equality directly, and that every seeded collection has
+   documents owned by it.
+3. Every k6 scenario checks that the response carries the seeded data, and
+   `checks: ['rate>0.99']` turns a failed check into a failed run.
+
+Nothing in the in-process layer is affected: it builds its own module and never
+authenticates, so the `FR-007` budgets are unchanged. This is the same root cause as the
+ObjectId fix above — an id that is not what the code assumes it is — arriving from the
+other end of the stack.

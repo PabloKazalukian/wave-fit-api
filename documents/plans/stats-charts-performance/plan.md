@@ -93,8 +93,9 @@ Final gate: `npm run build`, `npm run lint:ci`, `npm test`, `npm run test:e2e`, 
 | `AC-002` | green — one extra `countDocuments` in `volume-total` moved it 1→2 queries and the dashboard 16→17; bench turned red; reverted |
 | `AC-004` | green — `--listTests` collects 83 unit / 33 e2e / 5 perf, zero `test/perf` leakage |
 | `AC-005` | **pending** — no full manual k6 run against a live API yet |
+| Spec amendment | green — the seed/user-identity defect below was resolved as a Spec change (`FR-008`, `FR-009`, `FR-010`, `TEST-006`, `TEST-007`) before the k6 run, not as a silent code fix |
 
-Two defects were found by the harness itself while validating, both fixed:
+Three defects were found by the harness itself while validating, all fixed:
 
 1. **`TEST-006` deadlocked.** It spawned the seed with `execFileSync`, which on Windows
    never reaps the child once the same process has already spawned one of its own
@@ -106,3 +107,14 @@ Two defects were found by the harness itself while validating, both fixed:
    occurred — the same defect just fixed in the calculators. The deletes matched nothing,
    and the second run collided with its own deterministic `_id`s (`E11000`). Fixed by
    casting with `new Types.ObjectId(userIdStr)` at the delete boundary.
+3. **The seed's login user owned nothing.** Found while preparing `AC-005`, and the most
+   dangerous of the three: the seed created its user without an `_id`, so Mongo assigned a
+   random one, while the dataset's documents belong to `stableObjectId('user:' + size)`.
+   Since `login` puts `user._id` in the JWT and the calculators query by that id, a k6 run
+   would have authenticated as a user with no data — every chart answering `[]` with HTTP
+   200 and no GraphQL error, and the run reporting green. The k6 script could not catch it:
+   `checkOk` asserted only status and error-freedom, and with no `checks` threshold even a
+   failing `check()` left the run green. Fixed by pinning the seeded user's `_id` to the
+   dataset's `userId`, checking the seeded data in every scenario, and adding
+   `checks: ['rate>0.99']`; `TEST-006` and `TEST-007` now assert both. See the Spec section
+   "Relationship to the authenticated perf user".

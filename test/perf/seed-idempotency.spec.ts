@@ -155,4 +155,41 @@ describe('seed-stats-charts (idempotency, TEST-006)', () => {
     expect(user!.password).toMatch(/^\$2[aby]\$/);
     expect(user!.password).not.toBe(PASSWORD);
   }, 60_000);
+
+  /**
+   * The user document must *be* the owner of the seeded documents.
+   *
+   * `login` puts `user._id` in the JWT (`auth.service.ts` payload `sub`), the
+   * guard resolves that document, and `extractUserId()` hands its `_id` to
+   * every calculator. So a perf user whose `_id` differs from the dataset's
+   * `userId` authenticates successfully while owning nothing: every chart
+   * returns `[]` with HTTP 200 and no GraphQL error, and the k6 layer measures
+   * an empty database while reporting green.
+   *
+   * The dataset is deterministic and so must this id be, which is why the seed
+   * pins the user's `_id` instead of letting Mongo mint a random one.
+   */
+  it('gives the loginable user the same _id that owns the seeded data', async () => {
+    const db = client.db();
+    const { userId } = await runSeed(uri, 'small');
+
+    const user = await db.collection('users').findOne({ email: EMAIL });
+    expect(user).not.toBeNull();
+    expect(user!._id.toString()).toBe(userId);
+
+    // Not just equal ids: the documents actually hang off that user.
+    const owner = new ObjectId(userId);
+    for (const collection of [
+      'workoutsessions',
+      'extrasessions',
+      'userweightlogs',
+      'userprofiles',
+      'weeklogs',
+      'daylogs',
+    ]) {
+      expect(
+        await db.collection(collection).countDocuments({ userId: owner }),
+      ).toBeGreaterThan(0);
+    }
+  }, 300_000);
 });

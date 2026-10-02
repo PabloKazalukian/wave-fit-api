@@ -34,13 +34,19 @@ describe('k6 contract (test/load/stats-charts.js)', () => {
         encoding: 'utf8',
         stdio: ['ignore', 'pipe', 'pipe'],
       });
-    } catch {
-      // k6 is an external binary and may be absent on a contributor machine.
-      // Skipping rather than failing keeps the perf suite runnable anywhere.
-      console.warn(
-        'k6 binary not available; skipping the inspect-based assertion.',
-      );
-      return;
+    } catch (err) {
+      // Only a *missing binary* may skip this: k6 is an external tool and need
+      // not be installed on a contributor machine. A script that k6 refuses to
+      // parse must fail loudly — returning early on every error would turn a
+      // broken script into a green test, which is the one outcome this layer
+      // exists to prevent.
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+        console.warn(
+          'k6 binary not available; skipping the inspect-based assertion.',
+        );
+        return;
+      }
+      throw err;
     }
 
     const scenarios = JSON.parse(inspected).scenarios as Record<
@@ -67,6 +73,22 @@ describe('k6 contract (test/load/stats-charts.js)', () => {
   it('declares the two loose sanity thresholds', () => {
     expect(scriptSource).toContain("http_req_duration: ['p(95)<2000']");
     expect(scriptSource).toContain("http_req_failed: ['rate<0.01']");
+  });
+
+  /**
+   * A 200 with no GraphQL error is not proof the run measured anything: if the
+   * authenticated user owns no documents, every chart answers `[]` and the whole
+   * suite reports green while timing an empty database. So the script must check
+   * the payload and declare a `checks` threshold, without which even a failing
+   * `check()` leaves the run green.
+   */
+  it('fails when a chart returns no data rather than timing an empty response', () => {
+    expect(scriptSource).toContain("checks: ['rate>0.99']");
+    expect(scriptSource).toContain('returned the seeded data');
+    // Every chart declares which response field must carry the seeded data.
+    for (const chart of CHARTS) {
+      expect(scriptSource).toMatch(new RegExp(`${chart}: (true|false)`));
+    }
   });
 
   it('queries every chart plus a single-request dashboard', () => {
