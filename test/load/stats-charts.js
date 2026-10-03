@@ -124,9 +124,9 @@ const ONE_RM_QUERY = `
   query GetStats1RmWeekly($input: StatsChartsInput!) {
     getStats1RmWeekly(input: $input) {
       exerciseId
-      exerciseName
-      weekKey
-      best1RM
+      name
+      category
+      weeks { weekKey best1RM weightUsed reps participated }
     }
   }
 `;
@@ -135,8 +135,8 @@ const VOLUME_WEEKLY_QUERY = `
   query GetStatsVolumeWeekly($input: StatsChartsInput!) {
     getStatsVolumeWeekly(input: $input) {
       weekKey
-      exercises { exerciseId exerciseName volumeKg }
-      muscles { category sets volumeKg }
+      exercises { exerciseId name category volume }
+      muscles { muscle sets volume }
     }
   }
 `;
@@ -145,7 +145,9 @@ const VOLUME_TOTAL_QUERY = `
   query GetStatsVolumeTotalWeekly($input: StatsChartsInput!) {
     getStatsVolumeTotalWeekly(input: $input) {
       weekKey
-      totalVolumeKg
+      totalVolume
+      deltaPct
+      possibleDeload
     }
   }
 `;
@@ -165,8 +167,9 @@ const FORGOTTEN_QUERY = `
   query GetStatsForgottenMuscles($input: StatsChartsInput!) {
     getStatsForgottenMuscles(input: $input) {
       muscle
+      totalSets
       weeksWithoutWork
-      lastTrainedDate
+      lastTrainedAt
     }
   }
 `;
@@ -175,22 +178,26 @@ const TREND_QUERY = `
   query GetStatsExerciseTrend($input: StatsChartsInput!) {
     getStatsExerciseTrend(input: $input) {
       exerciseId
-      exerciseName
-      current1RM
-      previous1RM
-      trend
+      name
+      category
+      slope
+      pctChange
+      label
+      weeksUsed
     }
   }
 `;
 
+// One document requesting all six charts, which is what makes the dashboard a
+// single round trip instead of six.
 const DASHBOARD_QUERY = `
   query Dashboard($i1: StatsChartsInput!, $i2: StatsChartsInput!, $i3: StatsChartsInput!, $i4: StatsChartsInput!, $i5: StatsChartsInput!, $i6: StatsChartsInput!) {
-    getStats1RmWeekly(input: $i1) { exerciseId weekKey best1RM }
-    getStatsVolumeWeekly(input: $i2) { weekKey muscles { category volumeKg } }
-    getStatsVolumeTotalWeekly(input: $i3) { weekKey totalVolumeKg }
+    getStats1RmWeekly(input: $i1) { exerciseId name weeks { weekKey best1RM } }
+    getStatsVolumeWeekly(input: $i2) { weekKey muscles { muscle sets volume } }
+    getStatsVolumeTotalWeekly(input: $i3) { weekKey totalVolume }
     getStatsCaloriesWeekly(input: $i4) { weekKey totalKcal }
     getStatsForgottenMuscles(input: $i5) { muscle weeksWithoutWork }
-    getStatsExerciseTrend(input: $i6) { exerciseId trend }
+    getStatsExerciseTrend(input: $i6) { exerciseId label weeksUsed }
   }
 `;
 

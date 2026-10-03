@@ -17,7 +17,7 @@ How the WaveFit API is tested: philosophy, commands, unit vs E2E vs performance 
 
 ## 2. Commands
 
-Jest configuration is unified in `jest.config.js` — the single source of truth for the unit layer. The `jest` key was removed from `package.json`; **there is no dual Jest configuration**. `npm test` runs `jest`, which auto-detects `jest.config.js`. When invoking `jest` directly, always pass `--config jest.config.js` explicitly.
+Jest configuration is unified in `jest.config.js` â€” the single source of truth for the unit layer. The `jest` key was removed from `package.json`; **there is no dual Jest configuration**. `npm test` runs `jest`, which auto-detects `jest.config.js`. When invoking `jest` directly, always pass `--config jest.config.js` explicitly.
 
 ```bash
 # Unit (source: src/)
@@ -36,8 +36,8 @@ npm run perf:seed                                 # standalone bulk seed, for th
 npm run test:perf:k6                              # k6 against a live POST /graphql
 
 # Combined coverage (unit + e2e)
-npm run test:e2e:cov        # e2e-only with coverage (--maxWorkers=2 --coverage) → coverage/e2e/
-npm run test:cov:combined   # unit + e2e coverage + istanbul merge → coverage/combined/ and console summary
+npm run test:e2e:cov        # e2e-only with coverage (--maxWorkers=2 --coverage) â†’ coverage/e2e/
+npm run test:cov:combined   # unit + e2e coverage + istanbul merge â†’ coverage/combined/ and console summary
 ```
 
 ## 3. Unit vs E2E vs Performance Split
@@ -50,8 +50,8 @@ npm run test:cov:combined   # unit + e2e coverage + istanbul merge → coverage/
 
 - Unit tests mock dependencies with Jest (see section 6).
 - E2E boots the app against in-memory MongoDB, with `cookie-parser` registered (the JWT travels in an HttpOnly cookie), GraphQL playground disabled, and the same modules as the real app.
-- `test/utils/db-handler.ts` provides `rootMongooseTestModule()`, `closeInMongodConnection()` and `clearDatabase()` (clears only data collections between tests, not system collections/indices — clearing everything caused intermittent failures).
-- The automated suites supply their own connection and never read `MONGO_URL`; a disposable in-memory server is the right tool for a hermetic suite. Ad-hoc runs that need a real database of their own use the isolated container instead — see `documents/engineering/local-environments.md`.
+- `test/utils/db-handler.ts` provides `rootMongooseTestModule()`, `closeInMongodConnection()` and `clearDatabase()` (clears only data collections between tests, not system collections/indices â€” clearing everything caused intermittent failures).
+- The automated suites supply their own connection and never read `MONGO_URL`; a disposable in-memory server is the right tool for a hermetic suite. Ad-hoc runs that need a real database of their own use the isolated container instead â€” see `documents/engineering/local-environments.md`.
 - `test/fixtures/user.fixture.ts` provides the shared test user (`test@wavefit.com` / `password123`, role `USER`).
 - E2E helpers (`test/e2e/helpers/`) provide cookie extraction (`getCookieWithToken`), week-log/day-log creation, active-week queries and a complete-and-create helper for historical data.
 
@@ -61,8 +61,8 @@ npm run test:cov:combined   # unit + e2e coverage + istanbul merge → coverage/
 
 | Config | Scope | Collects `test/perf/`? |
 |---|---|---|
-| `jest.config.js` | `rootDir: 'src'`, `testRegex: '.*\.spec\.ts$'` | no — the files are outside `rootDir` |
-| `test/jest-e2e.json` | `testRegex: 'test/e2e/.*\.spec\.ts$'` | no — the pattern does not match |
+| `jest.config.js` | `rootDir: 'src'`, `testRegex: '.*\.spec\.ts$'` | no â€” the files are outside `rootDir` |
+| `test/jest-e2e.json` | `testRegex: 'test/e2e/.*\.spec\.ts$'` | no â€” the pattern does not match |
 | `test/jest-perf.json` | `testRegex: 'test/perf/.*\.spec\.ts$'`, `maxWorkers: 1` | yes |
 
 That separation is asserted, not assumed: `test/perf/perf-artifacts.spec.ts` reads all three configs and fails if either of the first two can collect a perf file. `maxWorkers: 1` is required because all five perf suites share one in-memory MongoDB.
@@ -72,7 +72,7 @@ Two consequences worth knowing:
 - **`npm run build` and `npm run lint:ci` do not see this layer at all.** `tsconfig.build.json` excludes `test` and `scripts`, and `lint:ci` is scoped to `src/**/*.ts`. The perf code is type-checked only when `ts-jest` compiles it during `npm run test:perf`. Run that suite before considering a change here validated.
 - **It does not move the coverage baseline.** Both coverage commands collect from `src/`, so nothing under `test/` or `scripts/` is ever counted.
 
-Performance assertions are on exact integer counts (`queries`, `docsReturned` — how many MongoDB commands the code issued and how many documents it materialized), never on wall-clock time, because duration on a shared runner describes the machine rather than the code. Timing is reported and only enforced under `PERF_ENFORCE_TIMING=1`. See `sdd/stats-charts-performance.md` and `documents/modules/stats-charts.md`.
+Performance assertions are on exact integer counts (`queries`, `docsReturned` â€” how many MongoDB commands the code issued and how many documents it materialized), never on wall-clock time, because duration on a shared runner describes the machine rather than the code. Timing is reported and only enforced under `PERF_ENFORCE_TIMING=1`. See `sdd/stats-charts-performance.spec.md` and `documents/modules/stats-charts.md`.
 
 ## 4. Why `--maxWorkers=2` in E2E
 
@@ -90,7 +90,7 @@ An automated CI pipeline (GitHub Actions) runs the four canonical commands on ev
 |---|---|---|
 | Unit % (lines/branches) | `coverage/lcov.info` (LF/LH, BRF/BRH) | `npm run test:cov` |
 | E2E standalone % | `coverage/e2e/coverage-final.json` | `npm run test:e2e:cov` |
-| Combined % | istanbul merge of both maps → `coverage/combined/` | `node scripts/merge-coverage.js` or `npm run test:cov:combined` |
+| Combined % | istanbul merge of both maps â†’ `coverage/combined/` | `node scripts/merge-coverage.js` or `npm run test:cov:combined` |
 
 Rules:
 
@@ -108,26 +108,26 @@ Semaphore thresholds (combined lines):
 | Status | Criterion |
 |---|---|
 | Green | >= 80% combined lines, or mitigated by verified E2E |
-| Yellow | 60–80%, or identified point gaps |
+| Yellow | 60â€“80%, or identified point gaps |
 | Red | < 40% effective, or pure logic with no test at all |
 
 ## 6. Unit Test Mock Patterns
 
-1. **Mongoose model tokens**: provide by class name, not schema object name — `{ provide: getModelToken(Exercise.name), useValue: exerciseModelMock }`. This matches how `MongooseModule.forFeature({ name: X.name })` registers the token. `getModelToken(ExerciseSchema.name)` produces a non-matching token because `ExerciseSchema` is a Schema instance, not the class.
-2. **EventEmitter2**: resolvers emit events (`workout-session.saved`, ...) → `{ provide: EventEmitter2, useValue: { emit: jest.fn() } }`.
+1. **Mongoose model tokens**: provide by class name, not schema object name â€” `{ provide: getModelToken(Exercise.name), useValue: exerciseModelMock }`. This matches how `MongooseModule.forFeature({ name: X.name })` registers the token. `getModelToken(ExerciseSchema.name)` produces a non-matching token because `ExerciseSchema` is a Schema instance, not the class.
+2. **EventEmitter2**: resolvers emit events (`workout-session.saved`, ...) â†’ `{ provide: EventEmitter2, useValue: { emit: jest.fn() } }`.
 3. **Hexagonal services (week-log)**: the service delegates to use cases; mock `.execute()` of each use case rather than chains of the model.
 4. **Interceptors**: `AuditInterceptor(reflector, auditService)` can be instantiated directly or overridden with `overrideInterceptor(...)`.
-5. **Behavioral alignment**: tests must reflect **current** behavior. Known evolved contracts: `WeekLogResolver.createWeekLog` refreshes the result via `service.findOne()` after creating; `findActiveWeekLog` returns a `{ hasActiveWeek: true, week }` wrapper; `ExtraSessionService.create` auto-creates the WorkoutSession when missing (no longer throws NotFound); ExtraSession calories are `MET × 70kg × hours × factorIntensidad` with user input accepted only within ±400 cal of the estimate; Google login downloads the avatar (`getAvatarGoogle`) and uploads it via `StorageService` before signing the JWT.
+5. **Behavioral alignment**: tests must reflect **current** behavior. Known evolved contracts: `WeekLogResolver.createWeekLog` refreshes the result via `service.findOne()` after creating; `findActiveWeekLog` returns a `{ hasActiveWeek: true, week }` wrapper; `ExtraSessionService.create` auto-creates the WorkoutSession when missing (no longer throws NotFound); ExtraSession calories are `MET Ã— 70kg Ã— hours Ã— factorIntensidad` with user input accepted only within Â±400 cal of the estimate; Google login downloads the avatar (`getAvatarGoogle`) and uploads it via `StorageService` before signing the JWT.
 
 Additional lessons: assert ObjectId-sensitive arguments by capturing received args and comparing `.toString()` (or provide both `_id` and `id` on mocked objects); when a test fails, first verify what the service/resolver does *today* (an evolved behavior is not a bug); adding a constructor dependency (StorageService, EventEmitter2, use cases) usually requires updating affected `.spec.ts` providers; after mass spec changes always run `npm run lint` + build + both suites.
 
 ## 7. E2E Infrastructure
 
-- `test/utils/db-handler.ts` — in-memory MongoDB (see section 3).
-- `test/utils/app-test.module.ts` — replicates real configuration: same modules as the app, `MongooseModule` pointing at in-memory MongoDB, GraphQL playground disabled, `GraphQLExceptionFilter` registered.
+- `test/utils/db-handler.ts` â€” in-memory MongoDB (see section 3).
+- `test/utils/app-test.module.ts` â€” replicates real configuration: same modules as the app, `MongooseModule` pointing at in-memory MongoDB, GraphQL playground disabled, `GraphQLExceptionFilter` registered.
   - The E2E bootstrap **must** register `app.use(cookieParser())`: without it every authed call fails because the JWT travels in the HttpOnly cookie.
-- `test/e2e/helpers/week-log.helper.ts`, `test/e2e/helpers/day-log.helper.ts` — cookie and tracking helpers.
-- `test/e2e/types/week-log.type.ts` — reusable `expect` shapes and a GraphQL field string for week-log responses.
+- `test/e2e/helpers/week-log.helper.ts`, `test/e2e/helpers/day-log.helper.ts` â€” cookie and tracking helpers.
+- `test/e2e/types/week-log.type.ts` â€” reusable `expect` shapes and a GraphQL field string for week-log responses.
 - Conventions: `clearDatabase()` in `beforeEach` (tests never depend on cross-run state); `createTestUser()` + login per test; verify `response.body.errors` on failures; close the active week before creating a new one when the test needs a fresh active week.
 
 ## 8. Realistic Coverage Numbers (measured 2026-08-23)
@@ -140,7 +140,7 @@ Additional lessons: assert ObjectId-sensitive arguments by capturing received ar
 
 Observations from the same report:
 
-- E2E contributes most in week-log (use cases 82–100%, resolver ~94%, repository ~70%) and auth.
+- E2E contributes most in week-log (use cases 82â€“100%, resolver ~94%, repository ~70%) and auth.
 - Cold areas: `stats` (experimental; the pure use cases, `get-raw-data-for-worker` and the SQS publisher are now covered, but the `get-*` use cases, service, resolver and repository remain uncovered), `google.service` (requires real OAuth or contract tests).
 - `npm run test:cov:combined` is the single command that regenerates the measured numbers.
 
@@ -155,4 +155,4 @@ Historical evolution (see Git history for the reports):
 
 ## 9. Test-First Methodology
 
-Per the Spec-driven development workflow (`sdd/README.md`): write the tests of a layer before its implementation; a failing requirement is fixed against the Spec. The final verification of a done Spec runs the full gate: `npm run build` · `npm run lint:ci` · `npm test` · `npm run test:e2e`. The same gate runs automatically in CI on every pull request and push to `main`; see `documents/engineering/ci-cd.md`. Locally, `npm run lint` (with `--fix`) may be used for convenience, but CI uses `lint:ci` (no `--fix`). When a new module is born, unit specs should be written from day one.
+Per the Spec-driven development workflow (`sdd/README.md`): write the tests of a layer before its implementation; a failing requirement is fixed against the Spec. The final verification of a done Spec runs the full gate: `npm run build` Â· `npm run lint:ci` Â· `npm test` Â· `npm run test:e2e`. The same gate runs automatically in CI on every pull request and push to `main`; see `documents/engineering/ci-cd.md`. Locally, `npm run lint` (with `--fix`) may be used for convenience, but CI uses `lint:ci` (no `--fix`). When a new module is born, unit specs should be written from day one.

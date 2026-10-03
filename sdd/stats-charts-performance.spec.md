@@ -1,6 +1,6 @@
 # Stats Charts — Performance Test Harness
 
-> **Status:** in_progress
+> **Status:** done
 > **Priority:** high
 
 ## Context
@@ -166,6 +166,7 @@ Metric semantics, all from the driver rather than from Mongoose internals:
 - `TEST-008` — `npm run test:perf` green and re-runnable (twice in a row) with no timing assertion active. Proves `NFR-001`, `NFR-002`, `BR-002`.
 - `TEST-009` — Regression gate: `npm run build`, `npm run lint:ci`, `npm test`, `npm run test:e2e` unchanged, and `npm test` / `npm run test:e2e` collect no `test/perf` file. Proves `BR-004`, `AC-004`.
 - `TEST-010` — `.github/workflows/perf.yml` declares `schedule` and `workflow_dispatch` and **no** `pull_request` / `push`; `.github/workflows/ci.yml` is byte-identical to its pre-Spec content. Proves `FR-012`, `BR-004`.
+- `TEST-011` — every query document the k6 script can send validates against the schema the application actually serves: the real schema is built from the real `StatsChartsResolver` with `GraphQLSchemaFactory`, the seven documents are extracted from the script and run through `graphql`'s `parse` + `validate`, and a second assertion confirms each chart query selects one field while the dashboard selects all six. Proves `FR-009`, `FR-011`. Added after the first live run failed — see "Relationship to the k6 query documents".
 
 ## Acceptance Criteria
 
@@ -173,9 +174,9 @@ Metric semantics, all from the driver rather than from Mongoose internals:
 - `AC-002` — A query-shape change in any calculator turns the bench red. Verified negatively during validation by temporarily adding one extra read and observing the failure, then reverting.
 - `AC-003` — `npm run test:perf` passes twice in a row with no timing assertion enabled.
 - `AC-004` — The canonical PR gate is untouched: `npm run build`, `npm run lint:ci`, `npm test`, `npm run test:e2e` behave exactly as before, and neither collects a `test/perf` file.
-- `AC-005` — `npm run perf:seed` plus `npm run test:perf:k6` measures all six queries and the dashboard aggregate end-to-end against a real `POST /graphql`, exporting a summary to `test/perf/results/`. A green run additionally proves the data check passed: the charts answered with the seeded documents, so the timings describe real calculations rather than empty responses.
+- `AC-005` — `npm run perf:seed` plus `npm run test:perf:k6` measures all six queries and the dashboard aggregate end-to-end against a real `POST /graphql`, exporting a summary to `test/perf/results/`. A green run additionally proves the data check passed: the charts answered with the seeded documents, so the timings describe real calculations rather than empty responses. Met on 2026-10-02: 215 requests over 30 s at 1 iteration/s per scenario, `http_req_failed` 0.00%, 643 checks passed and 0 failed, `http_req_duration` avg 112 ms / med 110 ms / p95 158 ms / max 245 ms, summary exported, no threshold crossed. `TEST-011` proved the documents themselves are valid against the served schema.
 - `AC-006` — `.github/workflows/perf.yml` runs on a schedule and on demand, asserts only the deterministic budgets, and is never triggered by a pull request. `.github/workflows/ci.yml` is unchanged.
-- `AC-007` — No application file is modified **by this Spec**: no calculator, service, resolver, schema or module. The diff of this Spec touches only `test/`, `scripts/perf/`, `.github/workflows/perf.yml`, `package.json` scripts, `.gitignore` and documentation. `BR-001` and `BR-007` hold.
+- `AC-007` — No application file is modified **by this Spec**: no calculator, service, resolver, schema or module. The diff of this Spec touches only `test/`, `scripts/perf/`, `.github/workflows/perf.yml`, `package.json` scripts, `.gitignore` and documentation. `BR-001` and `BR-007` hold. The one exception is the merge of `feat/mongo-connection-config`, which enters this branch as a delivered change of its own Spec (`sdd/mongo-connection-config.spec.md`) rather than as an edit authored here — see "Relationship to the configurable connection".
 - `AC-008` — The four measured hotspots of `BR-007` and the `medium` vs `large` divergence of `TEST-005` are documented in `documents/modules/stats-charts.md` as the input to a future optimization Spec, with no remediation in this one.
 - `AC-009` — The `ObjectId`-casting defect that blocked this Spec is delivered as its **own** change, tracked in `sdd/stats-charts.spec.md`, and is therefore outside `AC-007`'s diff. See "Relationship to the ObjectId fix" below.
 
@@ -238,3 +239,62 @@ Nothing in the in-process layer is affected: it builds its own module and never
 authenticates, so the `FR-007` budgets are unchanged. This is the same root cause as the
 ObjectId fix above — an id that is not what the code assumes it is — arriving from the
 other end of the stack.
+
+## Relationship to the configurable connection
+
+`AC-005` needs a live API pointed at a database that belongs to the perf run and to
+nothing else, so that the measured timings cannot be perturbed by — and cannot leak into —
+shared data. On this branch `src/app.module.ts` hardcoded the Atlas connection string, so
+there was no way to aim the API anywhere without editing an application file, which `AC-007`
+forbids. The contradiction is real and it is resolved here rather than silently:
+
+the connection became configurable in its own Spec, `sdd/mongo-connection-config.spec.md`
+(`MONGO_URL` with the previous URI as the byte-identical default, plus an isolated
+`docker-compose.yml`), and that branch is merged into this one. `AC-007` therefore has one
+declared exception, exactly as `AC-009` does for the ObjectId fix, and the reason is the
+same: a change with its own contract is delivered by its own change and then depended upon,
+rather than smuggled into a Spec whose diff is deliberately narrow.
+
+The merge is inert for the measured numbers. `buildMongoUri()` decides only *where* the
+connection points; with `MONGO_URL` unset it returns the URI that was hardcoded before, so
+a run that sets no variable reaches exactly the same database this branch always did. Only
+a run that sets the variable changes target, and it does so to the throwaway container.
+
+One ordering rule follows from it, and it is what makes `AC-005` reproducible: the seed runs
+**before** the API boots. `scripts/perf/seed-stats-charts.ts` builds its own module from
+`StatsChartsModule` and never imports `AppModule`, so the autoseed does not run inside it —
+but the API process that serves the k6 requests does boot `SeedModule`. Booting that API
+into an empty database first would let the autoseed claim the exercise catalog under
+Mongo-generated `_id`s, and the seed's upsert-by-`_id` would then collide with the unique
+`name` index. Seeded first, every autoseed step finds data and skips.
+
+The second autoseed step is worth naming because it did **not** skip: the plan is looked up by
+name (`PPL 6 días — Principiante/Intermedio`), the dataset's plan is called `Perf PPL 6 días`, so
+the API created a second plan. It cannot affect the measurement — neither plan is referenced by
+the perf user's weeklog or daylog (`routinePlanId` is unset on both), so the stats queries never
+resolve through `routineplans` for this dataset — but a run that compares `readBack.routinePlans`
+before and after a live boot will see `1` become `2`.
+
+## Relationship to the k6 query documents
+
+The first live k6 run failed 6 of its 7 scenarios with `GRAPHQL_VALIDATION_FAILED`, and the cause
+was that the script's query documents had never been checked against the schema the application
+serves. They were written against an assumed shape: `getStats1RmWeekly` asked for `exerciseName`,
+`weekKey` and `best1RM` directly on `Exercise1RmWeekly`, which exposes `exerciseId`, `name`,
+`category` and a nested `weeks` list; `MuscleVolume` has `muscle` and `volume`, not `category` and
+`volumeKg`; `VolumeTotalWeeklyEntry` has `totalVolume`, not `totalVolumeKg`; `ExerciseTrend` has
+`label`, `slope`, `pctChange` and `weeksUsed`, not `current1RM` / `previous1RM` / `trend`. Only
+`getStatsCaloriesWeekly` was spelled correctly, which is exactly why one scenario passed and six
+did not.
+
+Three layers had passed while this was true. The in-process bench calls the calculators directly
+and never crosses GraphQL. `TEST-007` runs `k6 inspect`, which proves the *JavaScript* is well
+formed — `graphql.parse` stops at the document's own syntax and never compares a field name
+against a type. And the run still produced numbers: `http_req_duration` med 15 ms with no request
+erroring, because a validation failure is a perfectly fast response. Only the `checks` threshold
+added for the identity defect stopped it being read as a pass.
+
+The fix is the documents, plus `TEST-011`, which closes the gap rather than the symptom: it builds
+the real schema from the real resolver and validates all seven documents, so renaming a field in a
+presentation entity turns the perf suite red instead of the next live run. It lives in `test/perf/`
+rather than beside the schema spec so that `AC-007`'s narrow diff still holds.

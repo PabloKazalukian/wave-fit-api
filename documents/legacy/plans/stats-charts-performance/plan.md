@@ -1,11 +1,11 @@
 # Plan — Stats Charts Performance Test Harness
 
-> **Status:** Active
-> **Spec:** `sdd/stats-charts-performance.md`
-> **Branch:** `feat/stats-charts-performance`
-> **Last updated:** 2026-10-01
+> **Status:** Historical / Non-Authoritative
+> **Spec:** `sdd/stats-charts-performance.spec.md`
+> **Executed on branch:** `feat/stats-charts-performance`
+> **Last updated:** 2026-10-02
 
-Execution artifact. Not authoritative. See the Spec for behavior and `sdd/README.md` for governance. Tasks 1–10 are implemented and validated; `AC-005` (a full manual k6 run against a live API) is still open, so the Spec remains `in_progress` and this Plan is not archived yet.
+Execution artifact. Not authoritative. See the Spec for behavior and `sdd/README.md` for governance. Tasks 1–10 are implemented and validated, `AC-005` closed by a full manual k6 run on 2026-10-02, and every acceptance criterion passes. The authoritative contract is `sdd/stats-charts-performance.spec.md`. This plan is kept for traceability and historical review only.
 
 ## Approach
 
@@ -94,6 +94,42 @@ Final gate: `npm run build`, `npm run lint:ci`, `npm test`, `npm run test:e2e`, 
 | `AC-004` | green — `--listTests` collects 83 unit / 33 e2e / 5 perf, zero `test/perf` leakage |
 | `AC-005` | **pending** — no full manual k6 run against a live API yet |
 | Spec amendment | green — the seed/user-identity defect below was resolved as a Spec change (`FR-008`, `FR-009`, `FR-010`, `TEST-006`, `TEST-007`) before the k6 run, not as a silent code fix |
+
+### Validation log (2026-10-02, closing `AC-005`)
+
+The isolated Mongo (`docker compose up -d`) was seeded for `medium`, an API was booted against it
+with `MONGO_URL`, and `npm run test:perf:k6` was run with `PERF_WINDOW_DAYS=120` to match the
+dataset's own window (`medium` spans 120 days; the script's default of 28 would have measured a
+slice that the `FR-007` budgets do not describe).
+
+| Item | Result |
+|---|---|
+| `AC-005` | **green** — 215 requests, 7 scenarios × 30 s at 1 iteration/s; `http_req_failed` 0.00%; **643 checks passed, 0 failed**; `http_req_duration` avg 112 ms / med 110 ms / p95 158 ms / max 245 ms; summary exported to `test/perf/results/k6-summary.json`; no threshold crossed |
+| `AC-006` | green — `perf.yml` declares only `schedule` (`0 3 * * 1-5`) and `workflow_dispatch`, runs only the deterministic in-process budgets, and `TEST-010` confirms `ci.yml` is byte-identical |
+| `AC-007` | green with one declared exception — the diff touches `test/`, `scripts/perf/`, the workflow, `package.json`, `.gitignore` and docs; the only application change present is the merge of `feat/mongo-connection-config`, delivered by its own promoted Spec |
+| `AC-008` | green — the four hotspots and the `medium` vs `large` divergence are in `documents/modules/stats-charts.md`, "Measured performance baseline" |
+| `AC-009` | green — the ObjectId correction is recorded in `sdd/stats-charts.spec.md` |
+| `TEST-011` | green — all seven k6 query documents validate against the schema built from the real `StatsChartsResolver` |
+| Perf suite | green — 6 suites / 124 tests |
+| Full gate | green — `build`, `lint:ci` 0 errors, `npm test`, `npm run test:e2e` |
+
+The first live run **failed** 6 of 7 scenarios and exposed a fourth defect, the most direct one yet:
+
+4. **The k6 query documents did not match the served schema.** Six of the seven documents were
+   written against an assumed field shape (`exerciseName`, `totalVolumeKg`, `volumeKg`,
+   `current1RM` / `trend`, `lastTrainedDate`) that the code-first entities do not expose, so every
+   request but `getStatsCaloriesWeekly` returned HTTP 400 with `GRAPHQL_VALIDATION_FAILED`. Three
+   layers had passed over it: the in-process bench never crosses GraphQL, `k6 inspect` only proves
+   the JavaScript parses, and a validation failure is still a fast response — `med 15 ms`, zero
+   failed requests. Only the `checks` threshold caught it. Fixed by correcting the documents against
+   the real entities plus `TEST-011`, which validates all seven against the real schema so the next
+   field rename fails the suite rather than the next live run. See the Spec section "Relationship to
+   the k6 query documents".
+
+The same run also settled two operational facts, both recorded rather than assumed: the API's
+autoseed creates a second `routineplans` document because the plan is matched by name and the
+dataset's is called differently, and neither plan is referenced by the perf user's weeklog or
+daylog, so it cannot influence the six queries.
 
 Three defects were found by the harness itself while validating, all fixed:
 
