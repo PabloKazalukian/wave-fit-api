@@ -132,10 +132,11 @@ Metric semantics, all from the driver rather than from Mongoose internals:
 
 ## Files
 
-- `sdd/stats-charts-performance.md` (new — this Spec; promoted to `.spec.md` when it reaches `done`)
-- `documents/plans/stats-charts-performance/plan.md` (new — implementation Plan, Active)
+- `sdd/stats-charts-performance.spec.md` (new — this Spec, authored as `stats-charts-performance.md` and promoted to `.spec.md` on reaching `done`)
+- `documents/legacy/plans/stats-charts-performance/plan.md` (new — implementation Plan, authored under `documents/plans/` and archived as Historical on completion)
 - `test/jest-perf.json` (new — isolated Jest config)
 - `test/perf/stats-charts.bench.spec.ts` (new — `TEST-004`, `TEST-005`)
+- `test/perf/k6-queries.spec.ts` (new — `TEST-011`, the k6 documents against the real schema)
 - `test/perf/stats-charts.budget.ts` (new — integer budgets, `FR-007`)
 - `test/perf/perf-artifacts.spec.ts` (new — `TEST-001`, `TEST-007`, `TEST-010`, plus the `FR-011` npm-script contract)
 - `test/perf/seed-idempotency.spec.ts` (new — `TEST-006`)
