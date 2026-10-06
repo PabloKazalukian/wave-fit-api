@@ -22,7 +22,9 @@ async function check() {
 
   // 1. Obtener todos los IDs de exercises existentes
   const exercisesCollection = connection.collection('exercises');
-  const existingExercises = await exercisesCollection.find({}, { projection: { _id: 1 } }).toArray();
+  const existingExercises = await exercisesCollection
+    .find({}, { projection: { _id: 1 } })
+    .toArray();
   const exerciseIds = new Set(existingExercises.map((e) => e._id.toString()));
   logger.log(`Exercises en DB: ${exerciseIds.size}`);
 
@@ -71,7 +73,9 @@ async function check() {
 
   // 4. Resultados
   if (brokenRefs.length === 0) {
-    logger.log('✅ Todas las referencias a Exercise son válidas. No hay integridad rota.');
+    logger.log(
+      '✅ Todas las referencias a Exercise son válidas. No hay integridad rota.',
+    );
   } else {
     logger.warn(`⚠️  Se encontraron ${brokenRefs.length} referencias rotas:\n`);
 
