@@ -188,4 +188,5 @@ On app bootstrap, `SeedService` (`src/database/seed-runner.ts`, implements `OnAp
 | UserProfile module | `documents/modules/user-profile.md` |
 | Stats module | `documents/modules/stats.md` + ADR-0007 |
 | Testing | `documents/engineering/testing.md` |
+| Performance testing | `documents/engineering/testing.md` + ADR-0008 |
 | Coding standards | `documents/engineering/coding-standards.md` |
