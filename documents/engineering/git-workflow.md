@@ -1,7 +1,7 @@
 # Git Workflow
 
 > **Status:** Current
-> **Last updated:** 2026-09-12
+> **Last updated:** 2026-10-06
 > **Authority level:** Stable engineering rule. See the Engineering Charter for the overall methodology.
 
 ## 1. Branch Strategy
@@ -21,9 +21,10 @@ The repository uses a lightweight feature-branch workflow. The integration branc
 ## 2. Commits
 
 - Commit messages are **English**, concise, and descriptive of the change.
-- **Commit message format (mandatory):** `feat/<what-was-done>: <brief english description>`. The `feat/` prefix names what the commit implements; the description is short, imperative, and specific.
-  - Examples: `feat/sdd: implement spec-anchored documentation principle`, `feat/day-log: add standalone training day tracking`, `feat/seed: correct exercise catalog count`.
-  - Use `feat/` for features and value-delivering changes (including documentation, chores, and fixes that complete a feature). Historical commits used a lowercase descriptive style (e.g. `add SDD conventions and day-log spec`); do not rewrite historical commits to change their language.
+- **Commit message format (mandatory):** `<type>(<scope>): <description>`, following Conventional Commits. The description is short, imperative and specific; the scope names the feature area and is omitted only when the change genuinely spans areas.
+  - Types used in this repository: `feat` (features and value-delivering changes, including documentation and chores), `fix` (defect corrections), `docs` (documentation only) and `test`. The remaining Conventional Commits types (`chore`, `ci`, `refactor`, `perf`, `build`, `style`) may be used with their standard meaning.
+  - Examples: `feat(stats-charts): add date-range on-the-fly chart calculations`, `fix(stats-charts): cast userId to ObjectId at every query boundary`, `docs(perf): correct the maxWorkers rationale`, `test(perf): assert the k6 documents against the served schema`.
+  - This rule replaces an earlier `feat/<what-was-done>: <description>` format. That format was real and was used by the documentation- and stats-era commits (`feat/sdd:`, `feat/audit:`, `feat/stats:`), but it is ambiguous with the rule adopted here: `feat/stats:` reads as a `feat/<what>` message under one rule and as `feat(scope)` under the other, and nothing in the subject separates them. Do not rewrite historical commits to change their language or format.
 - Commit after each completed, validated unit of work (one task = one commit when possible).
 - Do not commit secrets, generated artifacts, or unrelated files. Stage only the files that belong to the change.
 - Do not amend or force-push commits unless explicitly requested.
