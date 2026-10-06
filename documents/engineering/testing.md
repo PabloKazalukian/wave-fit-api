@@ -44,9 +44,9 @@ npm run test:cov:combined   # unit + e2e coverage + istanbul merge â†’ cove
 
 | Suite | Location | Baseline | Command |
 |---|---|---|---|
-| **Unit** | `src/**/*.spec.ts` | 83 suites / 786 tests | `npm test` |
+| **Unit** | `src/**/*.spec.ts` | 84 suites / 806 tests | `npm test` |
 | **E2E** | `test/e2e/*.spec.ts` | 33 suites / 173 tests | `npm run test:e2e` |
-| **Performance** | `test/perf/*.spec.ts` | 5 suites / 114 tests | `npm run test:perf` |
+| **Performance** | `test/perf/*.spec.ts` | 6 suites / 124 tests | `npm run test:perf` |
 
 - Unit tests mock dependencies with Jest (see section 6).
 - E2E boots the app against in-memory MongoDB, with `cookie-parser` registered (the JWT travels in an HttpOnly cookie), GraphQL playground disabled, and the same modules as the real app.
@@ -65,20 +65,20 @@ npm run test:cov:combined   # unit + e2e coverage + istanbul merge â†’ cove
 | `test/jest-e2e.json` | `testRegex: 'test/e2e/.*\.spec\.ts$'` | no â€” the pattern does not match |
 | `test/jest-perf.json` | `testRegex: 'test/perf/.*\.spec\.ts$'`, `maxWorkers: 1` | yes |
 
-That separation is asserted, not assumed: `test/perf/perf-artifacts.spec.ts` reads all three configs and fails if either of the first two can collect a perf file. `maxWorkers: 1` is required because all five perf suites share one in-memory MongoDB.
+That separation is asserted, not assumed: `test/perf/perf-artifacts.spec.ts` reads all three configs and fails if either of the first two can collect a perf file. `maxWorkers: 1` exists because two of the six suites boot MongoDB, and each starts a `mongod` of its own: running them in parallel would hold several `mongod` processes at once and have them contend for CPU, which is what would bias the reported `elapsedMs`. Only `stats-charts.bench.spec.ts` shares a single in-memory MongoDB — across its three dataset sizes, separated by `userId`; the other four never touch MongoDB.
 
 Two consequences worth knowing:
 
 - **`npm run build` and `npm run lint:ci` do not see this layer at all.** `tsconfig.build.json` excludes `test` and `scripts`, and `lint:ci` is scoped to `src/**/*.ts`. The perf code is type-checked only when `ts-jest` compiles it during `npm run test:perf`. Run that suite before considering a change here validated.
 - **It does not move the coverage baseline.** Both coverage commands collect from `src/`, so nothing under `test/` or `scripts/` is ever counted.
 
-Performance assertions are on exact integer counts (`queries`, `docsReturned` â€” how many MongoDB commands the code issued and how many documents it materialized), never on wall-clock time, because duration on a shared runner describes the machine rather than the code. Timing is reported and only enforced under `PERF_ENFORCE_TIMING=1`. See `sdd/stats-charts-performance.spec.md` and `documents/modules/stats-charts.md`.
+Performance assertions are on exact integer counts (`queries`, `docsReturned` â€” how many MongoDB commands the code issued and how many documents it materialized), never on wall-clock time, because duration on a shared runner describes the machine rather than the code. Timing is reported and only enforced under `PERF_ENFORCE_TIMING=1`. The rationale is recorded in `documents/decisions/ADR-0008-deterministic-performance-budgets.md`; the feature contract is `sdd/stats-charts-performance.spec.md` and the measured hotspots are in `documents/modules/stats-charts.md`.
 
 ## 4. Why `--maxWorkers=2` in E2E
 
 With more workers, `mongodb-memory-server` and the automated seeding race and produce cross-suite data. The limit is pinned to `--maxWorkers=2` in the `test:e2e` and `test:e2e:cov` scripts.
 
-The performance layer goes further and pins `--maxWorkers=1` in `test:perf`: all five of its suites share a single in-memory MongoDB and separate their datasets by `userId`, so any parallelism risks cross-talk between them.
+The performance layer goes further and pins `--maxWorkers=1` in `test:perf`. Six suites run, but only two boot MongoDB: `stats-charts.bench.spec.ts`, which shares one in-memory instance across its three dataset sizes and separates them by `userId`, and `seed-idempotency.spec.ts`, which starts a server of its own. Serializing them keeps two `mongod` processes from competing for CPU, which is what would make the reported `elapsedMs` meaningless.
 
 ## 5. Coverage Gates
 

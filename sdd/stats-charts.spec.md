@@ -17,8 +17,9 @@
 > query sites (the pattern from `ADR-0003` and
 > `week-log.infrastructure/repositories/week-log.repository.ts`), and by hardening the six
 > calculator specs to also assert `toBeInstanceOf(Types.ObjectId)`. Discovered while
-> building `sdd/stats-charts-performance.spec.md`; see its "Relationship to the ObjectId
-> fix" section.
+> building `sdd/stats-charts-performance.spec.md`; see its `FR-007`, which records the perf
+> budgets as a post-correction baseline, and `documents/legacy/plans/stats-charts-performance/plan.md`
+> for the implementation record.
 
 The frontend needs **chart data** for training statistics computed **on the fly over a date range** (`from`/`to`, capped at 4 months). The existing `stats` module is an **experimental, worker-fed pipeline**: NestJS publishes events to SQS, an external Lambda computes the 4 metrics, and NestJS only upserts the already-computed results, which are then read back with `getTopExercises`/`getTopRoutines`/`getPersonalRecords`/`getAdherence`. Those persisted metrics are **cumulative snapshots** with a single `computedAt`; there is **no date-range calculation** anywhere in the specs or the code (`get-*` use cases take only `userId`; `getRawDataForWorker` reads the full history with no date filter).
 
