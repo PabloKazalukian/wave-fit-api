@@ -1,9 +1,10 @@
 import { TrendCalculator } from './trend.calculator';
 import { localDateToUtc, LocalDate } from '../../../common/utils/date.utils';
 import { TrendLabel } from '../presentation/entities/exercise-trend.output';
+import { Types } from 'mongoose';
 
 const TIMEZONE = 'America/Argentina/Buenos_Aires';
-const USER_ID = 'user1';
+const USER_ID = '507f1f77bcf86cd799439011';
 
 function chainMock(resolvedValue: unknown) {
   const exec = jest.fn<any>().mockResolvedValue(resolvedValue);
@@ -241,6 +242,10 @@ describe('TrendCalculator (stats-charts)', () => {
     await calculator.execute(USER_ID, '2026-09-01', '2026-09-06', TIMEZONE);
 
     const query = workoutMock.find.mock.calls[0][0];
+    // ADR-0003: this calculator is the persistence boundary, so the string
+    // coming from `extractUserId` must be cast explicitly on every query. A
+    // raw string would not match the ObjectId stored in Mongo.
+    expect(query.userId).toBeInstanceOf(Types.ObjectId);
     expect(query.userId.toString()).toBe(USER_ID);
     expect(query.deleted).toEqual({ $ne: true });
     expect(query.status).toBe('complete');

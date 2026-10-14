@@ -1,9 +1,10 @@
 import { ForgottenMusclesCalculator } from './forgotten-muscles.calculator';
 import { localDateToUtc, LocalDate } from '../../../common/utils/date.utils';
 import { ExerciseCategory } from '../../routines/templates/exercise/entities/exercise.entity';
+import { Types } from 'mongoose';
 
 const TIMEZONE = 'America/Argentina/Buenos_Aires';
-const USER_ID = 'user1';
+const USER_ID = '507f1f77bcf86cd799439011';
 
 function chainMock(resolvedValue: unknown) {
   const exec = jest.fn<any>().mockResolvedValue(resolvedValue);
@@ -164,13 +165,19 @@ describe('ForgottenMusclesCalculator (stats-charts)', () => {
       if (category === ExerciseCategory.REST) continue;
       expect(muscles).toContain(category);
     }
-    expect(weekLogMock.find.mock.calls[0][0]).toMatchObject({
-      userId: USER_ID,
+    const weekLogQuery = weekLogMock.find.mock.calls[0][0];
+    const dayLogQuery = dayLogMock.find.mock.calls[0][0];
+    // `toMatchObject` compares by identity for ObjectId, so the string form is
+    // asserted separately from the cast (ADR-0003).
+    expect(weekLogQuery.userId).toBeInstanceOf(Types.ObjectId);
+    expect(dayLogQuery.userId).toBeInstanceOf(Types.ObjectId);
+    expect(weekLogQuery.userId.toString()).toBe(USER_ID);
+    expect(dayLogQuery.userId.toString()).toBe(USER_ID);
+    expect(weekLogQuery).toMatchObject({
       active: true,
       deleted: { $ne: true },
     });
-    expect(dayLogMock.find.mock.calls[0][0]).toMatchObject({
-      userId: USER_ID,
+    expect(dayLogQuery).toMatchObject({
       active: true,
       deleted: { $ne: true },
     });
@@ -273,6 +280,10 @@ describe('ForgottenMusclesCalculator (stats-charts)', () => {
     await calculator.execute(USER_ID, '2026-09-01', '2026-09-06', TIMEZONE);
 
     const query = workoutMock.find.mock.calls[0][0];
+    // ADR-0003: this calculator is the persistence boundary, so the string
+    // coming from `extractUserId` must be cast explicitly on every query. A
+    // raw string would not match the ObjectId stored in Mongo.
+    expect(query.userId).toBeInstanceOf(Types.ObjectId);
     expect(query.userId.toString()).toBe(USER_ID);
     expect(query.deleted).toEqual({ $ne: true });
     expect(query.status).toBe('complete');

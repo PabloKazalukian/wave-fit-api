@@ -16,6 +16,7 @@ Architecture Decision Records (ADRs) capture *why* a relevant engineering decisi
 | [ADR-0005](ADR-0005-google-oauth-pkce.md) | Google OAuth with PKCE | Google login uses the PKCE flow instead of less secure code exchange for SPA clients. |
 | [ADR-0006](ADR-0006-ai-provider-strategy.md) | AI provider strategy | LLM access is centralized in the transversal `ai/` module with provider strategy, rate limit, and budgeted retries. |
 | [ADR-0007](ADR-0007-stats-sqs-worker.md) | Stats delegated to an SQS worker | NestJS never computes statistics; an external worker does, driven by SQS events. |
+| [ADR-0008](ADR-0008-deterministic-performance-budgets.md) | Deterministic budgets over timing | Performance tests assert exact integer counts, not wall-clock durations; budgets lock measured current behavior and the layer runs nightly, never on a PR. |
 
 ## When is an ADR warranted?
 

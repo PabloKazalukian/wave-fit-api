@@ -104,9 +104,7 @@ async function find() {
         isSimilar(a.name, b.name, 3)
       ) {
         issues++;
-        logger.warn(
-          `  [similar] "${a.name}" <-> "${b.name}"`,
-        );
+        logger.warn(`  [similar] "${a.name}" <-> "${b.name}"`);
         continue;
       }
 

@@ -1,0 +1,38 @@
+# Isolated local MongoDB.
+#
+# Nothing here is required to build, test or run the API. The application
+# reaches this database through MONGO_URL, and every other topology — the shared
+# Atlas cluster, the in-memory server used by the unit and E2E suites — is
+# unaffected by this file existing.
+#
+# It exists for the cases that need their own database: a performance run, a
+# migration rehearsal, an isolated demo. See
+# documents/engineering/local-environments.md for the full workflow.
+services:
+  mongo:
+    # Pinned to the same major that mongodb-memory-server already runs for the
+    # unit and E2E suites, so an isolated database behaves like the one the
+    # tests use. Do not use `latest`: a silent major bump would change query
+    # semantics under a load test.
+    image: mongo:8.2
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      # Long syntax on purpose: it is the only form that makes the named volume
+      # explicit, which is what makes `docker compose down -v` meaningful.
+      - type: volume
+        source: mongo-data
+        target: /data/db
+    # No authentication on purpose. Local development connects without
+    # credentials: they would protect nothing and would cost every developer a
+    # setup step on every machine. Never point this at anything reachable.
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  mongo-data:

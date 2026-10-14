@@ -1,7 +1,7 @@
 # Engineering CI/CD
 
 > **Status:** Current
-> **Last updated:** 2026-09-17
+> **Last updated:** 2026-10-01
 
 ## 1. Continuous Integration (GitHub Actions)
 
@@ -24,6 +24,9 @@ The repository runs an automated CI pipeline defined in
   **non-secret** values (`GROQ_API_KEY`, `GOOGLE_CLIENT_ID`,
   `GOOGLE_CLIENT_SECRET`, `JWT_SECRET`, `PREFERRED_AI_PROVIDER`). No production
   secret is ever required by the test suites.
+
+A second, independent workflow — `.github/workflows/perf.yml` — covers the
+performance layer. See section 5. It does **not** modify this gate.
 
 CI is now the automated quality gate. A red pipeline blocks integration. There is
 still **no CD**: deployment remains manual (section 3).
@@ -59,11 +62,43 @@ The same four commands are the local gate and the CI gate:
 - Required environment variables are listed in `.env.example` and described in
   `documents/modules/auth.md` and `documents/modules/ai.md`.
 
-## 4. What This Means for Engineers
+## 4. Performance Workflow (nightly, not a PR gate)
+
+`.github/workflows/perf.yml` is a **separate** pipeline. It runs
+`npx jest --config test/jest-perf.json --maxWorkers=1 --no-coverage`.
+
+- **Triggers:** `schedule` (cron `0 3 * * 1-5`, weekdays at 03:00 UTC) and
+  `workflow_dispatch` only. There is deliberately **no** `pull_request` and no
+  `push` trigger, so it can never delay or block a merge. `AC-006` requires that
+  property, and `test/perf/perf-artifacts.spec.ts` asserts it by reading the
+  workflow file.
+- **What it asserts:** only deterministic budgets — exact integer `queries` and
+  `docsReturned` per calculator. Wall-clock numbers are printed for manual
+  comparison and **never** fail the job. Duration on a shared runner describes
+  the runner, not the code, so enforcing it would produce a flaky gate that the
+  team eventually ignores. Timing budgets exist but activate only under
+  `PERF_ENFORCE_TIMING=1`.
+- **Consequence:** a query-shape change that adds an N+1 or drops a `select()`
+  fails this workflow on the next weekday morning. It will not show up on the PR.
+  When touching a module that has a performance layer, run `npm run test:perf`
+  locally before pushing.
+- It does not run the unit or E2E suites, and neither of those collects
+  `test/perf/`, so the two layers cannot interfere. See
+  `documents/engineering/testing.md` section 3.
+
+The k6 layer (`npm run perf:seed` + `npm run test:perf:k6`) drives a real
+`POST /graphql` and is **not** wired into this workflow: it needs a running
+server and a seeded database. Its script contract is covered by
+`test/perf/perf-artifacts.spec.ts` instead.
+
+## 5. What This Means for Engineers
 
 - Every push to any branch runs the `quality` job; open a PR against `main` and
   wait for the `CI / quality` check to pass before merging; do not merge a red
   pipeline. Merging to `main` triggers Render's native auto-deploy.
 - Running the same commands locally before pushing shortens the feedback loop.
+- A red `Performance (stats-charts)` run is **not** urgent in the same way: it
+  means a query shape moved, not that a feature broke. Investigate whether the
+  change was deliberate before relaxing anything.
 - If the CI/CD setup changes again (for example, moving deploy into a Git workflow
   or adding coverage gates), this document must be updated to describe it.

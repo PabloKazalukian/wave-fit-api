@@ -33,7 +33,10 @@
     "check:exercise-refs": "ts-node -r tsconfig-paths/register src/database/scripts/check-exercise-references.ts",
     "check:similar-exercises": "ts-node -r tsconfig-paths/register src/database/scripts/find-similar-exercises.ts",
     "fix:exercise-refs": "ts-node -r tsconfig-paths/register src/database/scripts/fix-exercise-references.ts",
-    "generate:service-token": "ts-node -r tsconfig-paths/register scripts/generate-service-token.ts"
+    "generate:service-token": "ts-node -r tsconfig-paths/register scripts/generate-service-token.ts",
+    "test:perf": "jest --config test/jest-perf.json --maxWorkers=1",
+    "perf:seed": "ts-node -r tsconfig-paths/register scripts/perf/seed-stats-charts.ts",
+    "test:perf:k6": "k6 run --summary-export test/perf/results/k6-summary.json test/load/stats-charts.js"
   },
   "dependencies": {
     "@apollo/server": "^5.0.0",

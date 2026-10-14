@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { ExerciseCategory } from '../../routines/templates/exercise/entities/exercise.entity';
 import { LocalDate } from '../../../common/utils/date.utils';
 import { buildWeekKeys, rangeUtcBounds } from '../common/range.utils';
@@ -50,7 +50,7 @@ export class OneRmWeeklyCalculator {
     const [sessions, exercises] = await Promise.all([
       this.workoutSessionModel
         .find({
-          userId: userId as any,
+          userId: new Types.ObjectId(userId),
           deleted: { $ne: true },
           status: 'complete',
           date: { $gte: fromUtc, $lt: toUtc },
