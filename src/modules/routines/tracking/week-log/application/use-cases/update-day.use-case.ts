@@ -123,7 +123,7 @@ export class UpdateDayUseCase {
     } else {
       // El day no tiene WS → crear uno nuevo
       // day.date es Date UTC en Mongo → convertir a LocalDate "yyyy-MM-dd"
-      const dayLocalDate = utcToLocalDate(day.date, timezone);
+      // const dayLocalDate = utcToLocalDate(day.date, timezone);
       const newSession = await this.workoutSessionService.create(
         {
           ...wsInput,
@@ -175,7 +175,7 @@ export class UpdateDayUseCase {
     } else {
       // Prioridad 3: crear WS vacío, marcar el día como descanso
       // day.date es Date UTC en Mongo → convertir a LocalDate "yyyy-MM-dd"
-      const dayLocalDate = utcToLocalDate(day.date, timezone);
+      // const dayLocalDate = utcToLocalDate(day.date, timezone);
       const emptySession = await this.workoutSessionService.create(
         {
           weekLogId: (weekLog as any)._id.toString(),
