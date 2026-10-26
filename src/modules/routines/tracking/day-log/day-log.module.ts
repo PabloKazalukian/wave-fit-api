@@ -20,11 +20,14 @@ import { DAY_LOG_REPOSITORY } from './domain/interfaces/repositories/day-log.rep
 import { DAY_LOG_USE_CASES } from './application/use-cases';
 import { ExtraSessionModule } from '../extra-session/extra-session.module';
 import { ActiveTrackingModule } from '../active-tracking/active-tracking.module';
+import { WeekLogModule } from '../week-log/week-log.module';
+import { RolesGuard } from 'src/common/guards/roles.guard';
 
 @Module({
   imports: [
     forwardRef(() => WorkoutSessionModule),
     forwardRef(() => ActiveTrackingModule),
+    forwardRef(() => WeekLogModule),
     RoutineDayModule,
     MongooseModule.forFeature([
       { name: DayLog.name, schema: DayLogSchema },
@@ -38,15 +41,13 @@ import { ActiveTrackingModule } from '../active-tracking/active-tracking.module'
     DayLogResolver,
     DayLogService,
     DayLogValidator,
+    RolesGuard,
     ...DAY_LOG_USE_CASES,
     {
       provide: DAY_LOG_REPOSITORY,
       useClass: DayLogRepository,
     },
   ],
-  exports: [
-    DayLogService,
-    DAY_LOG_REPOSITORY,
-  ],
+  exports: [DayLogService, DAY_LOG_REPOSITORY],
 })
 export class DayLogModule {}

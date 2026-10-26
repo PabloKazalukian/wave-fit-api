@@ -2,6 +2,7 @@ import { Resolver, Query, Mutation, Args, Context } from '@nestjs/graphql';
 import { DayLogService } from './day-log.service';
 import { DayLog } from './presentation/entities/day-log.entity';
 import { CreateDayLogInput } from './presentation/dto/create-day-log.input';
+import { CreateDayLogDeferredInput } from './presentation/dto/create-day-log-deferred.input';
 import { UpdateDayLogInput } from './presentation/dto/update-day-log.input';
 import { UseGuards, UseInterceptors } from '@nestjs/common';
 import { GqlAuthGuard } from 'src/modules/auth/guards/gql-auth.guard';
@@ -24,6 +25,18 @@ export class DayLogResolver {
   ) {
     const userId = extractUserId(context);
     return this.dayLogService.create(createDayLogInput, userId);
+  }
+
+  @Mutation(() => DayLog)
+  @UseGuards(GqlAuthGuard)
+  @UseInterceptors(AuditInterceptor)
+  @Audit('CREATE_DAY_LOG_DEFERRED', 'DayLog')
+  async createDayLogDeferred(
+    @Args('input') input: CreateDayLogDeferredInput,
+    @Context() context,
+  ) {
+    const userId = extractUserId(context);
+    return this.dayLogService.createDeferred(input, userId);
   }
 
   @Query(() => [DayLog], { name: 'dayLogFindAll' })

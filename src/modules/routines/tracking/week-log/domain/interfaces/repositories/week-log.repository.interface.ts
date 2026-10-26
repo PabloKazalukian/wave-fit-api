@@ -16,6 +16,7 @@ export interface IWeekLogRepository {
     offset?: number,
   ): Promise<WeekLogDomain[]>;
   findActive(userId: string): Promise<WeekLogDomain | null>;
+  findOneByUserAndDate(userId: string, dateUtc: Date): Promise<WeekLogDomain | null>;
   create(
     weekLog: WeekLogDomain,
     sessions?: WorkoutSessionCreationData[],
