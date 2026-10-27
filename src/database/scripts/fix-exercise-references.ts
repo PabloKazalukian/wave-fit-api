@@ -2,7 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { Logger } from '@nestjs/common';
 import { AppModule } from 'src/app.module';
 import { getConnectionToken } from '@nestjs/mongoose';
-import { Connection, Types } from 'mongoose';
+import { Connection } from 'mongoose';
 
 const logger = new Logger('FixExerciseReferences');
 

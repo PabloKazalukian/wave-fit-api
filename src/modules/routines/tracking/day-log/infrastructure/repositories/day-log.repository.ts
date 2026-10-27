@@ -68,6 +68,24 @@ export class DayLogRepository implements IDayLogRepository {
     return this.mapToDomain(doc);
   }
 
+  async findOneByUserAndDate(
+    userId: string,
+    dateStartUtc: Date,
+    dateEndUtc: Date,
+  ): Promise<DayLogDomain | null> {
+    const doc = await this.dayLogModel
+      .findOne({
+        userId: new Types.ObjectId(userId),
+        deleted: { $ne: true },
+        date: { $gte: dateStartUtc, $lt: dateEndUtc },
+      })
+      .populate('workoutSessionId')
+      .exec();
+
+    if (!doc) return null;
+    return this.mapToDomain(doc);
+  }
+
   async create(data: DayLogDomain): Promise<DayLogDomain> {
     const plainData = {
       userId: new Types.ObjectId(data.userId),

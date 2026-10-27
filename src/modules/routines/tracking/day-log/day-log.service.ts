@@ -1,9 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateDayLogInput } from './presentation/dto/create-day-log.input';
+import { CreateDayLogDeferredInput } from './presentation/dto/create-day-log-deferred.input';
 import { UpdateDayLogInput } from './presentation/dto/update-day-log.input';
 import { DayLogDomain } from './domain/entities/day-log.domain';
 import {
   AssignRoutineDayUseCase,
+  CreateDayLogDeferredUseCase,
   CreateDayLogUseCase,
   FindActiveDayLogUseCase,
   FindAllDayLogsUseCase,
@@ -21,6 +23,7 @@ export const DEFAULT_TIMEZONE = 'America/Argentina/Buenos_Aires';
 export class DayLogService {
   constructor(
     private readonly createDayLogUseCase: CreateDayLogUseCase,
+    private readonly createDayLogDeferredUseCase: CreateDayLogDeferredUseCase,
     private readonly findAllDayLogsUseCase: FindAllDayLogsUseCase,
     private readonly findOneDayLogUseCase: FindOneDayLogUseCase,
     private readonly findActiveDayLogUseCase: FindActiveDayLogUseCase,
@@ -37,6 +40,13 @@ export class DayLogService {
     userId: string,
   ): Promise<DayLogDomain | null> {
     return this.createDayLogUseCase.execute(input, userId);
+  }
+
+  async createDeferred(
+    input: CreateDayLogDeferredInput,
+    userId: string,
+  ): Promise<DayLogDomain | null> {
+    return this.createDayLogDeferredUseCase.execute(input, userId);
   }
 
   async findAllByUser(

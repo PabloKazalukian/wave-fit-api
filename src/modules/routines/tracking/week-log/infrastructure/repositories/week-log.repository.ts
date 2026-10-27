@@ -73,6 +73,23 @@ export class WeekLogRepository implements IWeekLogRepository {
     return this.mapToDomain(doc);
   }
 
+  async findOneByUserAndDate(
+    userId: string,
+    dateUtc: Date,
+  ): Promise<WeekLogDomain | null> {
+    const doc = await this.weekLogModel
+      .findOne({
+        userId: new Types.ObjectId(userId),
+        deleted: { $ne: true },
+        startDate: { $lte: dateUtc },
+        endDate: { $gte: dateUtc },
+      })
+      .exec();
+
+    if (!doc) return null;
+    return this.mapToDomain(doc);
+  }
+
   async findPlanById(planId: string): Promise<any> {
     return this.weekLogModel.findById(planId).exec();
   }

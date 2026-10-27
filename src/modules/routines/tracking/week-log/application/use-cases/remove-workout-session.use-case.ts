@@ -1,22 +1,14 @@
 import {
-  BadRequestException,
   forwardRef,
   Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { DEFAULT_TIMEZONE, WeekLogService } from '../../week-log.service';
+import { WeekLogService } from '../../week-log.service';
 import { WEEK_LOG_REPOSITORY } from '../../domain/interfaces/repositories/week-log.repository.interface';
-import {
-  WeekLogDayDomain,
-  WeekLogDomain,
-} from '../../domain/entities/week-log.domain';
+import { WeekLogDayDomain } from '../../domain/entities/week-log.domain';
 import type { IWeekLogRepository } from '../../domain/interfaces/repositories/week-log.repository.interface';
 import { WeekLogValidator } from '../validators/week-log.validator';
-import {
-  isDateSameLocalDate,
-  isValidLocalDate,
-} from 'src/common/utils/date.utils';
 import { WorkoutSessionService } from '../../../workout-session/workout-session.service';
 
 @Injectable()

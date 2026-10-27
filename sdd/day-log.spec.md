@@ -27,11 +27,18 @@ Users need to record a single training day **without a complete week** — ad-ho
 - `FR-014` — `updateDayLog` accepts an optional `workoutSession` block (same shape as `updateWeekDay`'s `workoutSession: UpdateWorkoutSessionInput`, parity with week-log): when the day-log already has a `workoutSessionId` the session is updated (a mismatching explicit `workoutSession.id` throws `BadRequestException`); otherwise a new `WorkoutSession` is created with the `dayLogId` back-reference. When `completed = true` the use case guarantees a `WorkoutSession` exists (creating an empty one if missing) before setting `completed = true` and `active = false` (it does **not** modify `status`).
 - `FR-015` — `updateDayLogStatus(date, isRest)`: `isRest = true` sets `status = 'skipped'`, removes the linked `WorkoutSession` and forces `completed = false`, but **keeps `active = true`** (a rest day does not close the day-log, so the user can toggle back with `isRest = false`); `isRest = false` sets `status = 'pending'`, forces `completed = false` and creates/reuses the `WorkoutSession`. Removing the main session (`removeWorkoutSessionFromDayLog`) likewise forces `completed = false` and `status = 'pending'`.
 
+- `FR-016` — `createDayLogDeferred(input: CreateDayLogDeferredInput)` is a **mutación exclusiva** para guardar información de un día **pasado**. Requiere autenticación (`GqlAuthGuard`) + autorización por rol (`RolesGuard` con `@Roles(UserRole.ADMIN)`) y auditoría (`CREATE_DAY_LOG_DEFERRED`). Solo acepta fechas **estrictamente pasadas** respecto a la fecha actual en el `timezone` resuelto (por defecto `America/Argentina/Buenos_Aires`). Rechaza fecha de hoy o futura con `BadRequestException`. 
+- `FR-017` — `createDayLogDeferred` **bypasea las reglas de exclusividad activa** (`validateCreation` / `validateNoActiveWeek`): puede ejecutarse aunque exista un `week-log` activo o un `day-log` activo. Esta es la **única excepción** a dichas reglas. 
+- `FR-018` — No debe guardar sobre registros existentes: si ya existe un `day-log` no eliminado para ese usuario y esa fecha (cualquier estado), lanza `BadRequestException`/`ConflictException`. Si la fecha cae dentro de algún `week-log` del usuario (no eliminado, activo o no), lanza `BadRequestException` indicando que debe editarse el `week-log` directamente. 
+- `FR-019` — El `day-log` creado por `createDayLogDeferred` **nunca es activo** (`active: false`), **queda completado** (`completed: true`) y con `status` acorde a un día completado (`'complete'` por defecto). Al establecer `completed = true` se garantiza la existencia de un `WorkoutSession` (se crea uno vacío si no existe). Si se envía `routineDayId`, se crea/relaciona `WorkoutSession` con los ejercicios del `RoutineDay` mapeados como en `createDayLog` (`series: 0`, `sets: []`), con `dayLogId` y `weekLogId: null`. Todos los `WorkoutSession` relacionados usan el mismo patrón de back-reference. 
+- `FR-020` — Mismos contratos de fecha/validación: `LocalDate` `yyyy-MM-dd`, conversión a UTC con `localDateToUtc`, validación semántica con `isValidLocalDate`, timezone por defecto `America/Argentina/Buenos_Aires`. Errores coherentes con el módulo.
+
 ### Business Rules
 
 - `BR-001` — A user cannot have an active week-log and an active day-log simultaneously (hard write rule enforced by validators, not only by the front-end gate).
 - `BR-002` — Completing a day (`completed = true`) finalizes it: `active` is forced to `false`, regardless of any value sent by the client. A `WorkoutSession` is guaranteed to exist first (auto-created empty when missing). `completed` is independent of `status`: it never modifies the display status.
 - `BR-003` — `status` (`pending | complete | skipped`) is a **display-only** field owned by the frontend: the backend stores whatever the client sends and never infers it from `completed`, from the presence of a `WorkoutSession`, or from session blocks. A day that is not completed (`completed = false`) is one that has not been finalized (it may still have a `WorkoutSession` and any display `status`); the only way to finalize a day-log is `completed = true` or the dedicated `updateDayLogStatus`/`removeWorkoutSessionFromDayLog` flows.
+- `BR-004` — `createDayLogDeferred` is an **authorized exception** (role-gated). It only allows **past dates**, creates the day-log as `active: false` and `completed: true` (guaranteeing `WorkoutSession`), does **not** create/activate an active tracking resource, and must not overwrite an existing day-log or a day that belongs to any week-log. It bypasses active-week/active-day exclusivity checks exclusively for this mutation.
 
 ### Non-Functional Requirements
 
@@ -39,6 +46,7 @@ Users need to record a single training day **without a complete week** — ad-ho
 - `NFR-002` — The default timezone matches the rest of tracking modules: `'America/Argentina/Buenos_Aires'` (`DEFAULT_TIMEZONE` in `day-log.service.ts`, `create-day-log.use-case.ts` and `update-day-log.use-case.ts`).
 - `NFR-003` — The resolver is protected with `@UseGuards(GqlAuthGuard)` and mutations carry `@UseInterceptors(AuditInterceptor)` + `@Audit(...)` (actions `CREATE_DAY_LOG`, `UPDATE_DAY_LOG`, `UPDATE_DAY_LOG_STATUS`, `ASSIGN_ROUTINE_TO_DAY`, `REMOVE_WORKOUT_SESSION_FROM_DAY`, `REMOVE_EXTRA_SESSION_FROM_DAY`, `DELETE_DAY_LOG`).
 - `NFR-004` — The module follows the four-layer hexagonal architecture of `week-log`; the repository maps Mongoose document ↔ `DayLogDomain` (ObjectId ↔ string) and is provided under token `DAY_LOG_REPOSITORY`.
+- `NFR-005` — Deferred creation uses role-based authorization (`RolesGuard` + `@Roles`) and is audited via `CREATE_DAY_LOG_DEFERRED`. Guards are applied at resolver level for this mutation.
 
 ## Constraints
 
@@ -81,10 +89,11 @@ Coordination: ActiveTrackingService (hasActiveWeek / hasActiveDay / hasActiveTra
 - `src/modules/routines/tracking/day-log/infrastructure/schemas/day-log.schema.ts` (`DayLogSchema`, indices `{ userId, date }`, `{ userId, active }`, `{ workoutSessionId }`, `{ extraSessionIds }`)
 - `src/modules/routines/tracking/day-log/infrastructure/repositories/day-log.repository.ts`
 - `src/modules/routines/tracking/day-log/application/validators/day-log.validator.ts`
-- `src/modules/routines/tracking/day-log/application/use-cases/` — `create-day-log`, `find-all-day-logs`, `find-one-day-log`, `find-active-day-log`, `update-day-log`, `update-day-status`, `assign-routine-day`, `remove-day-log`, `remove-workout-session`, `remove-extra-session` (all `*.use-case.ts`, plus the barrel `index.ts`)
-- `src/modules/routines/tracking/day-log/presentation/dto/{create-day-log.input.ts, update-day-log.input.ts, day-log-extra-session.input.ts}`
+- `src/modules/routines/tracking/day-log/application/use-cases/` — `create-day-log`, `create-day-log-deferred`, `find-all-day-logs`, `find-one-day-log`, `find-active-day-log`, `update-day-log`, `update-day-status`, `assign-routine-day`, `remove-day-log`, `remove-workout-session`, `remove-extra-session` (all `*.use-case.ts`, plus the barrel `index.ts`)
+- `src/modules/routines/tracking/day-log/presentation/dto/{create-day-log.input.ts, create-day-log-deferred.input.ts, update-day-log.input.ts, day-log-extra-session.input.ts}`
 - `src/modules/routines/tracking/day-log/presentation/entities/day-log.entity.ts`
 - `src/modules/routines/tracking/active-tracking/active-tracking.{module,service,resolver}.ts` (coordination)
+- `src/common/decorators/roles.decorator.ts`, `src/common/guards/roles.guard.ts` (role-based authorization)
 
 ## Tests
 
@@ -103,3 +112,4 @@ Coordination: ActiveTrackingService (hasActiveWeek / hasActiveDay / hasActiveTra
 - `AC-004` — Another user cannot observe or mutate a day-log that is not theirs.
 - `AC-005` — `activeTracking` correctly reports `type: DAY_LOG` with the active day and `type: WEEK_LOG` with the active week (mutually exclusive).
 - `AC-006` — The canonical verification workflow passes and the `test/e2e/day-log/` and day-log unit suites are green.
+- `AC-007` — `createDayLogDeferred` requires authorization (role-gated), rejects today/future dates and invalid dates, rejects if a day-log already exists for that date, rejects if the date belongs to any week-log (suggesting direct week-log edit), bypasses active-week/active-day exclusivity, creates the day-log as `active: false` and `completed: true` with a guaranteed `WorkoutSession` (empty or from `routineDayId`), and does not affect the current active tracking resource.
