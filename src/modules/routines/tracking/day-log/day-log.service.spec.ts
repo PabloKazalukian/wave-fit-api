@@ -4,6 +4,7 @@ import { CreateDayLogInput } from './presentation/dto/create-day-log.input';
 import { NotFoundException } from '@nestjs/common';
 import {
   AssignRoutineDayUseCase,
+  CreateDayLogDeferredUseCase,
   CreateDayLogUseCase,
   FindActiveDayLogUseCase,
   FindAllDayLogsUseCase,
@@ -19,6 +20,7 @@ describe('DayLogService', () => {
   let service: DayLogService;
 
   const mockCreateDayLogUseCase = { execute: jest.fn() };
+  const mockCreateDayLogDeferredUseCase = { execute: jest.fn() };
   const mockFindAllDayLogsUseCase = { execute: jest.fn() };
   const mockFindOneDayLogUseCase = { execute: jest.fn() };
   const mockFindActiveDayLogUseCase = { execute: jest.fn() };
@@ -51,6 +53,10 @@ describe('DayLogService', () => {
       providers: [
         DayLogService,
         { provide: CreateDayLogUseCase, useValue: mockCreateDayLogUseCase },
+        {
+          provide: CreateDayLogDeferredUseCase,
+          useValue: mockCreateDayLogDeferredUseCase,
+        },
         { provide: FindAllDayLogsUseCase, useValue: mockFindAllDayLogsUseCase },
         { provide: FindOneDayLogUseCase, useValue: mockFindOneDayLogUseCase },
         {
