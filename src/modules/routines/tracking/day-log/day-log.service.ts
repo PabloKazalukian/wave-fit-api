@@ -11,6 +11,7 @@ import {
   FindAllDayLogsUseCase,
   FindOneDayLogUseCase,
   RemoveDayLogUseCase,
+  RemoveExtraSessionFromDeferredDayLogUseCase,
   RemoveExtraSessionUseCase,
   RemoveWorkoutSessionUseCase,
   UpdateDayLogUseCase,
@@ -32,6 +33,7 @@ export class DayLogService {
     private readonly removeDayLogUseCase: RemoveDayLogUseCase,
     private readonly removeWorkoutSessionUseCase: RemoveWorkoutSessionUseCase,
     private readonly removeExtraSessionUseCase: RemoveExtraSessionUseCase,
+    private readonly removeExtraSessionFromDeferredDayLogUseCase: RemoveExtraSessionFromDeferredDayLogUseCase,
     private readonly assignRoutineDayUseCase: AssignRoutineDayUseCase,
   ) {}
 
@@ -100,6 +102,16 @@ export class DayLogService {
     userId: string,
   ): Promise<DayLogDomain | null> {
     return this.removeExtraSessionUseCase.execute(extraSessionId, userId);
+  }
+
+  async removeExtraSessionFromDeferredDay(
+    extraSessionId: string,
+    userId: string,
+  ): Promise<DayLogDomain | null> {
+    return this.removeExtraSessionFromDeferredDayLogUseCase.execute(
+      extraSessionId,
+      userId,
+    );
   }
 
   async assignRoutineToDay(

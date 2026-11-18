@@ -127,6 +127,19 @@ export class DayLogResolver {
     return this.dayLogService.removeExtraSessionFromDay(extraSessionId, userId);
   }
 
+  @Mutation(() => DayLog, { name: 'removeExtraSessionFromDeferredDayLog' })
+  @Audit('REMOVE_EXTRA_SESSION_FROM_DEFERRED_DAY', 'DayLog')
+  async removeExtraSessionFromDeferredDay(
+    @Args('extraSessionId', { type: () => String }) extraSessionId: string,
+    @Context() context,
+  ) {
+    const userId = extractUserId(context);
+    return this.dayLogService.removeExtraSessionFromDeferredDay(
+      extraSessionId,
+      userId,
+    );
+  }
+
   @Mutation(() => DayLog)
   @Audit('DELETE_DAY_LOG', 'DayLog')
   async removeDayLog(
