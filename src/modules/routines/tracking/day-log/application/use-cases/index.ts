@@ -9,6 +9,7 @@ import { UpdateDayStatusUseCase } from './update-day-status.use-case';
 import { AssignRoutineDayUseCase } from './assign-routine-day.use-case';
 import { RemoveWorkoutSessionUseCase } from './remove-workout-session.use-case';
 import { RemoveExtraSessionUseCase } from './remove-extra-session.use-case';
+import { RemoveExtraSessionFromDeferredDayLogUseCase } from './remove-extra-session-from-deferred-day-log.use-case';
 
 export const DAY_LOG_USE_CASES = [
   CreateDayLogUseCase,
@@ -22,6 +23,7 @@ export const DAY_LOG_USE_CASES = [
   AssignRoutineDayUseCase,
   RemoveWorkoutSessionUseCase,
   RemoveExtraSessionUseCase,
+  RemoveExtraSessionFromDeferredDayLogUseCase,
 ];
 
 export * from './create-day-log.use-case';
@@ -35,14 +37,4 @@ export * from './assign-routine-day.use-case';
 export * from './remove-day-log.use-case';
 export * from './remove-workout-session.use-case';
 export * from './remove-extra-session.use-case';
-
-export * from './create-day-log.use-case';
-export * from './find-all-day-logs.use-case';
-export * from './find-one-day-log.use-case';
-export * from './update-day-log.use-case';
-export * from './remove-day-log.use-case';
-export * from './find-active-day-log.use-case';
-export * from './update-day-status.use-case';
-export * from './assign-routine-day.use-case';
-export * from './remove-workout-session.use-case';
-export * from './remove-extra-session.use-case';
+export * from './remove-extra-session-from-deferred-day-log.use-case';

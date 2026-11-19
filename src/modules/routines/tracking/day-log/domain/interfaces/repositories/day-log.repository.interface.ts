@@ -12,6 +12,10 @@ export interface IDayLogRepository {
     offset?: number,
   ): Promise<DayLogDomain[]>;
   findActive(userId: string): Promise<DayLogDomain | null>;
+  findByExtraSessionId(
+    extraSessionId: string,
+    userId: string,
+  ): Promise<DayLogDomain | null>;
   findOneByUserAndDate(
     userId: string,
     dateStartUtc: Date,

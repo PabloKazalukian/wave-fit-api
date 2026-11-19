@@ -10,6 +10,7 @@ import {
   FindAllDayLogsUseCase,
   FindOneDayLogUseCase,
   RemoveDayLogUseCase,
+  RemoveExtraSessionFromDeferredDayLogUseCase,
   RemoveExtraSessionUseCase,
   RemoveWorkoutSessionUseCase,
   UpdateDayLogUseCase,
@@ -29,6 +30,7 @@ describe('DayLogService', () => {
   const mockRemoveDayLogUseCase = { execute: jest.fn() };
   const mockRemoveWorkoutSessionUseCase = { execute: jest.fn() };
   const mockRemoveExtraSessionUseCase = { execute: jest.fn() };
+  const mockRemoveExtraSessionFromDeferredDayLogUseCase = { execute: jest.fn() };
   const mockAssignRoutineDayUseCase = { execute: jest.fn() };
 
   const mockUserId = '507f1f77bcf86cd799439011';
@@ -76,6 +78,10 @@ describe('DayLogService', () => {
         {
           provide: RemoveExtraSessionUseCase,
           useValue: mockRemoveExtraSessionUseCase,
+        },
+        {
+          provide: RemoveExtraSessionFromDeferredDayLogUseCase,
+          useValue: mockRemoveExtraSessionFromDeferredDayLogUseCase,
         },
         {
           provide: AssignRoutineDayUseCase,
